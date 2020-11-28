@@ -1,0 +1,13 @@
+{
+  "type": "siege:siege",
+  "name": "Siege",
+  "map": {
+    "id": "siege:siege_1",
+    "attacker_spawn_angle": 180
+  },
+  "players": {
+    "min": 1,
+    "max": 100
+  },
+  "time_limit_mins": 1
+}

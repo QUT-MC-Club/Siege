@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "siege",
+  "version": "${version}",
+  "name": "Siege",
+  "description": "Siege the castle!",
+  "authors": [
+    "Restioson"
+  ],
+  "license": "LGPLv3",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "io.github.restioson.siege.Siege"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.9.1",
+    "fabric": "*",
+    "minecraft": "1.16.x",
+    "plasmid": "0.4.x"
+  }
+}
