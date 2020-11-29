@@ -22,6 +22,10 @@ public final class SiegeSidebar {
             boolean blink = seconds % 2 == 0;
 
             for (SiegeFlag flag : this.game.map.flags) {
+                if (!flag.capturable) {
+                    continue;
+                }
+
                 Formatting color = flag.team.getFormatting();
                 boolean capturing = false;
                 if (flag.capturingState != null) {
