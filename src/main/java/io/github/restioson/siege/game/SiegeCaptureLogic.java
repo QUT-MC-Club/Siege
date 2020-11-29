@@ -1,5 +1,6 @@
 package io.github.restioson.siege.game;
 
+import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import net.minecraft.entity.EntityType;
@@ -16,6 +17,8 @@ import xyz.nucleoid.plasmid.game.player.GameTeam;
 import xyz.nucleoid.plasmid.util.PlayerRef;
 import xyz.nucleoid.plasmid.util.Scheduler;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -24,6 +27,9 @@ public final class SiegeCaptureLogic {
 
     private final GameSpace gameSpace;
     private final SiegeActive game;
+
+    private final List<ServerPlayerEntity> defendersPresent = new ArrayList<>();
+    private final List<ServerPlayerEntity> attackersPresent = new ArrayList<>();
 
     SiegeCaptureLogic(SiegeActive game) {
         this.gameSpace = game.gameSpace;
@@ -37,8 +43,11 @@ public final class SiegeCaptureLogic {
     }
 
     private void tickCaptureFlag(ServerWorld world, SiegeFlag flag, int interval) {
-        int defendersPresent = 0;
-        int attackersPresent = 0;
+        List<ServerPlayerEntity> defendersPresent = this.defendersPresent;
+        List<ServerPlayerEntity> attackersPresent = this.attackersPresent;
+
+        defendersPresent.clear();
+        attackersPresent.clear();
 
         for (Object2ObjectMap.Entry<PlayerRef, SiegePlayer> entry : Object2ObjectMaps.fastIterable(this.game.participants)) {
             ServerPlayerEntity player = entry.getKey().getEntity(world);
@@ -51,30 +60,30 @@ public final class SiegeCaptureLogic {
             if (flag.bounds.contains(player.getBlockPos())) {
                 GameTeam team = siegePlayer.team;
                 if (team == SiegeTeams.DEFENDERS) {
-                    defendersPresent++;
+                    defendersPresent.add(player);
                 } else if (team == SiegeTeams.ATTACKERS) {
-                    attackersPresent++;
+                    attackersPresent.add(player);
                 }
             }
         }
 
-        boolean defendersCapturing = defendersPresent > 0;
-        boolean attackersCapturing = attackersPresent > 0;
+        boolean defendersCapturing = !defendersPresent.isEmpty();
+        boolean attackersCapturing = !attackersPresent.isEmpty();
         boolean contested = defendersCapturing && attackersCapturing;
         boolean capturing = defendersCapturing || attackersCapturing;
 
         CapturingState capturingState = null;
         GameTeam captureTeam = flag.team;
-        int captureCount = 0;
+        List<ServerPlayerEntity> capturingPlayers = ImmutableList.of();
 
         if (capturing) {
             if (!contested) {
                 if (defendersCapturing) {
                     captureTeam = SiegeTeams.DEFENDERS;
-                    captureCount = defendersPresent;
+                    capturingPlayers = defendersPresent;
                 } else {
                     captureTeam = SiegeTeams.ATTACKERS;
-                    captureCount = attackersPresent;
+                    capturingPlayers = attackersPresent;
                 }
 
                 capturingState = captureTeam != flag.team ? CapturingState.CAPTURING : null;
@@ -90,20 +99,31 @@ public final class SiegeCaptureLogic {
         flag.capturingState = capturingState;
 
         if (capturingState == CapturingState.CAPTURING) {
-            this.tickCapturing(flag, interval, captureTeam, captureCount);
+            this.tickCapturing(flag, interval, captureTeam, capturingPlayers);
         } else if (capturingState == CapturingState.SECURING) {
             this.tickSecuring(flag, interval);
         }
     }
 
-    private void tickCapturing(SiegeFlag flag, int interval, GameTeam captureTeam, int captureCount) {
+    private void tickCapturing(SiegeFlag flag, int interval, GameTeam captureTeam, List<ServerPlayerEntity> capturingPlayers) {
         // Just began capturing
         if (flag.captureProgressTicks == 0) {
             this.broadcastStartCapture(flag, captureTeam);
         }
 
-        if (flag.incrementCapture(captureTeam, interval * captureCount)) {
+        if (flag.incrementCapture(captureTeam, interval * capturingPlayers.size())) {
             this.broadcastCaptured(flag, captureTeam);
+
+            for (ServerPlayerEntity player : capturingPlayers) {
+                player.sendMessage(new LiteralText("Captured!").formatted(Formatting.AQUA), true);
+                player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP,  SoundCategory.NEUTRAL, 1.0F, 1.0F);
+            }
+        } else {
+            int capturePercent = flag.captureProgressTicks * 100 / CAPTURE_TIME_TICKS;
+            for (ServerPlayerEntity player : capturingPlayers) {
+                player.sendMessage(new LiteralText("Capturing: " + capturePercent + "%").formatted(Formatting.RED), true);
+                player.playSound(SoundEvents.BLOCK_STONE_PLACE,  SoundCategory.NEUTRAL, 1.0F, 1.0F);
+            }
         }
     }
 

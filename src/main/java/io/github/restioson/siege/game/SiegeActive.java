@@ -12,6 +12,7 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameMode;
 import xyz.nucleoid.plasmid.game.GameCloseReason;
 import xyz.nucleoid.plasmid.game.GameSpace;
@@ -30,6 +31,8 @@ public class SiegeActive {
     public final GameSpace gameSpace;
     final SiegeMap map;
 
+    final SiegeTeams teams;
+
     final Object2ObjectMap<PlayerRef, SiegePlayer> participants;
     final SiegeStageManager stageManager;
 
@@ -44,13 +47,16 @@ public class SiegeActive {
         this.map = map;
         this.participants = new Object2ObjectOpenHashMap<>();
 
+        this.teams = gameSpace.addResource(new SiegeTeams(gameSpace));
+
         for (GameTeam team : players.keySet()) {
             for (ServerPlayerEntity player : players.get(team)) {
                 this.participants.put(PlayerRef.of(player), new SiegePlayer(team));
+                this.teams.addPlayer(player, team);
             }
         }
 
-        this.stageManager = new SiegeStageManager();
+        this.stageManager = new SiegeStageManager(this);
 
         this.sidebar = new SiegeSidebar(this, widgets);
         this.timerBar = new SiegeTimerBar(widgets);
@@ -73,6 +79,8 @@ public class SiegeActive {
 
             game.on(GameOpenListener.EVENT, active::onOpen);
             game.on(GameCloseListener.EVENT, active::onClose);
+
+            game.on(BreakBlockListener.EVENT, active::onBreakBlock);
 
             game.on(OfferPlayerListener.EVENT, player -> JoinResult.ok());
             game.on(PlayerAddListener.EVENT, active::addPlayer);
@@ -106,6 +114,13 @@ public class SiegeActive {
         this.participants.remove(PlayerRef.of(player));
     }
 
+    private ActionResult onBreakBlock(ServerPlayerEntity player, BlockPos pos) {
+        if (this.map.isProtectedBlock(pos.asLong())) {
+            return ActionResult.FAIL;
+        }
+        return ActionResult.PASS;
+    }
+
     private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
         this.spawnParticipant(player);
         return ActionResult.FAIL;
@@ -128,11 +143,18 @@ public class SiegeActive {
         ServerWorld world = this.gameSpace.getWorld();
         long time = world.getTime();
 
-        SiegeStageManager.TickResult result = this.stageManager.tick(time, this.gameSpace);
+        SiegeStageManager.TickResult result = this.stageManager.tick(time);
         if (result != SiegeStageManager.TickResult.CONTINUE_TICK) {
             switch (result) {
-                case GAME_FINISHED: this.broadcastWin();
-                case GAME_CLOSED: this.gameSpace.close(GameCloseReason.FINISHED);
+                case ATTACKERS_WIN:
+                    this.broadcastWin(SiegeTeams.ATTACKERS);
+                    break;
+                case DEFENDERS_WIN:
+                    this.broadcastWin(SiegeTeams.DEFENDERS);
+                    break;
+                case GAME_CLOSED:
+                    this.gameSpace.close(GameCloseReason.FINISHED);
+                    break;
             }
             return;
         }
@@ -146,8 +168,7 @@ public class SiegeActive {
         this.timerBar.update(this.stageManager.finishTime - time, this.config.timeLimitMins * 20 * 60);
     }
 
-    private void broadcastWin() {
-        GameTeam winningTeam = SiegeTeams.ATTACKERS; // TODO
+    private void broadcastWin(GameTeam winningTeam) {
         Text message = new LiteralText("The ")
                 .append(winningTeam.getDisplay())
                 .append(" have won the game!")
