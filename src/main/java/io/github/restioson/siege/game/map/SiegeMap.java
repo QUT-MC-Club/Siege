@@ -2,12 +2,13 @@ package io.github.restioson.siege.game.map;
 
 import io.github.restioson.siege.Siege;
 import io.github.restioson.siege.game.SiegeFlag;
-import io.github.restioson.siege.game.SiegeTeam;
+import io.github.restioson.siege.game.SiegeTeams;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.LiteralText;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 import xyz.nucleoid.plasmid.game.GameOpenException;
+import xyz.nucleoid.plasmid.game.player.GameTeam;
 import xyz.nucleoid.plasmid.map.template.MapTemplate;
 import xyz.nucleoid.plasmid.map.template.TemplateChunkGenerator;
 import xyz.nucleoid.plasmid.util.BlockBounds;
@@ -40,13 +41,13 @@ public class SiegeMap {
             String name = data.getString("name");
             String teamName = data.getString("team");
 
-            SiegeTeam team;
+            GameTeam team;
             switch(teamName) {
                 case "attackers":
-                    team = SiegeTeam.ATTACKERS;
+                    team = SiegeTeams.ATTACKERS;
                     break;
                 case "defenders":
-                    team = SiegeTeam.DEFENDERS;
+                    team = SiegeTeams.DEFENDERS;
                     break;
                 default:
                     Siege.LOGGER.error("Unknown team + \"" + teamName + "\"");

@@ -1,9 +1,11 @@
 package io.github.restioson.siege.game;
 
-public class SiegePlayer {
-    public SiegeTeam team;
+import xyz.nucleoid.plasmid.game.player.GameTeam;
 
-    public SiegePlayer(SiegeTeam team) {
+public class SiegePlayer {
+    public GameTeam team;
+
+    public SiegePlayer(GameTeam team) {
         this.team = team;
     }
 }

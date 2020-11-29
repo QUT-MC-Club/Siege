@@ -1,5 +1,8 @@
 package io.github.restioson.siege.game;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Multimap;
 import io.github.restioson.siege.game.map.SiegeMap;
 import io.github.restioson.siege.game.map.SiegeMapGenerator;
 import net.minecraft.entity.damage.DamageSource;
@@ -12,19 +15,26 @@ import xyz.nucleoid.plasmid.game.GameOpenProcedure;
 import xyz.nucleoid.plasmid.game.GameSpace;
 import xyz.nucleoid.plasmid.game.GameWaitingLobby;
 import xyz.nucleoid.plasmid.game.StartResult;
+import xyz.nucleoid.plasmid.game.TeamSelectionLobby;
 import xyz.nucleoid.plasmid.game.event.PlayerAddListener;
 import xyz.nucleoid.plasmid.game.event.PlayerDeathListener;
 import xyz.nucleoid.plasmid.game.event.RequestStartListener;
+import xyz.nucleoid.plasmid.game.player.GameTeam;
+
+import java.util.List;
 
 public class SiegeWaiting {
     private final GameSpace gameSpace;
     private final SiegeMap map;
     private final SiegeConfig config;
 
-    private SiegeWaiting(GameSpace gameSpace, SiegeMap map, SiegeConfig config) {
+    private final TeamSelectionLobby teamSelection;
+
+    private SiegeWaiting(GameSpace gameSpace, SiegeMap map, SiegeConfig config, TeamSelectionLobby teamSelection) {
         this.gameSpace = gameSpace;
         this.map = map;
         this.config = config;
+        this.teamSelection = teamSelection;
     }
 
     public static GameOpenProcedure open(GameOpenContext<SiegeConfig> context) {
@@ -36,9 +46,12 @@ public class SiegeWaiting {
                 .setDefaultGameMode(GameMode.SPECTATOR);
 
         return context.createOpenProcedure(worldConfig, game -> {
-            SiegeWaiting waiting = new SiegeWaiting(game.getSpace(), map, context.getConfig());
-
             GameWaitingLobby.applyTo(game, context.getConfig().playerConfig);
+
+            List<GameTeam> teams = ImmutableList.of(SiegeTeams.ATTACKERS, SiegeTeams.DEFENDERS);
+            TeamSelectionLobby teamSelection = TeamSelectionLobby.applyTo(game, teams);
+
+            SiegeWaiting waiting = new SiegeWaiting(game.getSpace(), map, context.getConfig(), teamSelection);
 
             game.on(RequestStartListener.EVENT, waiting::requestStart);
             game.on(PlayerAddListener.EVENT, waiting::addPlayer);
@@ -47,7 +60,11 @@ public class SiegeWaiting {
     }
 
     private StartResult requestStart() {
-        SiegeActive.open(this.gameSpace, this.map, this.config);
+        Multimap<GameTeam, ServerPlayerEntity> players = HashMultimap.create();
+        this.teamSelection.allocate(players::put);
+
+        SiegeActive.open(this.gameSpace, this.map, this.config, players);
+
         return StartResult.OK;
     }
 
@@ -56,7 +73,7 @@ public class SiegeWaiting {
     }
 
     private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
-        player.setHealth(20.0f);
+        player.setHealth(20.0F);
         this.spawnPlayer(player);
         return ActionResult.FAIL;
     }
