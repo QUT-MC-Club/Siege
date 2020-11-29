@@ -184,7 +184,7 @@ public final class SiegeCaptureLogic {
 
         ServerWorld world = this.gameSpace.getWorld();
 
-        Vec3d pos = SiegeSpawnLogic.choosePos(world.getRandom(), flag.bounds);
+        Vec3d pos = SiegeSpawnLogic.choosePos(world.getRandom(), flag.bounds, 0.0f);
         LightningEntity lightningEntity = EntityType.LIGHTNING_BOLT.create(world);
         Objects.requireNonNull(lightningEntity).refreshPositionAfterTeleport(pos);
         lightningEntity.setCosmetic(true);

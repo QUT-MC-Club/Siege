@@ -131,7 +131,7 @@ public class SiegeMapGenerator {
         String teamName = data.getString("team");
         GameTeam team = SiegeTeams.byKey(teamName);
         if (team == null) {
-            Siege.LOGGER.error("Unknown team + \"{}\"", teamName);
+            Siege.LOGGER.error("Unknown team \"{}\"", teamName);
             throw new GameOpenException(new LiteralText("unknown team"));
         }
         return team;
@@ -154,7 +154,7 @@ public class SiegeMapGenerator {
                 type = SiegeKitStandEntity.KitType.CONSTRUCTOR;
                 break;
             default:
-                Siege.LOGGER.error("Unknown kit + \"" + kitName + "\"");
+                Siege.LOGGER.error("Unknown kit \"" + kitName + "\"");
                 throw new GameOpenException(new LiteralText("unknown kit"));
         }
 

@@ -17,19 +17,19 @@ public class SiegeSpawnLogic {
         player.fallDistance = 0.0f;
     }
 
-    public static Vec3d choosePos(Random random, BlockBounds bounds) {
+    public static Vec3d choosePos(Random random, BlockBounds bounds, float aboveGround) {
         BlockPos min = bounds.getMin();
         BlockPos max = bounds.getMax();
 
         double x = MathHelper.nextDouble(random, min.getX(), max.getX());
         double z = MathHelper.nextDouble(random, min.getZ(), max.getZ());
-        double y = min.getY() + 0.5;
+        double y = min.getY() + aboveGround;
 
         return new Vec3d(x, y, z);
     }
 
     public static void spawnPlayer(ServerPlayerEntity player, BlockBounds bounds, ServerWorld world) {
-        Vec3d pos = SiegeSpawnLogic.choosePos(player.getRandom(), bounds);
+        Vec3d pos = SiegeSpawnLogic.choosePos(player.getRandom(), bounds, 0.5f);
         player.teleport(world, pos.x, pos.y, pos.z, 0.0F, 0.0F);
     }
 }
