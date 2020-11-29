@@ -1,6 +1,5 @@
 package io.github.restioson.siege.game;
 
-
 import xyz.nucleoid.plasmid.game.player.GameTeam;
 import xyz.nucleoid.plasmid.util.BlockBounds;
 
@@ -10,8 +9,9 @@ public class SiegeFlag {
     public GameTeam team;
     public BlockBounds bounds;
     public String name;
+
+    public CapturingState capturingState;
     public int captureProgressTicks;
-    public boolean contested;
 
     // The flags which must be captured before this flag can be captured
     public List<SiegeFlag> prerequisiteFlags;
@@ -23,7 +23,28 @@ public class SiegeFlag {
         this.prerequisiteFlags = prerequisiteFlags;
     }
 
-    public boolean isCapturing() {
-        return this.captureProgressTicks > 0;
+    boolean incrementCapture(GameTeam team, int amount) {
+        this.captureProgressTicks += amount;
+
+        if (this.captureProgressTicks >= SiegeCaptureLogic.CAPTURE_TIME_TICKS) {
+            this.captureProgressTicks = 0;
+            this.team = team;
+            this.capturingState = null;
+            return true;
+        }
+
+        return false;
+    }
+
+    boolean decrementCapture(int amount) {
+        this.captureProgressTicks -= amount;
+
+        if (this.captureProgressTicks <= 0) {
+            this.captureProgressTicks = 0;
+            this.capturingState = null;
+            return true;
+        }
+
+        return false;
     }
 }

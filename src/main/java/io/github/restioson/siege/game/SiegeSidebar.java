@@ -21,14 +21,21 @@ public final class SiegeSidebar {
 
             for (SiegeFlag flag : this.game.map.flags) {
                 Formatting color = flag.team.getFormatting();
-                if (flag.isCapturing()) {
-                    if (flag.contested) {
+                boolean capturing = false;
+                if (flag.capturingState != null) {
+                    if (flag.capturingState == CapturingState.CONTESTED) {
                         color = blink ? color : Formatting.GRAY;
                     } else {
                         color = blink ? SiegeTeams.ATTACKERS.getFormatting() : SiegeTeams.DEFENDERS.getFormatting();
                     }
+                    capturing = true;
                 }
-                content.writeLine(color + flag.name);
+
+                if (capturing) {
+                    content.writeLine("(!) " + color + flag.name);
+                } else {
+                    content.writeLine(color + flag.name);
+                }
             }
         });
     }
