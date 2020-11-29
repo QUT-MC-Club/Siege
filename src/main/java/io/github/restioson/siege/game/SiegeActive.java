@@ -10,6 +10,7 @@ import net.minecraft.entity.LightningEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
@@ -26,9 +27,11 @@ import xyz.nucleoid.plasmid.game.player.PlayerSet;
 import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
 import xyz.nucleoid.plasmid.util.PlayerRef;
+import xyz.nucleoid.plasmid.util.Scheduler;
 import xyz.nucleoid.plasmid.widget.GlobalWidgets;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class SiegeActive {
     private final SiegeConfig config;
@@ -218,6 +221,25 @@ public class SiegeActive {
                         .append("...")
                         .formatted(Formatting.BOLD)
         );
+
+        this.gameSpace.getPlayers().sendSound(SoundEvents.BLOCK_BELL_USE);
+
+        for (Object2ObjectMap.Entry<PlayerRef, SiegePlayer> entry : Object2ObjectMaps.fastIterable(this.participants)) {
+            if (entry.getValue().team != captureTeam) {
+                entry.getKey().ifOnline(
+                        this.gameSpace.getWorld(),
+                        p -> {
+                            AtomicInteger plays = new AtomicInteger();
+                            Scheduler.INSTANCE.repeatWhile(
+                                    s -> p.playSound(SoundEvents.BLOCK_BELL_USE, SoundCategory.PLAYERS, 1.0f, 1.0f),
+                                    t -> plays.incrementAndGet() < 3,
+                                    0,
+                                    7
+                            );
+                        }
+                );
+            }
+        }
     }
 
     private void broadcastCapture(SiegeFlag flag, GameTeam captureTeam) {
