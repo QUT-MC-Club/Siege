@@ -1,7 +1,7 @@
 package io.github.restioson.siege.game.map;
 
 import io.github.restioson.siege.Siege;
-import io.github.restioson.siege.entity.SiegeKitStandEntity;
+import io.github.restioson.siege.game.SiegeKit;
 import io.github.restioson.siege.game.SiegeTeams;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.fabricmc.fabric.api.util.NbtType;
@@ -66,7 +66,7 @@ public class SiegeMapGenerator {
                 .map(region -> {
                     CompoundTag data = region.getData();
                     GameTeam team = this.parseTeam(data);
-                    SiegeKitStandEntity.KitType type = this.parseKitStandType(data);
+                    SiegeKit type = this.parseKitStandType(data);
 
                     return new SiegeKitStandLocation(team, region.getBounds().getCenter(), type, data.getFloat("yaw"));
                 })
@@ -137,21 +137,21 @@ public class SiegeMapGenerator {
         return team;
     }
 
-    private SiegeKitStandEntity.KitType parseKitStandType(CompoundTag data) {
+    private SiegeKit parseKitStandType(CompoundTag data) {
         String kitName = data.getString("type");
-        SiegeKitStandEntity.KitType type;
+        SiegeKit type;
         switch (kitName) {
             case "bow":
-                type = SiegeKitStandEntity.KitType.ARCHER;
+                type = SiegeKit.ARCHER;
                 break;
             case "sword":
-                type = SiegeKitStandEntity.KitType.SOLDIER;
+                type = SiegeKit.SOLDIER;
                 break;
             case "shield":
-                type = SiegeKitStandEntity.KitType.SHIELD_BEARER;
+                type = SiegeKit.SHIELD_BEARER;
                 break;
             case "builder":
-                type = SiegeKitStandEntity.KitType.CONSTRUCTOR;
+                type = SiegeKit.CONSTRUCTOR;
                 break;
             default:
                 Siege.LOGGER.error("Unknown kit \"" + kitName + "\"");

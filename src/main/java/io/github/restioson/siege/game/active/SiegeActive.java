@@ -45,7 +45,7 @@ public class SiegeActive {
 
     final SiegeTeams teams;
 
-    final Object2ObjectMap<PlayerRef, SiegePlayer> participants;
+    public final Object2ObjectMap<PlayerRef, SiegePlayer> participants;
     final SiegeStageManager stageManager;
 
     final SiegeSidebar sidebar;
@@ -105,7 +105,7 @@ public class SiegeActive {
             ServerWorld world = gameSpace.getWorld();
 
             for (SiegeKitStandLocation stand : active.map.kitStands) {
-                SiegeKitStandEntity standEntity = new SiegeKitStandEntity(world, stand);
+                SiegeKitStandEntity standEntity = new SiegeKitStandEntity(world, active, stand);
                 world.spawnEntity(standEntity);
             }
         });
@@ -156,6 +156,8 @@ public class SiegeActive {
     private void spawnParticipant(ServerPlayerEntity player) {
         player.inventory.clear();
         player.getEnderChestInventory().clear();
+        SiegePlayer siegePlayer = this.participants.get(PlayerRef.of(player));
+        siegePlayer.kit.equipPlayer(player, siegePlayer.team);
 
         BlockBounds respawn = this.getRespawnFor(player);
 
