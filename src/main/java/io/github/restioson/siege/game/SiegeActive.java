@@ -34,10 +34,12 @@ public class SiegeActive {
     private final SiegeConfig config;
 
     public final GameSpace gameSpace;
-    private final SiegeMap map;
+    final SiegeMap map;
 
     private final Object2ObjectMap<PlayerRef, SiegePlayer> participants;
     private final SiegeStageManager stageManager;
+
+    private final SiegeSidebar sidebar;
     private final SiegeTimerBar timerBar;
 
     private SiegeActive(GameSpace gameSpace, SiegeMap map, SiegeConfig config, GlobalWidgets widgets, Multimap<GameTeam, ServerPlayerEntity> players) {
@@ -53,6 +55,8 @@ public class SiegeActive {
         }
 
         this.stageManager = new SiegeStageManager();
+
+        this.sidebar = new SiegeSidebar(this, widgets);
         this.timerBar = new SiegeTimerBar(widgets);
     }
 
@@ -137,6 +141,8 @@ public class SiegeActive {
 
         if (time % 20 == 0) {
             this.tickCaptureFlags(world, 20);
+
+            this.sidebar.update(time);
         }
 
         this.timerBar.update(this.stageManager.finishTime - time, this.config.timeLimitMins * 20 * 60);
@@ -196,6 +202,7 @@ public class SiegeActive {
                 if (flag.captureProgressTicks >= 2 * 20) { // TODO: change to a more sensible value...
                     flag.captureProgressTicks = 0;
                     flag.team = captureTeam;
+
                     this.broadcastCapture(flag, captureTeam);
                 }
             }
