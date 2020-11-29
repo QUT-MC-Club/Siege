@@ -1,5 +1,6 @@
 package io.github.restioson.siege.game;
 
+import io.github.restioson.siege.game.map.SiegeKitStandLocation;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
@@ -18,19 +19,21 @@ import xyz.nucleoid.plasmid.game.player.GameTeam;
 import xyz.nucleoid.plasmid.util.ItemStackBuilder;
 
 public final class SiegeKitStandEntity extends ArmorStandEntity {
-    private final KitType kitType;
+    private final KitType type;
     private final GameTeam team;
 
-    private SiegeKitStandEntity(World world, KitType kitType, GameTeam team) {
+    public SiegeKitStandEntity(World world, SiegeKitStandLocation stand) {
         super(EntityType.ARMOR_STAND, world);
-        this.kitType = kitType;
-        this.team = team;
+        this.type = stand.type;
+        this.team = stand.team;
 
-        this.setCustomName(kitType.name);
+        this.setPos(stand.pos.x, stand.pos.y, stand.pos.z);
+
+        this.setCustomName(this.type.name);
         this.setInvulnerable(true);
         this.setCustomNameVisible(true);
 
-        switch (this.kitType) {
+        switch (this.type) {
             case ARCHER:
                 this.giveArcherEquipment(this);
                 this.equipStack(EquipmentSlot.OFFHAND, new ItemStack(Items.WOODEN_SWORD));
@@ -61,7 +64,7 @@ public final class SiegeKitStandEntity extends ArmorStandEntity {
     public ActionResult interactAt(PlayerEntity player, Vec3d hitPos, Hand hand) {
         player.inventory.clear();
 
-        switch (this.kitType) {
+        switch (this.type) {
             case ARCHER:
                 this.giveArcherKit(player);
                 break;

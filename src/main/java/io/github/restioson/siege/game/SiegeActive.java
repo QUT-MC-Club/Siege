@@ -1,6 +1,7 @@
 package io.github.restioson.siege.game;
 
 import com.google.common.collect.Multimap;
+import io.github.restioson.siege.game.map.SiegeKitStandLocation;
 import io.github.restioson.siege.game.map.SiegeMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
@@ -89,6 +90,13 @@ public class SiegeActive {
             game.on(GameTickListener.EVENT, active::tick);
 
             game.on(PlayerDeathListener.EVENT, active::onPlayerDeath);
+
+            ServerWorld world = gameSpace.getWorld();
+
+            for (SiegeKitStandLocation stand : active.map.kitStands) {
+                SiegeKitStandEntity standEntity = new SiegeKitStandEntity(world, stand);
+                world.spawnEntity(standEntity);
+            }
         });
     }
 

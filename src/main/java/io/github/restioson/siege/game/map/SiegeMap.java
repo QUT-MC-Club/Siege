@@ -18,6 +18,7 @@ public class SiegeMap {
     public final int attackerSpawnAngle;
     public final BlockBounds bounds;
     public BlockBounds waitingSpawn = BlockBounds.EMPTY;
+    public List<SiegeKitStandLocation> kitStands = new ArrayList<>();
 
     private final LongSet protectedBlocks = new LongOpenHashSet();
 
@@ -29,10 +30,6 @@ public class SiegeMap {
 
     public void setWaitingSpawn(BlockBounds bounds) {
         this.waitingSpawn = bounds;
-    }
-
-    public void addFlag(SiegeFlag flag) {
-        this.flags.add(flag);
     }
 
     public void addProtectedBlock(long pos) {

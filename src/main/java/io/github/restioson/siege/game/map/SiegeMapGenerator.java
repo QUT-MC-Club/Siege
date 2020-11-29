@@ -3,6 +3,7 @@ package io.github.restioson.siege.game.map;
 import com.google.common.collect.ImmutableList;
 import io.github.restioson.siege.Siege;
 import io.github.restioson.siege.game.SiegeFlag;
+import io.github.restioson.siege.game.SiegeKitStandEntity;
 import io.github.restioson.siege.game.SiegeTeams;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.block.BlockState;
@@ -17,7 +18,10 @@ import xyz.nucleoid.plasmid.map.template.MapTemplateSerializer;
 import xyz.nucleoid.plasmid.util.BlockBounds;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class SiegeMapGenerator {
@@ -41,10 +45,8 @@ public class SiegeMapGenerator {
             }
 
             map.setWaitingSpawn(waitingSpawn);
-
-            for (SiegeFlag flag : this.collectFlags(template)) {
-                map.addFlag(flag);
-            }
+            map.flags.addAll(this.collectFlags(template));
+            map.kitStands.addAll(this.collectKitStands(template));
 
             for (BlockPos pos : template.getBounds()) {
                 BlockState state = template.getBlockState(pos);
@@ -59,6 +61,19 @@ public class SiegeMapGenerator {
         }
     }
 
+    private List<SiegeKitStandLocation> collectKitStands(MapTemplate template) {
+        return template.getMetadata()
+                .getRegions("kit_stand")
+                .map(region -> {
+                    CompoundTag data = region.getData();
+                    GameTeam team = this.parseTeam(data);
+                    SiegeKitStandEntity.KitType type = this.parseKitStandType(data);
+
+                    return new SiegeKitStandLocation(team, region.getBounds().getCenter(), type);
+                })
+                .collect(Collectors.toList());
+    }
+
     private Collection<SiegeFlag> collectFlags(MapTemplate template) {
         Map<String, SiegeFlag> flags = new Object2ObjectLinkedOpenHashMap<>();
 
@@ -66,21 +81,7 @@ public class SiegeMapGenerator {
             BlockBounds bounds = region.getBounds();
             CompoundTag data = region.getData();
             String name = data.getString("name");
-            String teamName = data.getString("team");
-
-            GameTeam team;
-            switch (teamName) {
-                case "attackers":
-                    team = SiegeTeams.ATTACKERS;
-                    break;
-                case "defenders":
-                    team = SiegeTeams.DEFENDERS;
-                    break;
-                default:
-                    Siege.LOGGER.error("Unknown team + \"" + teamName + "\"");
-                    throw new GameOpenException(new LiteralText("unknown team"));
-            }
-
+            GameTeam team = this.parseTeam(data);
             flags.put(name, new SiegeFlag(team, bounds, name, ImmutableList.of()));
         });
 
@@ -111,5 +112,47 @@ public class SiegeMapGenerator {
         });
 
         return flags.values();
+    }
+
+    private GameTeam parseTeam(CompoundTag data) {
+        String teamName = data.getString("team");
+        GameTeam team;
+        switch (teamName) {
+            case "attackers":
+                team = SiegeTeams.ATTACKERS;
+                break;
+            case "defenders":
+                team = SiegeTeams.DEFENDERS;
+                break;
+            default:
+                Siege.LOGGER.error("Unknown team + \"" + teamName + "\"");
+                throw new GameOpenException(new LiteralText("unknown team"));
+        }
+
+        return team;
+    }
+
+    private SiegeKitStandEntity.KitType parseKitStandType(CompoundTag data) {
+        String kitName = data.getString("type");
+        SiegeKitStandEntity.KitType type;
+        switch (kitName) {
+            case "bow":
+                type = SiegeKitStandEntity.KitType.ARCHER;
+                break;
+            case "sword":
+                type = SiegeKitStandEntity.KitType.SOLDIER;
+                break;
+            case "shield":
+                type = SiegeKitStandEntity.KitType.SHIELD_BEARER;
+                break;
+            case "builder":
+                type = SiegeKitStandEntity.KitType.CONSTRUCTOR;
+                break;
+            default:
+                Siege.LOGGER.error("Unknown kit + \"" + kitName + "\"");
+                throw new GameOpenException(new LiteralText("unknown kit"));
+        }
+
+        return type;
     }
 }
