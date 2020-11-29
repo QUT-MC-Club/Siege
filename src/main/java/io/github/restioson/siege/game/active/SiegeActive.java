@@ -9,6 +9,7 @@ import io.github.restioson.siege.game.map.SiegeFlag;
 import io.github.restioson.siege.game.map.SiegeKitStandLocation;
 import io.github.restioson.siege.game.map.SiegeMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
@@ -181,8 +182,16 @@ public class SiegeActive {
 
         players.sendMessage(new LiteralText("").append(player.getDisplayName()).append(eliminationMessage).formatted(Formatting.GRAY));
 
-        this.spawnParticipant(player);
+        this.spawnDeadParticipant(player, time);
         return ActionResult.FAIL;
+    }
+
+    private void spawnDeadParticipant(ServerPlayerEntity player, long time) {
+        player.inventory.clear();
+        player.getEnderChestInventory().clear();
+        SiegePlayer siegePlayer = this.participants.get(PlayerRef.of(player));
+        siegePlayer.timeOfDeath = time;
+        player.setGameMode(GameMode.SPECTATOR);
     }
 
     private void spawnParticipant(ServerPlayerEntity player) {
@@ -251,13 +260,35 @@ public class SiegeActive {
             return;
         }
 
+
         if (time % 20 == 0) {
             this.captureLogic.tick(world, 20);
-
             this.sidebar.update(time);
         }
 
+        this.tickDead(world, time);
         this.timerBar.update(this.stageManager.finishTime - time, this.config.timeLimitMins * 20 * 60);
+    }
+
+    private void tickDead(ServerWorld world, long time) {
+        for (Object2ObjectMap.Entry<PlayerRef, SiegePlayer> entry : Object2ObjectMaps.fastIterable(this.participants)) {
+            PlayerRef ref = entry.getKey();
+            SiegePlayer state = entry.getValue();
+            ref.ifOnline(world, p -> {
+                if (p.isSpectator()) {
+                    int sec = 5 - (int) Math.floor((time - state.timeOfDeath) / 20.0f);
+
+                    if (sec > 0 && (time - state.timeOfDeath) % 20 == 0) {
+                        Text text = new LiteralText(String.format("Respawning in %ds", sec)).formatted(Formatting.BOLD);
+                        p.sendMessage(text, true);
+                    }
+
+                    if (time - state.timeOfDeath > 5 * 20) {
+                        this.spawnParticipant(p);
+                    }
+                }
+            });
+        }
     }
 
     private void broadcastWin(GameTeam winningTeam) {

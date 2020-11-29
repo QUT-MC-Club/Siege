@@ -4,6 +4,7 @@ import io.github.restioson.siege.game.SiegeKit;
 import io.github.restioson.siege.game.active.SiegeActive;
 import io.github.restioson.siege.game.active.SiegePlayer;
 import io.github.restioson.siege.game.map.SiegeKitStandLocation;
+import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -26,6 +27,7 @@ public final class SiegeKitStandEntity extends ArmorStandEntity {
         this.type = stand.type;
         this.team = stand.team;
         this.game = game;
+        this.setPose(EntityPose.CROUCHING);
 
         this.updatePositionAndAngles(stand.pos.x, stand.pos.y, stand.pos.z, stand.yaw, 0);
 

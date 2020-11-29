@@ -11,6 +11,7 @@ public class SiegePlayer {
     public SiegeKit kit;
     @Nullable
     public AttackRecord lastTimeWasAttacked;
+    public long timeOfDeath;
 
     public SiegePlayer(GameTeam team) {
         this.team = team;
