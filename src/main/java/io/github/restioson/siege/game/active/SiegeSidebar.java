@@ -1,5 +1,7 @@
-package io.github.restioson.siege.game;
+package io.github.restioson.siege.game.active;
 
+import io.github.restioson.siege.game.SiegeTeams;
+import io.github.restioson.siege.game.map.SiegeFlag;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.Formatting;
 import xyz.nucleoid.plasmid.widget.GlobalWidgets;

@@ -1,6 +1,5 @@
 package io.github.restioson.siege.game.map;
 
-import io.github.restioson.siege.game.SiegeFlag;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.server.MinecraftServer;

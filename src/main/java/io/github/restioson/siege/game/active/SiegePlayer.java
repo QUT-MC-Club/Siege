@@ -1,4 +1,4 @@
-package io.github.restioson.siege.game;
+package io.github.restioson.siege.game.active;
 
 import xyz.nucleoid.plasmid.game.player.GameTeam;
 

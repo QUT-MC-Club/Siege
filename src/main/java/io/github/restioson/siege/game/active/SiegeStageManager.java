@@ -1,5 +1,8 @@
-package io.github.restioson.siege.game;
+package io.github.restioson.siege.game.active;
 
+import io.github.restioson.siege.game.SiegeConfig;
+import io.github.restioson.siege.game.SiegeTeams;
+import io.github.restioson.siege.game.map.SiegeFlag;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.world.GameMode;
 

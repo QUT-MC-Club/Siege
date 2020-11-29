@@ -1,4 +1,4 @@
-package io.github.restioson.siege.game;
+package io.github.restioson.siege.game.active;
 
 import net.minecraft.entity.boss.BossBar;
 import net.minecraft.text.LiteralText;

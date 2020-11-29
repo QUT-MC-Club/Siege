@@ -1,6 +1,6 @@
 package io.github.restioson.siege.game.map;
 
-import io.github.restioson.siege.game.SiegeKitStandEntity;
+import io.github.restioson.siege.entity.SiegeKitStandEntity;
 import net.minecraft.util.math.Vec3d;
 import xyz.nucleoid.plasmid.game.player.GameTeam;
 

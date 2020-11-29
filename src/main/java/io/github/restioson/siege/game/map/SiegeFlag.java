@@ -1,5 +1,7 @@
-package io.github.restioson.siege.game;
+package io.github.restioson.siege.game.map;
 
+import io.github.restioson.siege.game.active.CapturingState;
+import io.github.restioson.siege.game.active.SiegeCaptureLogic;
 import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.plasmid.game.player.GameTeam;
 import xyz.nucleoid.plasmid.util.BlockBounds;
@@ -31,7 +33,7 @@ public final class SiegeFlag {
         this.bounds = bounds;
     }
 
-    boolean incrementCapture(GameTeam team, int amount) {
+    public boolean incrementCapture(GameTeam team, int amount) {
         this.captureProgressTicks += amount;
 
         if (this.captureProgressTicks >= SiegeCaptureLogic.CAPTURE_TIME_TICKS) {
@@ -44,7 +46,7 @@ public final class SiegeFlag {
         return false;
     }
 
-    boolean decrementCapture(int amount) {
+    public boolean decrementCapture(int amount) {
         this.captureProgressTicks -= amount;
 
         if (this.captureProgressTicks <= 0) {

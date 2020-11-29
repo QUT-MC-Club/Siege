@@ -1,5 +1,6 @@
-package io.github.restioson.siege.game;
+package io.github.restioson.siege.entity;
 
+import io.github.restioson.siege.game.SiegeTeams;
 import io.github.restioson.siege.game.map.SiegeKitStandLocation;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;

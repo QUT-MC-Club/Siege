@@ -20,7 +20,7 @@ public final class SiegeTeams implements AutoCloseable {
     final Team attackers;
     final Team defenders;
 
-    SiegeTeams(GameSpace gameSpace) {
+    public SiegeTeams(GameSpace gameSpace) {
         this.scoreboard = gameSpace.getServer().getScoreboard();
 
         this.attackers = this.createTeam(ATTACKERS);

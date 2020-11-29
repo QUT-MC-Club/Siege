@@ -1,6 +1,9 @@
-package io.github.restioson.siege.game;
+package io.github.restioson.siege.game.active;
 
 import com.google.common.collect.ImmutableList;
+import io.github.restioson.siege.game.SiegeSpawnLogic;
+import io.github.restioson.siege.game.SiegeTeams;
+import io.github.restioson.siege.game.map.SiegeFlag;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import net.minecraft.entity.EntityType;

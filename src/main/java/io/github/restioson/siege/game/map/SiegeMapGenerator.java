@@ -1,8 +1,7 @@
 package io.github.restioson.siege.game.map;
 
 import io.github.restioson.siege.Siege;
-import io.github.restioson.siege.game.SiegeFlag;
-import io.github.restioson.siege.game.SiegeKitStandEntity;
+import io.github.restioson.siege.entity.SiegeKitStandEntity;
 import io.github.restioson.siege.game.SiegeTeams;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.fabricmc.fabric.api.util.NbtType;
