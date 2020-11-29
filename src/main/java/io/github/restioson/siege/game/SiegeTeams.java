@@ -7,6 +7,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.DyeColor;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.plasmid.game.GameSpace;
 import xyz.nucleoid.plasmid.game.player.GameTeam;
 
@@ -24,6 +25,15 @@ public final class SiegeTeams implements AutoCloseable {
 
         this.attackers = this.createTeam(ATTACKERS);
         this.defenders = this.createTeam(DEFENDERS);
+    }
+
+    @Nullable
+    public static GameTeam byKey(String name) {
+        switch (name) {
+            case "attackers": return ATTACKERS;
+            case "defenders": return DEFENDERS;
+            default: return null;
+        }
     }
 
     private Team createTeam(GameTeam team) {

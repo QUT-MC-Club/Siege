@@ -1,31 +1,30 @@
 package io.github.restioson.siege.game.map;
 
-import com.google.common.collect.ImmutableList;
 import io.github.restioson.siege.Siege;
 import io.github.restioson.siege.game.SiegeFlag;
 import io.github.restioson.siege.game.SiegeKitStandEntity;
 import io.github.restioson.siege.game.SiegeTeams;
-import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import net.fabricmc.fabric.api.util.NbtType;
 import net.minecraft.block.BlockState;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.BiomeKeys;
 import xyz.nucleoid.plasmid.game.GameOpenException;
 import xyz.nucleoid.plasmid.game.player.GameTeam;
 import xyz.nucleoid.plasmid.map.template.MapTemplate;
+import xyz.nucleoid.plasmid.map.template.MapTemplateMetadata;
 import xyz.nucleoid.plasmid.map.template.MapTemplateSerializer;
 import xyz.nucleoid.plasmid.util.BlockBounds;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class SiegeMapGenerator {
-
     private final SiegeMapConfig config;
 
     public SiegeMapGenerator(SiegeMapConfig config) {
@@ -45,7 +44,8 @@ public class SiegeMapGenerator {
             }
 
             map.setWaitingSpawn(waitingSpawn);
-            map.flags.addAll(this.collectFlags(template));
+
+            this.addFlagsToMap(map, template.getMetadata());
             map.kitStands.addAll(this.collectKitStands(template));
 
             for (BlockPos pos : template.getBounds()) {
@@ -61,7 +61,7 @@ public class SiegeMapGenerator {
         }
     }
 
-    private List<SiegeKitStandLocation> collectKitStands(MapTemplate template) {
+    private List<SiegeKitStandEntity> collectKitStands(MapTemplate template) {
         return template.getMetadata()
                 .getRegions("kit_stand")
                 .map(region -> {
@@ -74,61 +74,67 @@ public class SiegeMapGenerator {
                 .collect(Collectors.toList());
     }
 
-    private Collection<SiegeFlag> collectFlags(MapTemplate template) {
-        Map<String, SiegeFlag> flags = new Object2ObjectLinkedOpenHashMap<>();
+    private void addFlagsToMap(SiegeMap map, MapTemplateMetadata metadata) {
+        Map<String, SiegeFlag> flags = new Object2ObjectOpenHashMap<>();
 
-        template.getMetadata().getRegions("flag").forEach(region -> {
+        metadata.getRegions("flag").forEach(region -> {
             BlockBounds bounds = region.getBounds();
             CompoundTag data = region.getData();
+            String id = data.getString("id");
             String name = data.getString("name");
             GameTeam team = this.parseTeam(data);
-            flags.put(name, new SiegeFlag(team, bounds, name, ImmutableList.of()));
+
+            SiegeFlag flag = new SiegeFlag(id, name, team, bounds);
+            if (data.contains("capturable") && !data.getBoolean("capturable")) {
+                flag.capturable = false;
+            }
+
+            flags.put(id, flag);
+            map.addFlag(flag);
         });
 
-        template.getMetadata().getRegions("flag").forEach(region -> {
+        metadata.getRegions("flag").forEach(region -> {
             CompoundTag data = region.getData();
-            String flagName = data.getString("name");
-            String[] flagNames = data.getString("prerequisite_flags").split(";");
+            String flagId = data.getString("id");
 
-            if (flagNames.length == 1 && flagNames[0].equals("")) {
+            SiegeFlag flag = flags.get(flagId);
+            if (flag == null) {
                 return;
             }
 
-            List<SiegeFlag> prerequisites = Arrays.stream(flagNames)
-                    .map(prerequisiteName -> {
-                        SiegeFlag flag = flags.get(prerequisiteName);
-                        if (flag == null) {
-                            Siege.LOGGER.error("Unknown flag \"" + prerequisiteName + "\"");
-                            throw new GameOpenException(new LiteralText("unknown flag"));
-                        }
-                        return flag;
-                    })
-                    .collect(Collectors.toList());
+            ListTag prerequisiteFlagsList = data.getList("prerequisite_flags", NbtType.STRING);
+            for (int i = 0; i < prerequisiteFlagsList.size(); i++) {
+                String prerequisiteId = prerequisiteFlagsList.getString(i);
 
-            SiegeFlag flag = flags.get(flagName);
-            if (flag != null) {
-                flag.prerequisiteFlags = prerequisites;
+                SiegeFlag prerequisite = flags.get(prerequisiteId);
+                if (prerequisite == null) {
+                    Siege.LOGGER.error("Unknown flag \"{}}\"", prerequisiteId);
+                    throw new GameOpenException(new LiteralText("unknown flag"));
+                }
+
+                flag.prerequisiteFlags.add(prerequisite);
             }
         });
 
-        return flags.values();
+        metadata.getRegions("respawn").forEach(region -> {
+            CompoundTag data = region.getData();
+            String flagId = data.getString("id");
+            SiegeFlag flag = flags.get(flagId);
+            if (flag != null) {
+                flag.respawn = region.getBounds();
+            } else {
+                Siege.LOGGER.warn("Respawn attached to missing flag: {}", flagId);
+            }
+        });
     }
 
     private GameTeam parseTeam(CompoundTag data) {
         String teamName = data.getString("team");
-        GameTeam team;
-        switch (teamName) {
-            case "attackers":
-                team = SiegeTeams.ATTACKERS;
-                break;
-            case "defenders":
-                team = SiegeTeams.DEFENDERS;
-                break;
-            default:
-                Siege.LOGGER.error("Unknown team + \"" + teamName + "\"");
-                throw new GameOpenException(new LiteralText("unknown team"));
+        GameTeam team = SiegeTeams.byKey(teamName);
+        if (team == null) {
+            Siege.LOGGER.error("Unknown team + \"{}\"", teamName);
+            throw new GameOpenException(new LiteralText("unknown team"));
         }
-
         return team;
     }
 

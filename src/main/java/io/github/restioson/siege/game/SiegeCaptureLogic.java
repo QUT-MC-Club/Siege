@@ -38,7 +38,9 @@ public final class SiegeCaptureLogic {
 
     void tick(ServerWorld world, int interval) {
         for (SiegeFlag flag : this.game.map.flags) {
-            this.tickCaptureFlag(world, flag, interval);
+            if (flag.capturable) {
+                this.tickCaptureFlag(world, flag, interval);
+            }
         }
     }
 

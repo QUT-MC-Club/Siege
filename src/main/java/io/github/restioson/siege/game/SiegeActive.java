@@ -14,7 +14,9 @@ import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
+import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.plasmid.game.GameCloseReason;
 import xyz.nucleoid.plasmid.game.GameSpace;
 import xyz.nucleoid.plasmid.game.event.*;
@@ -23,6 +25,7 @@ import xyz.nucleoid.plasmid.game.player.JoinResult;
 import xyz.nucleoid.plasmid.game.player.PlayerSet;
 import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
+import xyz.nucleoid.plasmid.util.BlockBounds;
 import xyz.nucleoid.plasmid.util.PlayerRef;
 import xyz.nucleoid.plasmid.widget.GlobalWidgets;
 
@@ -138,8 +141,39 @@ public class SiegeActive {
         player.inventory.clear();
         player.getEnderChestInventory().clear();
 
+        BlockBounds respawn = this.getRespawnFor(player);
+
         SiegeSpawnLogic.resetPlayer(player, GameMode.ADVENTURE);
-        SiegeSpawnLogic.spawnPlayer(player, this.map.waitingSpawn, this.gameSpace.getWorld()); // TODO change spawn
+        SiegeSpawnLogic.spawnPlayer(player, respawn, this.gameSpace.getWorld());
+    }
+
+    private BlockBounds getRespawnFor(ServerPlayerEntity player) {
+        GameTeam team = this.getTeamFor(player);
+        if (team == null) {
+            return this.map.waitingSpawn;
+        }
+
+        BlockBounds respawn = this.map.waitingSpawn;
+        double minDistance = Double.MAX_VALUE;
+
+        for (SiegeFlag flag : this.map.flags) {
+            if (flag.respawn != null && flag.team == team) {
+                Vec3d center = flag.respawn.getCenter();
+                double distance = player.squaredDistanceTo(center);
+                if (distance < minDistance) {
+                    respawn = flag.respawn;
+                    minDistance = distance;
+                }
+            }
+        }
+
+        return respawn;
+    }
+
+    @Nullable
+    private GameTeam getTeamFor(ServerPlayerEntity player) {
+        SiegePlayer participant = this.participants.get(PlayerRef.of(player));
+        return participant != null ? participant.team : null;
     }
 
     private void spawnSpectator(ServerPlayerEntity player) {

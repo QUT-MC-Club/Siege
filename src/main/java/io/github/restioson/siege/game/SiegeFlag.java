@@ -1,26 +1,34 @@
 package io.github.restioson.siege.game;
 
+import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.plasmid.game.player.GameTeam;
 import xyz.nucleoid.plasmid.util.BlockBounds;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class SiegeFlag {
+public final class SiegeFlag {
+    public final String id;
+    public final String name;
+    public final BlockBounds bounds;
+    public boolean capturable = true;
+
+    @Nullable
+    public BlockBounds respawn;
+
     public GameTeam team;
-    public BlockBounds bounds;
-    public String name;
 
     public CapturingState capturingState;
     public int captureProgressTicks;
 
     // The flags which must be captured before this flag can be captured
-    public List<SiegeFlag> prerequisiteFlags;
+    public List<SiegeFlag> prerequisiteFlags = new ArrayList<>();
 
-    public SiegeFlag(GameTeam team, BlockBounds bounds, String name, List<SiegeFlag> prerequisiteFlags) {
+    public SiegeFlag(String id, String name, GameTeam team, BlockBounds bounds) {
+        this.id = id;
+        this.name = name;
         this.team = team;
         this.bounds = bounds;
-        this.name = name;
-        this.prerequisiteFlags = prerequisiteFlags;
     }
 
     boolean incrementCapture(GameTeam team, int amount) {
