@@ -50,7 +50,7 @@ public class SiegeActive {
             }
         }
 
-        this.stageManager = new SiegeStageManager();
+        this.stageManager = new SiegeStageManager(this);
 
         this.sidebar = new SiegeSidebar(this, widgets);
         this.timerBar = new SiegeTimerBar(widgets);
@@ -128,10 +128,11 @@ public class SiegeActive {
         ServerWorld world = this.gameSpace.getWorld();
         long time = world.getTime();
 
-        SiegeStageManager.TickResult result = this.stageManager.tick(time, this.gameSpace);
+        SiegeStageManager.TickResult result = this.stageManager.tick(time);
         if (result != SiegeStageManager.TickResult.CONTINUE_TICK) {
             switch (result) {
-                case GAME_FINISHED: this.broadcastWin();
+                case ATTACKERS_WIN: this.broadcastWin(SiegeTeams.ATTACKERS);
+                case DEFENDERS_WIN: this.broadcastWin(SiegeTeams.DEFENDERS);
                 case GAME_CLOSED: this.gameSpace.close(GameCloseReason.FINISHED);
             }
             return;
@@ -146,8 +147,7 @@ public class SiegeActive {
         this.timerBar.update(this.stageManager.finishTime - time, this.config.timeLimitMins * 20 * 60);
     }
 
-    private void broadcastWin() {
-        GameTeam winningTeam = SiegeTeams.ATTACKERS; // TODO
+    private void broadcastWin(GameTeam winningTeam) {
         Text message = new LiteralText("The ")
                 .append(winningTeam.getDisplay())
                 .append(" have won the game!")
