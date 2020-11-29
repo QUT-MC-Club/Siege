@@ -20,6 +20,7 @@ import xyz.nucleoid.plasmid.game.event.PlayerAddListener;
 import xyz.nucleoid.plasmid.game.event.PlayerDeathListener;
 import xyz.nucleoid.plasmid.game.event.RequestStartListener;
 import xyz.nucleoid.plasmid.game.player.GameTeam;
+import xyz.nucleoid.plasmid.map.MapTickets;
 
 import java.util.List;
 
@@ -35,6 +36,8 @@ public class SiegeWaiting {
         this.map = map;
         this.config = config;
         this.teamSelection = teamSelection;
+
+        gameSpace.addResource(MapTickets.acquire(gameSpace.getWorld(), map.bounds));
     }
 
     public static GameOpenProcedure open(GameOpenContext<SiegeConfig> context) {

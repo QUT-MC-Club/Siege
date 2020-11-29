@@ -61,7 +61,7 @@ public class SiegeMapGenerator {
         }
     }
 
-    private List<SiegeKitStandEntity> collectKitStands(MapTemplate template) {
+    private List<SiegeKitStandLocation> collectKitStands(MapTemplate template) {
         return template.getMetadata()
                 .getRegions("kit_stand")
                 .map(region -> {
@@ -90,7 +90,7 @@ public class SiegeMapGenerator {
             }
 
             flags.put(id, flag);
-            map.addFlag(flag);
+            map.flags.add(flag);
         });
 
         metadata.getRegions("flag").forEach(region -> {
