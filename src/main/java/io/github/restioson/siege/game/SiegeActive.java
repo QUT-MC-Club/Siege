@@ -131,9 +131,15 @@ public class SiegeActive {
         SiegeStageManager.TickResult result = this.stageManager.tick(time);
         if (result != SiegeStageManager.TickResult.CONTINUE_TICK) {
             switch (result) {
-                case ATTACKERS_WIN: this.broadcastWin(SiegeTeams.ATTACKERS);
-                case DEFENDERS_WIN: this.broadcastWin(SiegeTeams.DEFENDERS);
-                case GAME_CLOSED: this.gameSpace.close(GameCloseReason.FINISHED);
+                case ATTACKERS_WIN:
+                    this.broadcastWin(SiegeTeams.ATTACKERS);
+                    break;
+                case DEFENDERS_WIN:
+                    this.broadcastWin(SiegeTeams.DEFENDERS);
+                    break;
+                case GAME_CLOSED:
+                    this.gameSpace.close(GameCloseReason.FINISHED);
+                    break;
             }
             return;
         }
