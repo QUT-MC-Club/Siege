@@ -68,7 +68,7 @@ public class SiegeMapGenerator {
                     GameTeam team = this.parseTeam(data);
                     SiegeKitStandEntity.KitType type = this.parseKitStandType(data);
 
-                    return new SiegeKitStandLocation(team, region.getBounds().getCenter(), type);
+                    return new SiegeKitStandLocation(team, region.getBounds().getCenter(), type, data.getFloat("yaw"));
                 })
                 .collect(Collectors.toList());
     }

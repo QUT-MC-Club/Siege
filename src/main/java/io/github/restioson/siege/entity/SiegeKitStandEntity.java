@@ -28,7 +28,7 @@ public final class SiegeKitStandEntity extends ArmorStandEntity {
         this.type = stand.type;
         this.team = stand.team;
 
-        this.setPos(stand.pos.x, stand.pos.y, stand.pos.z);
+        this.updatePositionAndAngles(stand.pos.x, stand.pos.y, stand.pos.z, stand.yaw, 0);
 
         this.setCustomName(this.type.name);
         this.setInvulnerable(true);
