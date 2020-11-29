@@ -15,6 +15,7 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameMode;
 import xyz.nucleoid.plasmid.game.GameSpace;
 import xyz.nucleoid.plasmid.game.player.GameTeam;
 import xyz.nucleoid.plasmid.util.PlayerRef;
@@ -57,6 +58,10 @@ public final class SiegeCaptureLogic {
         for (Object2ObjectMap.Entry<PlayerRef, SiegePlayer> entry : Object2ObjectMaps.fastIterable(this.game.participants)) {
             ServerPlayerEntity player = entry.getKey().getEntity(world);
             if (player == null) {
+                continue;
+            }
+
+            if (player.interactionManager.getGameMode() != GameMode.SURVIVAL) {
                 continue;
             }
 

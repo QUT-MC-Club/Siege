@@ -14,6 +14,7 @@ public class SiegeSpawnLogic {
     public static void resetPlayer(ServerPlayerEntity player, GameMode gameMode) {
         player.setGameMode(gameMode);
         player.setVelocity(Vec3d.ZERO);
+        player.getHungerManager().setFoodLevel(20);
         player.fallDistance = 0.0f;
     }
 

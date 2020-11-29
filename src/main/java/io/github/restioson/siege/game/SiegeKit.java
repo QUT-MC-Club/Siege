@@ -74,7 +74,7 @@ public enum SiegeKit {
                 break;
         }
 
-        player.inventory.insertStack(ItemStackBuilder.of(Items.COOKED_BEEF).setCount(5).build());
+        player.inventory.insertStack(ItemStackBuilder.of(Items.COOKED_BEEF).setCount(10).build());
     }
 
     // give{x}Equipment is for armour stands and players
@@ -115,7 +115,7 @@ public enum SiegeKit {
         this.giveArcherEquipment(player, team);
         player.inventory.insertStack(ItemStackBuilder.of(Items.WOODEN_SWORD).setUnbreakable().build());
         player.inventory.insertStack(ItemStackBuilder.of(Items.BOW).setUnbreakable().build());
-        player.inventory.insertStack(ItemStackBuilder.of(Items.ARROW).setCount(32).build());
+        player.inventory.insertStack(ItemStackBuilder.of(Items.ARROW).setCount(16).build());
     }
 
     private void giveSoldierKit(PlayerEntity player, GameTeam team) {
