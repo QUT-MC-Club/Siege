@@ -80,60 +80,60 @@ public enum SiegeKit {
     // give{x}Equipment is for armour stands and players
 
     private void giveArcherEquipment(LivingEntity entity, GameTeam team) {
-        entity.equipStack(EquipmentSlot.HEAD, ItemStackBuilder.of(Items.LEATHER_HELMET).setColor(team.getColor()).build());
-        entity.equipStack(EquipmentSlot.CHEST, ItemStackBuilder.of(Items.LEATHER_CHESTPLATE).setColor(team.getColor()).build());
-        entity.equipStack(EquipmentSlot.LEGS, ItemStackBuilder.of(Items.LEATHER_LEGGINGS).setColor(team.getColor()).build());
-        entity.equipStack(EquipmentSlot.FEET, ItemStackBuilder.of(Items.LEATHER_BOOTS).setColor(team.getColor()).build());
+        entity.equipStack(EquipmentSlot.HEAD, ItemStackBuilder.of(Items.LEATHER_HELMET).setColor(team.getColor()).setUnbreakable().build());
+        entity.equipStack(EquipmentSlot.CHEST, ItemStackBuilder.of(Items.LEATHER_CHESTPLATE).setColor(team.getColor()).setUnbreakable().build());
+        entity.equipStack(EquipmentSlot.LEGS, ItemStackBuilder.of(Items.LEATHER_LEGGINGS).setColor(team.getColor()).setUnbreakable().build());
+        entity.equipStack(EquipmentSlot.FEET, ItemStackBuilder.of(Items.LEATHER_BOOTS).setColor(team.getColor()).setUnbreakable().build());
     }
 
     private void giveSoldierEquipment(LivingEntity entity, GameTeam team) {
-        entity.equipStack(EquipmentSlot.HEAD, ItemStackBuilder.of(Items.LEATHER_HELMET).setColor(team.getColor()).build());
-        entity.equipStack(EquipmentSlot.CHEST, ItemStackBuilder.of(Items.IRON_CHESTPLATE).setColor(team.getColor()).build());
-        entity.equipStack(EquipmentSlot.LEGS, ItemStackBuilder.of(Items.LEATHER_LEGGINGS).setColor(team.getColor()).build());
-        entity.equipStack(EquipmentSlot.FEET, ItemStackBuilder.of(Items.IRON_BOOTS).setColor(team.getColor()).build());
+        entity.equipStack(EquipmentSlot.HEAD, ItemStackBuilder.of(Items.LEATHER_HELMET).setColor(team.getColor()).setUnbreakable().build());
+        entity.equipStack(EquipmentSlot.CHEST, ItemStackBuilder.of(Items.IRON_CHESTPLATE).setUnbreakable().build());
+        entity.equipStack(EquipmentSlot.LEGS, ItemStackBuilder.of(Items.LEATHER_LEGGINGS).setColor(team.getColor()).setUnbreakable().build());
+        entity.equipStack(EquipmentSlot.FEET, ItemStackBuilder.of(Items.IRON_BOOTS).setUnbreakable().build());
     }
 
     private void giveConstructorEquipment(LivingEntity entity, GameTeam team) {
-        entity.equipStack(EquipmentSlot.HEAD, ItemStackBuilder.of(Items.LEATHER_HELMET).setColor(team.getColor()).build());
-        entity.equipStack(EquipmentSlot.CHEST, ItemStackBuilder.of(Items.LEATHER_CHESTPLATE).setColor(team.getColor()).build());
-        entity.equipStack(EquipmentSlot.LEGS, ItemStackBuilder.of(Items.LEATHER_LEGGINGS).setColor(team.getColor()).build());
-        entity.equipStack(EquipmentSlot.FEET, ItemStackBuilder.of(Items.LEATHER_BOOTS).setColor(team.getColor()).build());
+        entity.equipStack(EquipmentSlot.HEAD, ItemStackBuilder.of(Items.LEATHER_HELMET).setColor(team.getColor()).setUnbreakable().build());
+        entity.equipStack(EquipmentSlot.CHEST, ItemStackBuilder.of(Items.LEATHER_CHESTPLATE).setColor(team.getColor()).setUnbreakable().build());
+        entity.equipStack(EquipmentSlot.LEGS, ItemStackBuilder.of(Items.LEATHER_LEGGINGS).setColor(team.getColor()).setUnbreakable().build());
+        entity.equipStack(EquipmentSlot.FEET, ItemStackBuilder.of(Items.LEATHER_BOOTS).setColor(team.getColor()).setUnbreakable().build());
         entity.equipStack(EquipmentSlot.OFFHAND, new ItemStack(SiegeKit.planksForTeam(team)));
     }
 
     private void giveShieldEquipment(LivingEntity entity, GameTeam team) {
         entity.equipStack(EquipmentSlot.HEAD, ItemStackBuilder.of(Items.LEATHER_HELMET).setColor(team.getColor()).build());
-        entity.equipStack(EquipmentSlot.CHEST, ItemStackBuilder.of(Items.IRON_CHESTPLATE).setColor(team.getColor()).build());
-        entity.equipStack(EquipmentSlot.LEGS, ItemStackBuilder.of(Items.LEATHER_LEGGINGS).setColor(team.getColor()).build());
-        entity.equipStack(EquipmentSlot.FEET, ItemStackBuilder.of(Items.LEATHER_BOOTS).setColor(team.getColor()).build());
-        entity.equipStack(EquipmentSlot.OFFHAND, new ItemStack(Items.SHIELD));
+        entity.equipStack(EquipmentSlot.CHEST, ItemStackBuilder.of(Items.IRON_CHESTPLATE).setUnbreakable().build());
+        entity.equipStack(EquipmentSlot.LEGS, ItemStackBuilder.of(Items.LEATHER_LEGGINGS).setColor(team.getColor()).setUnbreakable().build());
+        entity.equipStack(EquipmentSlot.FEET, ItemStackBuilder.of(Items.LEATHER_BOOTS).setColor(team.getColor()).setUnbreakable().build());
+        entity.equipStack(EquipmentSlot.OFFHAND, ItemStackBuilder.of(Items.SHIELD).setUnbreakable().build());
     }
 
     // give{x}Kit is for players only
 
     private void giveArcherKit(PlayerEntity player, GameTeam team) {
         this.giveArcherEquipment(player, team);
-        player.inventory.insertStack(new ItemStack(Items.WOODEN_SWORD));
-        player.inventory.insertStack(new ItemStack(Items.BOW));
+        player.inventory.insertStack(ItemStackBuilder.of(Items.WOODEN_SWORD).setUnbreakable().build());
+        player.inventory.insertStack(ItemStackBuilder.of(Items.BOW).setUnbreakable().build());
         player.inventory.insertStack(ItemStackBuilder.of(Items.ARROW).setCount(32).build());
     }
 
     private void giveSoldierKit(PlayerEntity player, GameTeam team) {
         this.giveSoldierEquipment(player, team);
-        player.inventory.insertStack(new ItemStack(Items.IRON_SWORD));
-        player.inventory.insertStack(new ItemStack(Items.IRON_AXE));
+        player.inventory.insertStack(ItemStackBuilder.of(Items.IRON_SWORD).setUnbreakable().build());
+        player.inventory.insertStack(ItemStackBuilder.of(Items.IRON_AXE).setUnbreakable().build());
     }
 
     private void giveConstructorKit(PlayerEntity player, GameTeam team) {
         this.giveConstructorEquipment(player, team);
         player.equipStack(EquipmentSlot.OFFHAND, ItemStackBuilder.of(SiegeKit.planksForTeam(team)).setCount(16).build());
-        player.inventory.insertStack(new ItemStack(Items.WOODEN_SWORD));
-        player.inventory.insertStack(new ItemStack(Items.WOODEN_AXE));
+        player.inventory.insertStack(ItemStackBuilder.of(Items.WOODEN_SWORD).setUnbreakable().build());
+        player.inventory.insertStack(ItemStackBuilder.of(Items.WOODEN_AXE).setUnbreakable().build());
         player.inventory.insertStack(ItemStackBuilder.of(Items.LADDER).setCount(4).build());
     }
 
     private void giveShieldKit(PlayerEntity player, GameTeam team) {
         this.giveShieldEquipment(player, team);
-        player.inventory.insertStack(new ItemStack(Items.IRON_SWORD));
+        player.inventory.insertStack(ItemStackBuilder.of(Items.IRON_SWORD).setUnbreakable().build());
     }
 }

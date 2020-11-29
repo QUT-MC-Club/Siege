@@ -18,6 +18,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
@@ -100,6 +101,7 @@ public class SiegeActive {
 
             game.on(GameTickListener.EVENT, active::tick);
 
+            game.on(PlayerDamageListener.EVENT, active::onPlayerDamage);
             game.on(PlayerDeathListener.EVENT, active::onPlayerDeath);
 
             ServerWorld world = gameSpace.getWorld();
@@ -148,7 +150,37 @@ public class SiegeActive {
         return ActionResult.PASS;
     }
 
+    private ActionResult onPlayerDamage(ServerPlayerEntity player, DamageSource source, float v) {
+        SiegePlayer participant = this.participants.get(player);
+
+        if (participant != null && source.getAttacker() != null && source.getAttacker() instanceof ServerPlayerEntity) {
+            long time = this.gameSpace.getWorld().getTime();
+            PlayerRef attacker = PlayerRef.of((ServerPlayerEntity) source.getAttacker());
+            participant.lastTimeWasAttacked = new AttackRecord(attacker, time);
+        }
+
+        return ActionResult.PASS;
+    }
+
     private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
+        PlayerSet players = this.gameSpace.getPlayers();
+        MutableText eliminationMessage = new LiteralText(" was killed by ");
+        SiegePlayer participant = this.participants.get(PlayerRef.of(player));
+        ServerWorld world = this.gameSpace.getWorld();
+        long time = world.getTime();
+
+        if (source.getAttacker() != null) {
+            eliminationMessage.append(source.getAttacker().getDisplayName());
+        } else if (participant != null && participant.attacker(time, world) != null) {
+            eliminationMessage.append(participant.attacker(time, world).getDisplayName());
+        } else if (source == DamageSource.DROWN) {
+            eliminationMessage.append("forgetting to just keep swimming");
+        } else {
+            eliminationMessage = new LiteralText(" died");
+        }
+
+        players.sendMessage(new LiteralText("").append(player.getDisplayName()).append(eliminationMessage).formatted(Formatting.GRAY));
+
         this.spawnParticipant(player);
         return ActionResult.FAIL;
     }
