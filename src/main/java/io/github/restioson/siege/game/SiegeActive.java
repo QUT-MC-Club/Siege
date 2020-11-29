@@ -12,6 +12,7 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameMode;
 import xyz.nucleoid.plasmid.game.GameCloseReason;
 import xyz.nucleoid.plasmid.game.GameSpace;
@@ -79,6 +80,8 @@ public class SiegeActive {
             game.on(GameOpenListener.EVENT, active::onOpen);
             game.on(GameCloseListener.EVENT, active::onClose);
 
+            game.on(BreakBlockListener.EVENT, active::onBreakBlock);
+
             game.on(OfferPlayerListener.EVENT, player -> JoinResult.ok());
             game.on(PlayerAddListener.EVENT, active::addPlayer);
             game.on(PlayerRemoveListener.EVENT, active::removePlayer);
@@ -109,6 +112,13 @@ public class SiegeActive {
 
     private void removePlayer(ServerPlayerEntity player) {
         this.participants.remove(PlayerRef.of(player));
+    }
+
+    private ActionResult onBreakBlock(ServerPlayerEntity player, BlockPos pos) {
+        if (this.map.isProtectedBlock(pos.asLong())) {
+            return ActionResult.FAIL;
+        }
+        return ActionResult.PASS;
     }
 
     private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
