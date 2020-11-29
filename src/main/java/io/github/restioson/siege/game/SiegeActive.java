@@ -30,6 +30,8 @@ public class SiegeActive {
     public final GameSpace gameSpace;
     final SiegeMap map;
 
+    final SiegeTeams teams;
+
     final Object2ObjectMap<PlayerRef, SiegePlayer> participants;
     final SiegeStageManager stageManager;
 
@@ -44,9 +46,12 @@ public class SiegeActive {
         this.map = map;
         this.participants = new Object2ObjectOpenHashMap<>();
 
+        this.teams = gameSpace.addResource(new SiegeTeams(gameSpace));
+
         for (GameTeam team : players.keySet()) {
             for (ServerPlayerEntity player : players.get(team)) {
                 this.participants.put(PlayerRef.of(player), new SiegePlayer(team));
+                this.teams.addPlayer(player, team);
             }
         }
 
