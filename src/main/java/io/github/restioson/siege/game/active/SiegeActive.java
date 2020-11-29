@@ -11,6 +11,9 @@ import io.github.restioson.siege.game.map.SiegeMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
@@ -88,7 +91,7 @@ public class SiegeActive {
 
             game.on(GameOpenListener.EVENT, active::onOpen);
             game.on(GameCloseListener.EVENT, active::onClose);
-
+            game.on(DropItemListener.EVENT, active::onDropItem);
             game.on(BreakBlockListener.EVENT, active::onBreakBlock);
 
             game.on(OfferPlayerListener.EVENT, player -> JoinResult.ok());
@@ -130,6 +133,14 @@ public class SiegeActive {
         this.participants.remove(PlayerRef.of(player));
     }
 
+    private ActionResult onDropItem(PlayerEntity player, int slot, ItemStack stack) {
+        if (stack.getItem() == Items.ARROW || stack.getItem() == Items.COOKED_BEEF) {
+            return ActionResult.PASS;
+        } else {
+            return ActionResult.FAIL;
+        }
+    }
+
     private ActionResult onBreakBlock(ServerPlayerEntity player, BlockPos pos) {
         if (this.map.isProtectedBlock(pos.asLong())) {
             return ActionResult.FAIL;
@@ -148,7 +159,7 @@ public class SiegeActive {
 
         BlockBounds respawn = this.getRespawnFor(player);
 
-        SiegeSpawnLogic.resetPlayer(player, GameMode.ADVENTURE);
+        SiegeSpawnLogic.resetPlayer(player, GameMode.SURVIVAL);
         SiegeSpawnLogic.spawnPlayer(player, respawn, this.gameSpace.getWorld());
     }
 

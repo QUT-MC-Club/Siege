@@ -33,21 +33,26 @@ public final class SiegeKitStandEntity extends ArmorStandEntity {
         this.setCustomName(this.type.name);
         this.setInvulnerable(true);
         this.setCustomNameVisible(true);
+        this.setShowArms(true);
 
         switch (this.type) {
             case ARCHER:
                 this.giveArcherEquipment(this);
                 this.equipStack(EquipmentSlot.OFFHAND, new ItemStack(Items.WOODEN_SWORD));
+                this.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
                 break;
             case SOLDIER:
                 this.giveSoldierEquipment(this);
+                this.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
                 this.equipStack(EquipmentSlot.OFFHAND, new ItemStack(Items.IRON_AXE));
                 break;
             case CONSTRUCTOR:
                 this.giveConstructorEquipment(this);
+                this.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.WOODEN_AXE));
                 break;
             case SHIELD_BEARER:
                 this.giveShieldEquipment(this);
+                this.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
                 break;
         }
 
@@ -80,6 +85,8 @@ public final class SiegeKitStandEntity extends ArmorStandEntity {
                 break;
         }
 
+        player.inventory.insertStack(ItemStackBuilder.of(Items.COOKED_BEEF).setCount(5).build());
+
         return ActionResult.SUCCESS;
     }
 
@@ -90,15 +97,13 @@ public final class SiegeKitStandEntity extends ArmorStandEntity {
         entity.equipStack(EquipmentSlot.CHEST, ItemStackBuilder.of(Items.LEATHER_CHESTPLATE).setColor(this.team.getColor()).build());
         entity.equipStack(EquipmentSlot.LEGS, ItemStackBuilder.of(Items.LEATHER_LEGGINGS).setColor(this.team.getColor()).build());
         entity.equipStack(EquipmentSlot.FEET, ItemStackBuilder.of(Items.LEATHER_BOOTS).setColor(this.team.getColor()).build());
-        entity.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
     }
 
     private void giveSoldierEquipment(LivingEntity entity) {
         entity.equipStack(EquipmentSlot.HEAD, ItemStackBuilder.of(Items.LEATHER_HELMET).setColor(this.team.getColor()).build());
-        entity.equipStack(EquipmentSlot.CHEST, ItemStackBuilder.of(Items.LEATHER_CHESTPLATE).setColor(this.team.getColor()).build());
+        entity.equipStack(EquipmentSlot.CHEST, ItemStackBuilder.of(Items.IRON_CHESTPLATE).setColor(this.team.getColor()).build());
         entity.equipStack(EquipmentSlot.LEGS, ItemStackBuilder.of(Items.LEATHER_LEGGINGS).setColor(this.team.getColor()).build());
-        entity.equipStack(EquipmentSlot.FEET, ItemStackBuilder.of(Items.LEATHER_BOOTS).setColor(this.team.getColor()).build());
-        entity.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
+        entity.equipStack(EquipmentSlot.FEET, ItemStackBuilder.of(Items.IRON_BOOTS).setColor(this.team.getColor()).build());
     }
 
     private void giveConstructorEquipment(LivingEntity entity) {
@@ -106,35 +111,43 @@ public final class SiegeKitStandEntity extends ArmorStandEntity {
         entity.equipStack(EquipmentSlot.CHEST, ItemStackBuilder.of(Items.LEATHER_CHESTPLATE).setColor(this.team.getColor()).build());
         entity.equipStack(EquipmentSlot.LEGS, ItemStackBuilder.of(Items.LEATHER_LEGGINGS).setColor(this.team.getColor()).build());
         entity.equipStack(EquipmentSlot.FEET, ItemStackBuilder.of(Items.LEATHER_BOOTS).setColor(this.team.getColor()).build());
-        entity.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.WOODEN_AXE));
         entity.equipStack(EquipmentSlot.OFFHAND, new ItemStack(this.planksForTeam()));
     }
 
     private void giveShieldEquipment(LivingEntity entity) {
         entity.equipStack(EquipmentSlot.HEAD, ItemStackBuilder.of(Items.LEATHER_HELMET).setColor(this.team.getColor()).build());
-        entity.equipStack(EquipmentSlot.CHEST, ItemStackBuilder.of(Items.LEATHER_CHESTPLATE).setColor(this.team.getColor()).build());
+        entity.equipStack(EquipmentSlot.CHEST, ItemStackBuilder.of(Items.IRON_CHESTPLATE).setColor(this.team.getColor()).build());
         entity.equipStack(EquipmentSlot.LEGS, ItemStackBuilder.of(Items.LEATHER_LEGGINGS).setColor(this.team.getColor()).build());
         entity.equipStack(EquipmentSlot.FEET, ItemStackBuilder.of(Items.LEATHER_BOOTS).setColor(this.team.getColor()).build());
-        entity.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
         entity.equipStack(EquipmentSlot.OFFHAND, new ItemStack(Items.SHIELD));
     }
 
     // give{x}Kit is for players only
 
     private void giveArcherKit(PlayerEntity player) {
-
+        this.giveArcherEquipment(player);
+        player.inventory.insertStack(new ItemStack(Items.WOODEN_SWORD));
+        player.inventory.insertStack(new ItemStack(Items.BOW));
+        player.inventory.insertStack(ItemStackBuilder.of(Items.ARROW).setCount(32).build());
     }
 
     private void giveSoldierKit(PlayerEntity player) {
-
+        this.giveShieldEquipment(player);
+        player.inventory.insertStack(new ItemStack(Items.IRON_SWORD));
+        player.inventory.insertStack(new ItemStack(Items.IRON_AXE));
     }
 
     private void giveConstructorKit(PlayerEntity player) {
-
+        this.giveConstructorEquipment(player);
+        player.equipStack(EquipmentSlot.OFFHAND, ItemStackBuilder.of(this.planksForTeam()).setCount(16).build());
+        player.inventory.insertStack(new ItemStack(Items.WOODEN_SWORD));
+        player.inventory.insertStack(new ItemStack(Items.WOODEN_AXE));
+        player.inventory.insertStack(ItemStackBuilder.of(Items.LADDER).setCount(4).build());
     }
 
     private void giveShieldKit(PlayerEntity player) {
-
+        this.giveShieldEquipment(player);
+        player.inventory.insertStack(new ItemStack(Items.IRON_SWORD));
     }
 
 
