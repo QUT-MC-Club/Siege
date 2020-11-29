@@ -116,11 +116,13 @@ public final class SiegeCaptureLogic {
 
             for (ServerPlayerEntity player : capturingPlayers) {
                 player.sendMessage(new LiteralText("Captured!").formatted(Formatting.AQUA), true);
+                player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP,  SoundCategory.NEUTRAL, 1.0F, 1.0F);
             }
         } else {
             int capturePercent = flag.captureProgressTicks * 100 / CAPTURE_TIME_TICKS;
             for (ServerPlayerEntity player : capturingPlayers) {
                 player.sendMessage(new LiteralText("Capturing: " + capturePercent + "%").formatted(Formatting.RED), true);
+                player.playSound(SoundEvents.BLOCK_STONE_PLACE,  SoundCategory.NEUTRAL, 1.0F, 1.0F);
             }
         }
     }
