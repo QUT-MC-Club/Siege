@@ -5,6 +5,8 @@ import io.github.restioson.siege.game.map.SiegeMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LightningEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -13,16 +15,11 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import xyz.nucleoid.plasmid.game.GameCloseReason;
 import xyz.nucleoid.plasmid.game.GameSpace;
-import xyz.nucleoid.plasmid.game.event.GameCloseListener;
-import xyz.nucleoid.plasmid.game.event.GameOpenListener;
-import xyz.nucleoid.plasmid.game.event.GameTickListener;
-import xyz.nucleoid.plasmid.game.event.OfferPlayerListener;
-import xyz.nucleoid.plasmid.game.event.PlayerAddListener;
-import xyz.nucleoid.plasmid.game.event.PlayerDeathListener;
-import xyz.nucleoid.plasmid.game.event.PlayerRemoveListener;
+import xyz.nucleoid.plasmid.game.event.*;
 import xyz.nucleoid.plasmid.game.player.GameTeam;
 import xyz.nucleoid.plasmid.game.player.JoinResult;
 import xyz.nucleoid.plasmid.game.player.PlayerSet;
@@ -30,6 +27,8 @@ import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
 import xyz.nucleoid.plasmid.util.PlayerRef;
 import xyz.nucleoid.plasmid.widget.GlobalWidgets;
+
+import java.util.Objects;
 
 public class SiegeActive {
     private final SiegeConfig config;
@@ -187,6 +186,11 @@ public class SiegeActive {
                     continue;
                 }
 
+                // Just began capturing
+                if (flag.captureProgressTicks == 0) {
+                    this.broadcastStartCapture(flag, captureTeam);
+                }
+
                 flag.captureProgressTicks += interval * captureCount;
 
                 if (flag.captureProgressTicks >= 2 * 20) { // TODO: change to a more sensible value...
@@ -198,6 +202,17 @@ public class SiegeActive {
         }
     }
 
+    private void broadcastStartCapture(SiegeFlag flag, GameTeam captureTeam) {
+        this.gameSpace.getPlayers().sendMessage(
+                new LiteralText("The ")
+                        .append(new LiteralText(flag.name).formatted(Formatting.YELLOW))
+                        .append(" is being captured by the ")
+                        .append(new LiteralText(captureTeam.getDisplay()).formatted(captureTeam.getFormatting()))
+                        .append("...")
+                        .formatted(Formatting.BOLD)
+        );
+    }
+
     private void broadcastCapture(SiegeFlag flag, GameTeam captureTeam) {
         this.gameSpace.getPlayers().sendMessage(
                 new LiteralText("The ")
@@ -205,7 +220,16 @@ public class SiegeActive {
                         .append(" has been captured by the ")
                         .append(new LiteralText(captureTeam.getDisplay()).formatted(captureTeam.getFormatting()))
                         .append("!")
+                        .formatted(Formatting.BOLD)
         );
+
+        ServerWorld world = this.gameSpace.getWorld();
+
+        Vec3d pos = SiegeSpawnLogic.choosePos(world.getRandom(), flag.bounds);
+        LightningEntity lightningEntity = EntityType.LIGHTNING_BOLT.create(world);
+        Objects.requireNonNull(lightningEntity).refreshPositionAfterTeleport(pos);
+        lightningEntity.setCosmetic(true);
+        world.spawnEntity(lightningEntity);
     }
 
     private void broadcastWin() {

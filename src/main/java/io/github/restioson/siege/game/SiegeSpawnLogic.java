@@ -1,7 +1,5 @@
 package io.github.restioson.siege.game;
 
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -10,6 +8,8 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import xyz.nucleoid.plasmid.util.BlockBounds;
 
+import java.util.Random;
+
 public class SiegeSpawnLogic {
     public static void resetPlayer(ServerPlayerEntity player, GameMode gameMode) {
         player.setGameMode(gameMode);
@@ -17,14 +17,19 @@ public class SiegeSpawnLogic {
         player.fallDistance = 0.0f;
     }
 
-    public static void spawnPlayer(ServerPlayerEntity player, BlockBounds bounds, ServerWorld world) {
+    public static Vec3d choosePos(Random random, BlockBounds bounds) {
         BlockPos min = bounds.getMin();
         BlockPos max = bounds.getMax();
 
-        double x = MathHelper.nextDouble(player.getRandom(), min.getX(), max.getX());
-        double z = MathHelper.nextDouble(player.getRandom(), min.getZ(), max.getZ());
+        double x = MathHelper.nextDouble(random, min.getX(), max.getX());
+        double z = MathHelper.nextDouble(random, min.getZ(), max.getZ());
         double y = min.getY() + 0.5;
 
-        player.teleport(world, x, y, z, 0.0F, 0.0F);
+        return new Vec3d(x, y, z);
+    }
+
+    public static void spawnPlayer(ServerPlayerEntity player, BlockBounds bounds, ServerWorld world) {
+        Vec3d pos = SiegeSpawnLogic.choosePos(player.getRandom(), bounds);
+        player.teleport(world, pos.x, pos.y, pos.z, 0.0F, 0.0F);
     }
 }
