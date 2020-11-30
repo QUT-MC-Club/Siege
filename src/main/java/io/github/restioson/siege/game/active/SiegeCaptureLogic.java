@@ -138,8 +138,6 @@ public final class SiegeCaptureLogic {
     }
 
     private void tickSecuring(SiegeFlag flag, int interval) {
-        flag.captureProgressTicks -= interval;
-
         if (flag.decrementCapture(interval)) {
             this.broadcastSecured(flag);
         }

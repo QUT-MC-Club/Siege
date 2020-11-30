@@ -164,12 +164,20 @@ public class SiegeActive {
     }
 
     private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
-        PlayerSet players = this.gameSpace.getPlayers();
-        MutableText eliminationMessage = new LiteralText(" was killed by ");
+        MutableText deathMessage = this.getDeathMessage(player, source);
+        this.gameSpace.getPlayers().sendMessage(deathMessage.formatted(Formatting.GRAY));
+
+        this.spawnDeadParticipant(player);
+
+        return ActionResult.FAIL;
+    }
+
+    private MutableText getDeathMessage(ServerPlayerEntity player, DamageSource source) {
         SiegePlayer participant = this.participants.get(PlayerRef.of(player));
         ServerWorld world = this.gameSpace.getWorld();
         long time = world.getTime();
 
+        MutableText eliminationMessage = new LiteralText(" was killed by ");
         if (source.getAttacker() != null) {
             eliminationMessage.append(source.getAttacker().getDisplayName());
         } else if (participant != null && participant.attacker(time, world) != null) {
@@ -180,18 +188,18 @@ public class SiegeActive {
             eliminationMessage = new LiteralText(" died");
         }
 
-        players.sendMessage(new LiteralText("").append(player.getDisplayName()).append(eliminationMessage).formatted(Formatting.GRAY));
-
-        this.spawnDeadParticipant(player, time);
-        return ActionResult.FAIL;
+        return new LiteralText("").append(player.getDisplayName()).append(eliminationMessage);
     }
 
-    private void spawnDeadParticipant(ServerPlayerEntity player, long time) {
+    private void spawnDeadParticipant(ServerPlayerEntity player) {
         player.inventory.clear();
         player.getEnderChestInventory().clear();
-        SiegePlayer siegePlayer = this.participants.get(PlayerRef.of(player));
-        siegePlayer.timeOfDeath = time;
         player.setGameMode(GameMode.SPECTATOR);
+
+        SiegePlayer siegePlayer = this.participants.get(PlayerRef.of(player));
+        if (siegePlayer != null) {
+            siegePlayer.timeOfDeath = this.gameSpace.getWorld().getTime();
+        }
     }
 
     private void spawnParticipant(ServerPlayerEntity player) {
