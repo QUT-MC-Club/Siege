@@ -40,7 +40,7 @@ public final class SiegeSidebar {
 
                 Formatting color = flag.team.getFormatting();
                 boolean capturing = false;
-                boolean bold = false;
+                boolean italic = false;
 
                 if (flag.capturingState != null) {
                     if (flag.capturingState == CapturingState.CONTESTED) {
@@ -48,14 +48,18 @@ public final class SiegeSidebar {
                     } else {
                         GameTeam blinkTeam = blink ? SiegeTeams.ATTACKERS : SiegeTeams.DEFENDERS;
                         color = blinkTeam.getFormatting();
-                        bold = blinkTeam != flag.team;
+                        italic = blinkTeam != flag.team;
                     }
                     capturing = true;
                 }
 
-                String line = color + flag.name;
+                String line;
+                if (italic) {
+                    line = color + Formatting.ITALIC.toString() + flag.name;
+                } else {
+                    line = color + flag.name;
+                }
 
-                if (bold) line = Formatting.BOLD + line;
                 if (capturing) line = "(!) " + line;
 
                 content.writeLine(line);
