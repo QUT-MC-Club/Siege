@@ -19,6 +19,7 @@ import xyz.nucleoid.plasmid.map.template.MapTemplateSerializer;
 import xyz.nucleoid.plasmid.util.BlockBounds;
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -95,6 +96,8 @@ public class SiegeMapGenerator {
             flags.put(id, flag);
             map.flags.add(flag);
         });
+
+        map.flags.sort(Comparator.comparing(flag -> flag.name));
 
         metadata.getRegions("flag").forEach(region -> {
             CompoundTag data = region.getData();
