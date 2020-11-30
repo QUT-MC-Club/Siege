@@ -185,6 +185,10 @@ public class SiegeActive {
     private ActionResult onPlayerDamage(ServerPlayerEntity player, DamageSource source, float v) {
         SiegePlayer participant = this.participant(player);
 
+        if (participant != null && this.gameSpace.getWorld().getTime() > participant.timeOfSpawn + 5 * 20) {
+            return ActionResult.FAIL;
+        }
+
         if (participant != null && source.getAttacker() != null && source.getAttacker() instanceof ServerPlayerEntity) {
             long time = this.gameSpace.getWorld().getTime();
             PlayerRef attacker = PlayerRef.of((ServerPlayerEntity) source.getAttacker());
@@ -248,7 +252,9 @@ public class SiegeActive {
         player.inventory.clear();
         player.getEnderChestInventory().clear();
         SiegePlayer participant = this.participant(player);
+        assert participant != null; // spawnParticipant should only be spawned on a participant
         participant.kit.equipPlayer(player, participant);
+        participant.timeOfSpawn = this.gameSpace.getWorld().getTime();
 
         BlockBounds respawn = this.getRespawnFor(player);
 

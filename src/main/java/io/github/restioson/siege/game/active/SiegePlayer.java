@@ -13,6 +13,7 @@ public class SiegePlayer {
     @Nullable
     public AttackRecord lastTimeWasAttacked;
     public long timeOfDeath;
+    public long timeOfSpawn;
     private final Object2IntOpenHashMap<SiegePersonalResource> resources = new Object2IntOpenHashMap<>();
 
     public SiegePlayer(GameTeam team) {
