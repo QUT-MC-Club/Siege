@@ -132,6 +132,8 @@ public class SiegeMapGenerator {
                 Siege.LOGGER.warn("Respawn attached to missing flag: {}", flagId);
             }
         });
+
+        map.noBuildRegions = metadata.getRegionBounds("no_build").collect(Collectors.toList());
     }
 
     private GameTeam parseTeam(CompoundTag data) {

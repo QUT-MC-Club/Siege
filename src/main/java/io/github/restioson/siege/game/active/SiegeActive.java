@@ -3,6 +3,7 @@ package io.github.restioson.siege.game.active;
 import com.google.common.collect.Multimap;
 import io.github.restioson.siege.entity.SiegeKitStandEntity;
 import io.github.restioson.siege.game.SiegeConfig;
+import io.github.restioson.siege.game.SiegeKit;
 import io.github.restioson.siege.game.SiegeSpawnLogic;
 import io.github.restioson.siege.game.SiegeTeams;
 import io.github.restioson.siege.game.map.SiegeFlag;
@@ -12,12 +13,16 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.BlockWithEntity;
 import net.minecraft.block.EnderChestBlock;
+import net.minecraft.block.TrapdoorBlock;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.item.ArrowItem;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsageContext;
+import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
@@ -95,11 +100,13 @@ public class SiegeActive {
             game.setRule(GameRule.HUNGER, RuleResult.ALLOW);
             game.setRule(GameRule.INTERACTION, RuleResult.ALLOW);
             game.setRule(GameRule.FALL_DAMAGE, RuleResult.ALLOW);
+            game.setRule(GameRule.PLACE_BLOCKS, RuleResult.ALLOW);
 
             game.on(GameOpenListener.EVENT, active::onOpen);
             game.on(GameCloseListener.EVENT, active::onClose);
             game.on(DropItemListener.EVENT, active::onDropItem);
             game.on(BreakBlockListener.EVENT, active::onBreakBlock);
+            game.on(PlaceBlockListener.EVENT, active::onPlaceBlock);
 
             game.on(OfferPlayerListener.EVENT, player -> JoinResult.ok());
             game.on(PlayerAddListener.EVENT, active::addPlayer);
@@ -157,6 +164,35 @@ public class SiegeActive {
         return ActionResult.FAIL;
     }
 
+    private ActionResult onPlaceBlock(
+            ServerPlayerEntity player,
+            BlockPos blockPos,
+            BlockState blockState,
+            ItemUsageContext ctx
+    ) {
+        SiegePlayer participant = this.participant(player);
+        if (participant != null && participant.kit != SiegeKit.CONSTRUCTOR) {
+            return ActionResult.FAIL;
+        }
+
+        for (BlockBounds noBuildRegion : this.map.noBuildRegions) {
+            if (noBuildRegion.contains(blockPos)) {
+                // TODO do this in plasmid
+                int slot;
+                if (ctx.getHand() == Hand.MAIN_HAND) {
+                    slot = player.inventory.selectedSlot;
+                } else {
+                    slot = 40; // offhand
+                }
+
+                player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, slot, ctx.getStack()));
+                return ActionResult.FAIL;
+            }
+        }
+
+        return ActionResult.PASS;
+    }
+
     private ActionResult onBreakBlock(ServerPlayerEntity player, BlockPos pos) {
         if (this.map.isProtectedBlock(pos.asLong())) {
             return ActionResult.FAIL;
@@ -172,20 +208,23 @@ public class SiegeActive {
 
         SiegePlayer participant = this.participant(player);
         if (participant != null) {
+            pos.offset(hitResult.getSide());
             BlockState state = this.gameSpace.getWorld().getBlockState(pos);
             if (state.getBlock() instanceof EnderChestBlock) {
                 participant.kit.restock(player, participant, this.gameSpace.getWorld());
                 return ActionResult.FAIL;
+            } else if (state.getBlock() instanceof BlockWithEntity || state.getBlock() instanceof TrapdoorBlock) {
+                return ActionResult.FAIL;
             }
         }
 
-        return ActionResult.FAIL;
+        return ActionResult.PASS;
     }
 
     private ActionResult onPlayerDamage(ServerPlayerEntity player, DamageSource source, float v) {
         SiegePlayer participant = this.participant(player);
 
-        if (participant != null && this.gameSpace.getWorld().getTime() > participant.timeOfSpawn + 5 * 20) {
+        if (participant != null && this.gameSpace.getWorld().getTime() < participant.timeOfSpawn + 5 * 20) {
             return ActionResult.FAIL;
         }
 

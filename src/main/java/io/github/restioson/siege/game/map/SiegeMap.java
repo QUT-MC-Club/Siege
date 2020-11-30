@@ -17,6 +17,7 @@ public class SiegeMap {
     public final int attackerSpawnAngle;
     public final BlockBounds bounds;
     public BlockBounds waitingSpawn = BlockBounds.EMPTY;
+    public List<BlockBounds> noBuildRegions = new ArrayList<>();
     public List<SiegeKitStandLocation> kitStands = new ArrayList<>();
 
     private final LongSet protectedBlocks = new LongOpenHashSet();
