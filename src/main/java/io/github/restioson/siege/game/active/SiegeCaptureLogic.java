@@ -65,10 +65,10 @@ public final class SiegeCaptureLogic {
                 continue;
             }
 
-            SiegePlayer siegePlayer = entry.getValue();
+            SiegePlayer participant = entry.getValue();
 
             if (flag.bounds.contains(player.getBlockPos())) {
-                GameTeam team = siegePlayer.team;
+                GameTeam team = participant.team;
                 if (team == SiegeTeams.DEFENDERS) {
                     defendersPresent.add(player);
                 } else if (team == SiegeTeams.ATTACKERS) {

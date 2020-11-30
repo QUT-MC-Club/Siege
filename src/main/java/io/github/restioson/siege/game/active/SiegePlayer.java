@@ -1,6 +1,7 @@
 package io.github.restioson.siege.game.active;
 
 import io.github.restioson.siege.game.SiegeKit;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import org.jetbrains.annotations.Nullable;
@@ -12,10 +13,12 @@ public class SiegePlayer {
     @Nullable
     public AttackRecord lastTimeWasAttacked;
     public long timeOfDeath;
+    private final Object2IntOpenHashMap<SiegePersonalResource> resources = new Object2IntOpenHashMap<>();
 
     public SiegePlayer(GameTeam team) {
         this.team = team;
         this.kit = SiegeKit.SOLDIER;
+        this.resources.defaultReturnValue(0);
     }
 
     public ServerPlayerEntity attacker(long time, ServerWorld world) {
@@ -23,6 +26,31 @@ public class SiegePlayer {
             return this.lastTimeWasAttacked.isValid(time) ? this.lastTimeWasAttacked.player.getEntity(world) : null;
         } else {
             return null;
+        }
+    }
+
+    public void incrementResource(SiegePersonalResource resource, int amount) {
+        int newAmount = this.resources.addTo(resource, amount);
+        if (newAmount > resource.max) {
+            this.resources.replace(resource, resource.max);
+        }
+    }
+
+    public void decrementResource(SiegePersonalResource resource, int amount) {
+        int newAmount = this.resources.addTo(resource, -amount);
+        if (newAmount < 0) {
+            this.resources.replace(resource, 0);
+        }
+    }
+
+    // Try decrement an amount, returning how much was actually decremented
+    public int tryDecrementResource(SiegePersonalResource resource, int amount) {
+        int newAmount = this.resources.addTo(resource, -amount) - amount; // addTo returns previous value
+        if (newAmount < 0) {
+            this.resources.replace(resource, 0);
+            return amount + newAmount;
+        } else {
+            return amount;
         }
     }
 }

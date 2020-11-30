@@ -15,7 +15,6 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 import xyz.nucleoid.plasmid.game.player.GameTeam;
-import xyz.nucleoid.plasmid.util.PlayerRef;
 
 public final class SiegeKitStandEntity extends ArmorStandEntity {
     public final GameTeam team;
@@ -40,13 +39,13 @@ public final class SiegeKitStandEntity extends ArmorStandEntity {
 
     @Override
     public ActionResult interactAt(PlayerEntity player, Vec3d hitPos, Hand hand) {
-        SiegePlayer siegePlayer = this.game.participants.get(PlayerRef.of(player));
-        if (siegePlayer == null || ((ServerPlayerEntity) player).interactionManager.getGameMode() != GameMode.SURVIVAL) {
+        SiegePlayer participant = this.game.participant((ServerPlayerEntity) player);
+        if (participant == null || ((ServerPlayerEntity) player).interactionManager.getGameMode() != GameMode.SURVIVAL) {
             return ActionResult.FAIL;
         }
 
-        this.type.equipPlayer((ServerPlayerEntity) player, this.team);
-        siegePlayer.kit = this.type;
+        this.type.equipPlayer((ServerPlayerEntity) player, participant);
+        participant.kit = this.type;
         return ActionResult.SUCCESS;
     }
 }

@@ -11,10 +11,13 @@ import io.github.restioson.siege.game.map.SiegeMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.EnderChestBlock;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.projectile.PersistentProjectileEntity;
+import net.minecraft.item.ArrowItem;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
@@ -23,6 +26,8 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
@@ -99,11 +104,13 @@ public class SiegeActive {
             game.on(OfferPlayerListener.EVENT, player -> JoinResult.ok());
             game.on(PlayerAddListener.EVENT, active::addPlayer);
             game.on(PlayerRemoveListener.EVENT, active::removePlayer);
+            game.on(UseBlockListener.EVENT, active::onUseBlock);
 
             game.on(GameTickListener.EVENT, active::tick);
 
             game.on(PlayerDamageListener.EVENT, active::onPlayerDamage);
             game.on(PlayerDeathListener.EVENT, active::onPlayerDeath);
+            game.on(PlayerFireArrowListener.EVENT, active::onPlayerFireArrow);
 
             ServerWorld world = gameSpace.getWorld();
 
@@ -112,6 +119,16 @@ public class SiegeActive {
                 world.spawnEntity(standEntity);
             }
         });
+    }
+
+    @Nullable
+    public SiegePlayer participant(ServerPlayerEntity player) {
+        return this.participant(PlayerRef.of(player));
+    }
+
+    @Nullable
+    public SiegePlayer participant(PlayerRef player) {
+        return this.participants.get(player);
     }
 
     private void onOpen() {
@@ -137,11 +154,7 @@ public class SiegeActive {
     }
 
     private ActionResult onDropItem(PlayerEntity player, int slot, ItemStack stack) {
-        if (stack.getItem() == Items.ARROW || stack.getItem() == Items.COOKED_BEEF) {
-            return ActionResult.PASS;
-        } else {
-            return ActionResult.FAIL;
-        }
+        return ActionResult.FAIL;
     }
 
     private ActionResult onBreakBlock(ServerPlayerEntity player, BlockPos pos) {
@@ -151,8 +164,26 @@ public class SiegeActive {
         return ActionResult.PASS;
     }
 
+    private ActionResult onUseBlock(ServerPlayerEntity player, Hand hand, BlockHitResult hitResult) {
+        BlockPos pos = hitResult.getBlockPos();
+        if (pos == null) {
+            return ActionResult.PASS;
+        }
+
+        SiegePlayer participant = this.participant(player);
+        if (participant != null) {
+            BlockState state = this.gameSpace.getWorld().getBlockState(pos);
+            if (state.getBlock() instanceof EnderChestBlock) {
+                participant.kit.restock(player, participant, this.gameSpace.getWorld());
+                return ActionResult.FAIL;
+            }
+        }
+
+        return ActionResult.PASS;
+    }
+
     private ActionResult onPlayerDamage(ServerPlayerEntity player, DamageSource source, float v) {
-        SiegePlayer participant = this.participants.get(player);
+        SiegePlayer participant = this.participant(player);
 
         if (participant != null && source.getAttacker() != null && source.getAttacker() instanceof ServerPlayerEntity) {
             long time = this.gameSpace.getWorld().getTime();
@@ -166,7 +197,7 @@ public class SiegeActive {
     private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
         PlayerSet players = this.gameSpace.getPlayers();
         MutableText eliminationMessage = new LiteralText(" was killed by ");
-        SiegePlayer participant = this.participants.get(PlayerRef.of(player));
+        SiegePlayer participant = this.participant(player);
         ServerWorld world = this.gameSpace.getWorld();
         long time = world.getTime();
 
@@ -186,19 +217,30 @@ public class SiegeActive {
         return ActionResult.FAIL;
     }
 
+    private ActionResult onPlayerFireArrow(
+            ServerPlayerEntity user,
+            ItemStack tool,
+            ArrowItem arrowItem,
+            int remainingUseTicks,
+            PersistentProjectileEntity projectile
+    ) {
+        projectile.pickupType = PersistentProjectileEntity.PickupPermission.DISALLOWED;
+        return ActionResult.PASS;
+    }
+
     private void spawnDeadParticipant(ServerPlayerEntity player, long time) {
         player.inventory.clear();
         player.getEnderChestInventory().clear();
-        SiegePlayer siegePlayer = this.participants.get(PlayerRef.of(player));
-        siegePlayer.timeOfDeath = time;
+        SiegePlayer participant = this.participant(player);
+        participant.timeOfDeath = time;
         player.setGameMode(GameMode.SPECTATOR);
     }
 
     private void spawnParticipant(ServerPlayerEntity player) {
         player.inventory.clear();
         player.getEnderChestInventory().clear();
-        SiegePlayer siegePlayer = this.participants.get(PlayerRef.of(player));
-        siegePlayer.kit.equipPlayer(player, siegePlayer.team);
+        SiegePlayer participant = this.participant(player);
+        participant.kit.equipPlayer(player, participant);
 
         BlockBounds respawn = this.getRespawnFor(player);
 
@@ -231,7 +273,7 @@ public class SiegeActive {
 
     @Nullable
     private GameTeam getTeamFor(ServerPlayerEntity player) {
-        SiegePlayer participant = this.participants.get(PlayerRef.of(player));
+        SiegePlayer participant = this.participant(player);
         return participant != null ? participant.team : null;
     }
 
@@ -263,11 +305,18 @@ public class SiegeActive {
 
         if (time % 20 == 0) {
             this.captureLogic.tick(world, 20);
+            this.tickResources();
             this.sidebar.update(time);
         }
 
         this.tickDead(world, time);
         this.timerBar.update(this.stageManager.finishTime - time, this.config.timeLimitMins * 20 * 60);
+    }
+
+    private void tickResources() {
+        for (SiegePlayer player : this.participants.values()) {
+            player.incrementResource(SiegePersonalResource.WOOD, 1);
+        }
     }
 
     private void tickDead(ServerWorld world, long time) {
