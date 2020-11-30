@@ -6,9 +6,7 @@ import io.github.restioson.siege.game.SiegeTeams;
 import io.github.restioson.siege.game.map.SiegeFlag;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
+import net.minecraft.block.*;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LightningEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -132,7 +130,8 @@ public final class SiegeCaptureLogic {
                 ServerWorld world = this.game.gameSpace.getWorld();
                 for (BlockPos blockPos : flag.flagIndicatorBlocks) {
                     BlockState blockState = world.getBlockState(blockPos);
-                    if (blockState.getBlock() == Blocks.BLUE_WOOL || blockState.getBlock() == Blocks.RED_WOOL) {
+                    Block block = blockState.getBlock();
+                    if (block == Blocks.BLUE_WOOL || block == Blocks.RED_WOOL) {
                         Block wool;
 
                         if (captureTeam == SiegeTeams.DEFENDERS) {
@@ -142,6 +141,32 @@ public final class SiegeCaptureLogic {
                         }
 
                         world.setBlockState(blockPos, wool.getDefaultState());
+                    }
+
+                    if (block == Blocks.BLUE_WALL_BANNER || block == Blocks.RED_WALL_BANNER) {
+                        Block banner;
+
+                        if (captureTeam == SiegeTeams.DEFENDERS) {
+                            banner = Blocks.BLUE_WALL_BANNER;
+                        } else {
+                            banner = Blocks.RED_WALL_BANNER;
+                        }
+
+                        BlockState newBlockState = banner.getDefaultState().with(WallBannerBlock.FACING, blockState.get(WallBannerBlock.FACING));
+                        world.setBlockState(blockPos, newBlockState);
+                    }
+
+                    if (block == Blocks.BLUE_BANNER || block == Blocks.RED_BANNER) {
+                        Block banner;
+
+                        if (captureTeam == SiegeTeams.DEFENDERS) {
+                            banner = Blocks.BLUE_BANNER;
+                        } else {
+                            banner = Blocks.RED_BANNER;
+                        }
+
+                        BlockState newBlockState = banner.getDefaultState().with(BannerBlock.ROTATION, blockState.get(BannerBlock.ROTATION));
+                        world.setBlockState(blockPos, newBlockState);
                     }
                 }
             }
