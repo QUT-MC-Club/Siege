@@ -6,6 +6,9 @@ import io.github.restioson.siege.game.SiegeTeams;
 import io.github.restioson.siege.game.map.SiegeFlag;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LightningEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -14,6 +17,7 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import xyz.nucleoid.plasmid.game.GameSpace;
@@ -124,9 +128,27 @@ public final class SiegeCaptureLogic {
         if (flag.incrementCapture(captureTeam, interval * capturingPlayers.size())) {
             this.broadcastCaptured(flag, captureTeam);
 
+            if (flag.flagIndicatorBlocks != null) {
+                ServerWorld world = this.game.gameSpace.getWorld();
+                for (BlockPos blockPos : flag.flagIndicatorBlocks) {
+                    BlockState blockState = world.getBlockState(blockPos);
+                    if (blockState.getBlock() == Blocks.BLUE_WOOL || blockState.getBlock() == Blocks.RED_WOOL) {
+                        Block wool;
+
+                        if (captureTeam == SiegeTeams.DEFENDERS) {
+                            wool = Blocks.BLUE_WOOL;
+                        } else {
+                            wool = Blocks.RED_WOOL;
+                        }
+
+                        world.setBlockState(blockPos, wool.getDefaultState());
+                    }
+                }
+            }
+
             for (ServerPlayerEntity player : capturingPlayers) {
                 player.sendMessage(new LiteralText("Captured!").formatted(Formatting.AQUA), true);
-                player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP,  SoundCategory.NEUTRAL, 1.0F, 1.0F);
+                player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.NEUTRAL, 1.0F, 1.0F);
             }
         } else {
             int capturePercent = flag.captureProgressTicks * 100 / CAPTURE_TIME_TICKS;

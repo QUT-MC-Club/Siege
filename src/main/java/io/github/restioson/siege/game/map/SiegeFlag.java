@@ -15,6 +15,8 @@ public final class SiegeFlag {
     public final BlockBounds bounds;
     public boolean capturable = true;
     public boolean pluralName = false;
+    @Nullable
+    public BlockBounds flagIndicatorBlocks;
 
     @Nullable
     public BlockBounds respawn;
