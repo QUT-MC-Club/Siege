@@ -179,7 +179,7 @@ public class SiegeActive {
             }
         }
 
-        return ActionResult.PASS;
+        return ActionResult.FAIL;
     }
 
     private ActionResult onPlayerDamage(ServerPlayerEntity player, DamageSource source, float v) {

@@ -88,6 +88,10 @@ public class SiegeMapGenerator {
                 flag.capturable = false;
             }
 
+            if (data.contains("plural") && data.getBoolean("plural")) {
+                flag.pluralName = true;
+            }
+
             flags.put(id, flag);
             map.flags.add(flag);
         });

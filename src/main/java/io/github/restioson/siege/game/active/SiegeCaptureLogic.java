@@ -147,7 +147,9 @@ public final class SiegeCaptureLogic {
         this.gameSpace.getPlayers().sendMessage(
                 new LiteralText("The ")
                         .append(new LiteralText(flag.name).formatted(Formatting.YELLOW))
-                        .append(" is being captured by the ")
+                        .append(" ")
+                        .append(flag.presentTobe())
+                        .append(" being captured by the ")
                         .append(new LiteralText(captureTeam.getDisplay()).formatted(captureTeam.getFormatting()))
                         .append("...")
                         .formatted(Formatting.BOLD)
@@ -179,7 +181,9 @@ public final class SiegeCaptureLogic {
         this.gameSpace.getPlayers().sendMessage(
                 new LiteralText("The ")
                         .append(new LiteralText(flag.name).formatted(Formatting.YELLOW))
-                        .append(" has been captured by the ")
+                        .append(" ")
+                        .append(flag.pastToBe())
+                        .append(" been captured by the ")
                         .append(new LiteralText(captureTeam.getDisplay()).formatted(captureTeam.getFormatting()))
                         .append("!")
                         .formatted(Formatting.BOLD)
@@ -198,7 +202,9 @@ public final class SiegeCaptureLogic {
         this.gameSpace.getPlayers().sendMessage(
                 new LiteralText("The ")
                         .append(new LiteralText(flag.name).formatted(Formatting.YELLOW))
-                        .append(" has been defended by the ")
+                        .append(" ")
+                        .append(flag.pastToBe())
+                        .append(" been defended by the ")
                         .append(new LiteralText(flag.team.getDisplay()).formatted(flag.team.getFormatting()))
                         .append("!")
                         .formatted(Formatting.BOLD)

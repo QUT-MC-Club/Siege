@@ -14,6 +14,7 @@ public final class SiegeFlag {
     public final String name;
     public final BlockBounds bounds;
     public boolean capturable = true;
+    public boolean pluralName = false;
 
     @Nullable
     public BlockBounds respawn;
@@ -31,6 +32,22 @@ public final class SiegeFlag {
         this.name = name;
         this.team = team;
         this.bounds = bounds;
+    }
+
+    public String pastToBe() {
+        if (this.pluralName) {
+            return "have";
+        } else {
+            return "has";
+        }
+    }
+
+    public String presentTobe() {
+        if (this.pluralName) {
+            return "are";
+        } else {
+            return "is";
+        }
     }
 
     public boolean incrementCapture(GameTeam team, int amount) {
