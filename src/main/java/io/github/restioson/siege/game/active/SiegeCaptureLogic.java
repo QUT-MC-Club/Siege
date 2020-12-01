@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableList;
 import io.github.restioson.siege.game.SiegeSpawnLogic;
 import io.github.restioson.siege.game.SiegeTeams;
 import io.github.restioson.siege.game.map.SiegeFlag;
-import io.github.restioson.siege.game.map.SiegeGate;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import net.minecraft.block.*;
@@ -126,10 +125,6 @@ public final class SiegeCaptureLogic {
 
         if (flag.incrementCapture(captureTeam, interval * capturingPlayers.size())) {
             this.broadcastCaptured(flag, captureTeam);
-
-            for (SiegeGate gate : flag.attachedGates) {
-                gate.team = captureTeam;
-            }
 
             if (flag.flagIndicatorBlocks != null) {
                 ServerWorld world = this.game.gameSpace.getWorld();

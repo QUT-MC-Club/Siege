@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class SiegeMapGenerator {
@@ -146,34 +145,21 @@ public class SiegeMapGenerator {
                 .map(region -> {
                     CompoundTag data = region.getData();
 
-                    if (!data.contains("id")) {
-                        Siege.LOGGER.error("Gate must have id");
-                        throw new GameOpenException(new LiteralText("gate missing id"));
+                    String id = data.getString("id");
+                    SiegeFlag flag = flags.get(id);
+                    if (flag == null) {
+                        throw new GameOpenException(new LiteralText("Gate missing flag with id '" + id + "'!"));
                     }
 
-                    String gateId = data.getString("id");
-                    GameTeam team = this.parseTeam(data);
-                    SiegeGate gate = new SiegeGate(region.getBounds(), team);
+                    TemplateRegion portcullisRegion = metadata.getRegions("portcullis")
+                            .filter(r -> id.equalsIgnoreCase(r.getData().getString("id")))
+                            .findFirst()
+                            .orElseThrow(() -> new GameOpenException(new LiteralText("Gate missing portcullis!")));
 
-                    Optional<BlockBounds> portcullis = metadata.getRegions("portcullis")
-                            .filter(r -> gateId.equalsIgnoreCase(r.getData().getString("id")))
-                            .map(TemplateRegion::getBounds)
-                            .findFirst();
+                    CompoundTag portcullisData = portcullisRegion.getData();
+                    int retractHeight = portcullisData.getInt("retract_height");
 
-                    if (!portcullis.isPresent()) {
-                        Siege.LOGGER.error("Gate {} does not have attached portcullis", gateId);
-                        throw new GameOpenException(new LiteralText("gate does not have portcullis"));
-                    }
-
-                    gate.portcullis = portcullis.get();
-
-                    SiegeFlag flag = flags.get(gateId);
-
-                    if (flag != null) {
-                        flag.attachedGates.add(gate);
-                    }
-
-                    return gate;
+                    return new SiegeGate(flag, region.getBounds(), portcullisRegion.getBounds(), retractHeight);
                 })
                 .collect(Collectors.toList());
     }
@@ -183,7 +169,7 @@ public class SiegeMapGenerator {
         GameTeam team = SiegeTeams.byKey(teamName);
         if (team == null) {
             Siege.LOGGER.error("Unknown team \"{}\"", teamName);
-            throw new GameOpenException(new LiteralText("unknown team"));
+            return SiegeTeams.DEFENDERS;
         }
         return team;
     }

@@ -3,16 +3,11 @@ package io.github.restioson.siege.game.active;
 import io.github.restioson.siege.game.map.SiegeGate;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.AutomaticItemPlacementContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
 import net.minecraft.world.GameMode;
 import xyz.nucleoid.plasmid.util.PlayerRef;
 
@@ -36,18 +31,13 @@ public class SiegeGateLogic {
 
         for (Object2ObjectMap.Entry<PlayerRef, SiegePlayer> entry : Object2ObjectMaps.fastIterable(this.active.participants)) {
             ServerPlayerEntity player = entry.getKey().getEntity(world);
-            if (player == null) {
+            if (player == null || player.interactionManager.getGameMode() != GameMode.SURVIVAL) {
                 continue;
             }
-
-            if (player.interactionManager.getGameMode() != GameMode.SURVIVAL) {
-                continue;
-            }
-
-            SiegePlayer participant = entry.getValue();
 
             if (gate.gateOpen.contains(player.getBlockPos())) {
-                if (participant.team == gate.team) {
+                SiegePlayer participant = entry.getValue();
+                if (participant.team == gate.flag.team) {
                     ownerTeamPresent = true;
                 } else {
                     enemyTeamPresent = true;
@@ -55,23 +45,11 @@ public class SiegeGateLogic {
             }
         }
 
-        boolean continueMoving = ownerTeamPresent && !enemyTeamPresent;
+        boolean shouldOpen = ownerTeamPresent && !enemyTeamPresent;
 
-        if (continueMoving && gate.openProgress <= gate.portcullis.getSize().getY() - 1) {
-            gate.openProgress += 1;
-        } else if (!continueMoving && gate.openProgress != 0) {
-            gate.openProgress -= 1;
-        } else {
+        boolean moved = shouldOpen ? gate.tickOpen(world) : gate.tickClose(world);
+        if (!moved) {
             return;
-        }
-
-        for (BlockPos pos : gate.portcullis) {
-            if (pos.getY() < gate.openProgress + gate.portcullis.getMin().getY()) {
-                world.setBlockState(pos, Blocks.AIR.getDefaultState());
-            } else {
-                AutomaticItemPlacementContext ctx = new AutomaticItemPlacementContext(world, pos, Direction.DOWN, new ItemStack(Items.OAK_FENCE), Direction.DOWN);
-                world.setBlockState(pos, Blocks.OAK_FENCE.getPlacementState(ctx));
-            }
         }
 
         BlockPos pos = gate.portcullis.getMax();
