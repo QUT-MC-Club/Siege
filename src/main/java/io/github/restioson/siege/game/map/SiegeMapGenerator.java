@@ -16,12 +16,14 @@ import xyz.nucleoid.plasmid.game.player.GameTeam;
 import xyz.nucleoid.plasmid.map.template.MapTemplate;
 import xyz.nucleoid.plasmid.map.template.MapTemplateMetadata;
 import xyz.nucleoid.plasmid.map.template.MapTemplateSerializer;
+import xyz.nucleoid.plasmid.map.template.TemplateRegion;
 import xyz.nucleoid.plasmid.util.BlockBounds;
 
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class SiegeMapGenerator {
@@ -139,6 +141,41 @@ public class SiegeMapGenerator {
         });
 
         map.noBuildRegions = metadata.getRegionBounds("no_build").collect(Collectors.toList());
+
+        map.gates = metadata.getRegions("gate_open")
+                .map(region -> {
+                    CompoundTag data = region.getData();
+
+                    if (!data.contains("id")) {
+                        Siege.LOGGER.error("Gate must have id");
+                        throw new GameOpenException(new LiteralText("gate missing id"));
+                    }
+
+                    String gateId = data.getString("id");
+                    GameTeam team = this.parseTeam(data);
+                    SiegeGate gate = new SiegeGate(region.getBounds(), team);
+
+                    Optional<BlockBounds> portcullis = metadata.getRegions("portcullis")
+                            .filter(r -> gateId.equalsIgnoreCase(r.getData().getString("id")))
+                            .map(TemplateRegion::getBounds)
+                            .findFirst();
+
+                    if (!portcullis.isPresent()) {
+                        Siege.LOGGER.error("Gate {} does not have attached portcullis", gateId);
+                        throw new GameOpenException(new LiteralText("gate does not have portcullis"));
+                    }
+
+                    gate.portcullis = portcullis.get();
+
+                    SiegeFlag flag = flags.get(gateId);
+
+                    if (flag != null) {
+                        flag.attachedGates.add(gate);
+                    }
+
+                    return gate;
+                })
+                .collect(Collectors.toList());
     }
 
     private GameTeam parseTeam(CompoundTag data) {

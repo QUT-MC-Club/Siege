@@ -14,11 +14,12 @@ import java.util.List;
 public class SiegeMap {
     private final MapTemplate template;
     public final List<SiegeFlag> flags = new ArrayList<>();
+    public final List<SiegeKitStandLocation> kitStands = new ArrayList<>();
     public final int attackerSpawnAngle;
     public final BlockBounds bounds;
     public BlockBounds waitingSpawn = BlockBounds.EMPTY;
     public List<BlockBounds> noBuildRegions = new ArrayList<>();
-    public List<SiegeKitStandLocation> kitStands = new ArrayList<>();
+    public List<SiegeGate> gates = new ArrayList<>();
 
     private final LongSet protectedBlocks = new LongOpenHashSet();
 

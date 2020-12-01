@@ -64,6 +64,7 @@ public class SiegeActive {
     final SiegeTimerBar timerBar;
 
     final SiegeCaptureLogic captureLogic;
+    final SiegeGateLogic gateLogic;
 
     private SiegeActive(GameSpace gameSpace, SiegeMap map, SiegeConfig config, GlobalWidgets widgets, Multimap<GameTeam, ServerPlayerEntity> players) {
         this.gameSpace = gameSpace;
@@ -86,6 +87,7 @@ public class SiegeActive {
         this.timerBar = new SiegeTimerBar(widgets);
 
         this.captureLogic = new SiegeCaptureLogic(this);
+        this.gateLogic = new SiegeGateLogic(this);
     }
 
     public static void open(GameSpace gameSpace, SiegeMap map, SiegeConfig config, Multimap<GameTeam, ServerPlayerEntity> players) {
@@ -358,6 +360,7 @@ public class SiegeActive {
 
         if (time % 20 == 0) {
             this.captureLogic.tick(world, 20);
+            this.gateLogic.tick();
             this.tickResources();
             this.sidebar.update(time);
         }

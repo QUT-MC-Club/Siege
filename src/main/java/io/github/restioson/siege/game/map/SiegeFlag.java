@@ -17,6 +17,7 @@ public final class SiegeFlag {
     public boolean pluralName = false;
     @Nullable
     public BlockBounds flagIndicatorBlocks;
+    public final List<SiegeGate> attachedGates = new ArrayList<>();
 
     @Nullable
     public BlockBounds respawn;
