@@ -26,19 +26,12 @@ public enum SiegeKit {
     public static int ARROWS = 16;
     public static int PLANKS = 16;
     public static int STEAK = 10;
+    public static int LADDERS = 4;
 
     public final Text name;
 
     SiegeKit(Text name) {
         this.name = name;
-    }
-
-    private static Item planksForTeam(GameTeam team) {
-        if (team == SiegeTeams.ATTACKERS) {
-            return Items.ACACIA_PLANKS;
-        } else {
-            return Items.BIRCH_PLANKS;
-        }
     }
 
     public void equipArmourStand(SiegeKitStandEntity stand) {
@@ -65,10 +58,25 @@ public enum SiegeKit {
     }
 
     public void restock(ServerPlayerEntity player, SiegePlayer participant, ServerWorld world) {
-        if (participant.kit == SiegeKit.ARCHER) {
-            int arrowsRequired = SiegeKit.ARROWS - player.inventory.count(Items.ARROW);
-            int arrowsToGive = participant.tryDecrementResource(SiegePersonalResource.WOOD, arrowsRequired);
-            player.inventory.offerOrDrop(world, ItemStackBuilder.of(Items.ARROW).setCount(arrowsToGive).build());
+        switch (participant.kit) {
+            case ARCHER:
+                int arrowsRequired = SiegeKit.ARROWS - player.inventory.count(Items.ARROW);
+                int arrowsToGive = participant.tryDecrementResource(SiegePersonalResource.WOOD, arrowsRequired);
+                player.inventory.offerOrDrop(world, ItemStackBuilder.of(Items.ARROW).setCount(arrowsToGive).build());
+                break;
+            case CONSTRUCTOR:
+                Item planks = SiegeTeams.planksForTeam(participant.team);
+                int planksRequired = SiegeKit.PLANKS - player.inventory.count(planks);
+                int planksToGive = participant.tryDecrementResource(SiegePersonalResource.WOOD, planksRequired);
+
+                int laddersRequired = SiegeKit.LADDERS - player.inventory.count(Items.LADDER);
+                int laddersToGive = participant.tryDecrementResource(SiegePersonalResource.WOOD, laddersRequired);
+
+                player.inventory.offerOrDrop(world, ItemStackBuilder.of(planks).setCount(planksToGive).build());
+                player.inventory.offerOrDrop(world, ItemStackBuilder.of(Items.LADDER).setCount(laddersToGive).build());
+                break;
+            default:
+                break;
         }
 
         int steakRequired = SiegeKit.STEAK - player.inventory.count(Items.COOKED_BEEF);
@@ -88,7 +96,7 @@ public enum SiegeKit {
                 this.giveSoldierKit(player, team);
                 break;
             case CONSTRUCTOR:
-                this.giveConstructorKit(player, team);
+                this.giveConstructorKit(player, participant);
                 break;
             case SHIELD_BEARER:
                 this.giveShieldKit(player, team);
@@ -119,7 +127,7 @@ public enum SiegeKit {
         entity.equipStack(EquipmentSlot.CHEST, ItemStackBuilder.of(Items.LEATHER_CHESTPLATE).setColor(team.getColor()).setUnbreakable().build());
         entity.equipStack(EquipmentSlot.LEGS, ItemStackBuilder.of(Items.LEATHER_LEGGINGS).setColor(team.getColor()).setUnbreakable().build());
         entity.equipStack(EquipmentSlot.FEET, ItemStackBuilder.of(Items.LEATHER_BOOTS).setColor(team.getColor()).setUnbreakable().build());
-        entity.equipStack(EquipmentSlot.OFFHAND, new ItemStack(SiegeKit.planksForTeam(team)));
+        entity.equipStack(EquipmentSlot.OFFHAND, new ItemStack(SiegeTeams.planksForTeam(team)));
     }
 
     private void giveShieldEquipment(LivingEntity entity, GameTeam team) {
@@ -146,12 +154,14 @@ public enum SiegeKit {
         player.inventory.insertStack(ItemStackBuilder.of(Items.IRON_AXE).setUnbreakable().build());
     }
 
-    private void giveConstructorKit(PlayerEntity player, GameTeam team) {
-        this.giveConstructorEquipment(player, team);
-        player.equipStack(EquipmentSlot.OFFHAND, ItemStackBuilder.of(SiegeKit.planksForTeam(team)).setCount(PLANKS).build());
+    private void giveConstructorKit(PlayerEntity player, SiegePlayer participant) {
+        this.giveConstructorEquipment(player, participant.team);
+        player.equipStack(EquipmentSlot.OFFHAND, ItemStackBuilder.of(SiegeTeams.planksForTeam(participant.team)).setCount(PLANKS).build());
         player.inventory.insertStack(ItemStackBuilder.of(Items.WOODEN_SWORD).setUnbreakable().build());
         player.inventory.insertStack(ItemStackBuilder.of(Items.WOODEN_AXE).setUnbreakable().build());
-        player.inventory.insertStack(ItemStackBuilder.of(Items.LADDER).setCount(4).build());
+        player.inventory.insertStack(ItemStackBuilder.of(Items.LADDER).setCount(LADDERS).build());
+
+        participant.decrementResource(SiegePersonalResource.WOOD, LADDERS + PLANKS);
     }
 
     private void giveShieldKit(PlayerEntity player, GameTeam team) {

@@ -1,5 +1,7 @@
 package io.github.restioson.siege.game;
 
+import net.minecraft.item.Item;
+import net.minecraft.item.Items;
 import net.minecraft.scoreboard.AbstractTeam;
 import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.scoreboard.Team;
@@ -27,12 +29,23 @@ public final class SiegeTeams implements AutoCloseable {
         this.defenders = this.createTeam(DEFENDERS);
     }
 
+    public static Item planksForTeam(GameTeam team) {
+        if (team == SiegeTeams.ATTACKERS) {
+            return Items.ACACIA_PLANKS;
+        } else {
+            return Items.BIRCH_PLANKS;
+        }
+    }
+
     @Nullable
     public static GameTeam byKey(String name) {
         switch (name) {
-            case "attackers": return ATTACKERS;
-            case "defenders": return DEFENDERS;
-            default: return null;
+            case "attackers":
+                return ATTACKERS;
+            case "defenders":
+                return DEFENDERS;
+            default:
+                return null;
         }
     }
 
