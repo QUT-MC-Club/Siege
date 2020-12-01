@@ -1,9 +1,11 @@
 package io.github.restioson.siege.game.map;
 
+import io.github.restioson.siege.game.SiegeTeams;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
+import xyz.nucleoid.plasmid.game.player.GameTeam;
 import xyz.nucleoid.plasmid.map.template.MapTemplate;
 import xyz.nucleoid.plasmid.map.template.TemplateChunkGenerator;
 import xyz.nucleoid.plasmid.util.BlockBounds;
@@ -20,6 +22,8 @@ public class SiegeMap {
     public BlockBounds waitingSpawn = BlockBounds.EMPTY;
     public List<BlockBounds> noBuildRegions = new ArrayList<>();
     public List<SiegeGate> gates = new ArrayList<>();
+    public BlockBounds attackerFirstSpawn;
+    public BlockBounds defenderFirstSpawn;
 
     private final LongSet protectedBlocks = new LongOpenHashSet();
 
@@ -27,6 +31,14 @@ public class SiegeMap {
         this.template = template;
         this.attackerSpawnAngle = attackerSpawnAngle;
         this.bounds = template.getBounds();
+    }
+
+    public BlockBounds getFirstSpawn(GameTeam team) {
+        if (team == SiegeTeams.ATTACKERS) {
+            return this.attackerFirstSpawn;
+        } else {
+            return this.defenderFirstSpawn;
+        }
     }
 
     public void setWaitingSpawn(BlockBounds bounds) {

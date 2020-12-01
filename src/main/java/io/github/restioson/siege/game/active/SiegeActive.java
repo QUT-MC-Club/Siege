@@ -49,6 +49,8 @@ import xyz.nucleoid.plasmid.util.BlockBounds;
 import xyz.nucleoid.plasmid.util.PlayerRef;
 import xyz.nucleoid.plasmid.widget.GlobalWidgets;
 
+import java.util.Map;
+
 public class SiegeActive {
     final SiegeConfig config;
 
@@ -142,8 +144,8 @@ public class SiegeActive {
 
     private void onOpen() {
         ServerWorld world = this.gameSpace.getWorld();
-        for (PlayerRef ref : this.participants.keySet()) {
-            ref.ifOnline(world, this::spawnParticipant);
+        for (Map.Entry<PlayerRef, SiegePlayer> entry : this.participants.entrySet()) {
+            entry.getKey().ifOnline(world, p -> this.spawnParticipant(p, this.map.getFirstSpawn(entry.getValue().team)));
         }
 
         this.stageManager.onOpen(world.getTime(), this.config);
@@ -289,7 +291,7 @@ public class SiegeActive {
         }
     }
 
-    private void spawnParticipant(ServerPlayerEntity player) {
+    private void spawnParticipant(ServerPlayerEntity player, @Nullable BlockBounds spawnRegion) {
         player.inventory.clear();
         player.getEnderChestInventory().clear();
         SiegePlayer participant = this.participant(player);
@@ -297,10 +299,12 @@ public class SiegeActive {
         participant.kit.equipPlayer(player, participant);
         participant.timeOfSpawn = this.gameSpace.getWorld().getTime();
 
-        BlockBounds respawn = this.getRespawnFor(player);
+        if (spawnRegion == null) {
+            spawnRegion = this.getRespawnFor(player);
+        }
 
         SiegeSpawnLogic.resetPlayer(player, GameMode.SURVIVAL);
-        SiegeSpawnLogic.spawnPlayer(player, respawn, this.gameSpace.getWorld());
+        SiegeSpawnLogic.spawnPlayer(player, spawnRegion, this.gameSpace.getWorld());
     }
 
     private BlockBounds getRespawnFor(ServerPlayerEntity player) {
@@ -389,7 +393,7 @@ public class SiegeActive {
                     }
 
                     if (time - state.timeOfDeath > 5 * 20) {
-                        this.spawnParticipant(p);
+                        this.spawnParticipant(p, null);
                     }
                 }
             });

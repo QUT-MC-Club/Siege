@@ -134,6 +134,14 @@ public class SiegeMapGenerator {
             SiegeFlag flag = flags.get(flagId);
             if (flag != null) {
                 flag.respawn = region.getBounds();
+
+                if (data.contains("starting_spawn") && data.getBoolean("starting_spawn")) {
+                    if (flag.team == SiegeTeams.DEFENDERS) {
+                        map.defenderFirstSpawn = region.getBounds();
+                    } else {
+                        map.attackerFirstSpawn = region.getBounds();
+                    }
+                }
             } else {
                 Siege.LOGGER.warn("Respawn attached to missing flag: {}", flagId);
             }
