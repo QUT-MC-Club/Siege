@@ -385,14 +385,20 @@ public class SiegeActive {
             SiegePlayer state = entry.getValue();
             ref.ifOnline(world, p -> {
                 if (p.isSpectator()) {
-                    int sec = 5 - (int) Math.floor((time - state.timeOfDeath) / 20.0f);
+                    int respawnDelay = 5;
+
+                    if (state.team == SiegeTeams.DEFENDERS) {
+                        respawnDelay = 10;
+                    }
+
+                    int sec = respawnDelay - (int) Math.floor((time - state.timeOfDeath) / 20.0f);
 
                     if (sec > 0 && (time - state.timeOfDeath) % 20 == 0) {
                         Text text = new LiteralText(String.format("Respawning in %ds", sec)).formatted(Formatting.BOLD);
                         p.sendMessage(text, true);
                     }
 
-                    if (time - state.timeOfDeath > 5 * 20) {
+                    if (time - state.timeOfDeath > respawnDelay * 20) {
                         this.spawnParticipant(p, null);
                     }
                 }
