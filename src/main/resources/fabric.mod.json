@@ -7,7 +7,7 @@
   "authors": [
     "Restioson"
   ],
-  "accesswidener": "siege.accesswidener",
+  "accessWidener": "siege.accesswidener",
   "license": "LGPLv3",
   "environment": "*",
   "entrypoints": {
