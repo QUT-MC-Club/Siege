@@ -80,10 +80,11 @@ public final class SiegeCaptureLogic {
             }
         }
 
-        boolean defendersCapturing = !defendersPresent.isEmpty();
+        boolean defendersAtFlag = !defendersPresent.isEmpty();
+        boolean defendersActuallyCapturing = defendersAtFlag && this.game.config.recapture;
         boolean attackersCapturing = !attackersPresent.isEmpty();
-        boolean contested = defendersCapturing && attackersCapturing;
-        boolean capturing = defendersCapturing || attackersCapturing;
+        boolean contested = defendersAtFlag && attackersCapturing;
+        boolean capturing = defendersActuallyCapturing || attackersCapturing;
 
         CapturingState capturingState = null;
         GameTeam captureTeam = flag.team;
@@ -91,7 +92,7 @@ public final class SiegeCaptureLogic {
 
         if (capturing) {
             if (!contested) {
-                if (defendersCapturing) {
+                if (defendersAtFlag) {
                     captureTeam = SiegeTeams.DEFENDERS;
                     capturingPlayers = defendersPresent;
                 } else {

@@ -157,6 +157,8 @@ public class SiegeActive {
     private void addPlayer(ServerPlayerEntity player) {
         if (!this.participants.containsKey(PlayerRef.of(player))) {
             this.spawnSpectator(player);
+        } else {
+            this.spawnParticipant(player, null);
         }
     }
 

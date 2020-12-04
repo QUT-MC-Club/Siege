@@ -10,5 +10,6 @@
     "max": 100,
     "threshold": 4
   },
+  "recapture": false,
   "time_limit_mins": 20
 }
