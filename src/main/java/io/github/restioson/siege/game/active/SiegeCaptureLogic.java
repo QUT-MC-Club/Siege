@@ -168,6 +168,19 @@ public final class SiegeCaptureLogic {
                         BlockState newBlockState = banner.getDefaultState().with(BannerBlock.ROTATION, blockState.get(BannerBlock.ROTATION));
                         world.setBlockState(blockPos, newBlockState);
                     }
+
+                    if (block == Blocks.BLUE_CONCRETE || block == Blocks.RED_CONCRETE) {
+                        Block concrete;
+
+                        if (captureTeam == SiegeTeams.DEFENDERS) {
+                            concrete = Blocks.BLUE_CONCRETE;
+                        } else {
+                            concrete = Blocks.RED_CONCRETE;
+                        }
+
+                        BlockState newBlockState = concrete.getDefaultState();
+                        world.setBlockState(blockPos, newBlockState);
+                    }
                 }
             }
 
