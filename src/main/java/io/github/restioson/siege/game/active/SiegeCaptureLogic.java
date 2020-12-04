@@ -30,7 +30,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public final class SiegeCaptureLogic {
-    public static final int CAPTURE_TIME_TICKS = 20 * 10;
+    public static final int CAPTURE_TIME_TICKS = 20 * 30;
 
     private final GameSpace gameSpace;
     private final SiegeActive game;
