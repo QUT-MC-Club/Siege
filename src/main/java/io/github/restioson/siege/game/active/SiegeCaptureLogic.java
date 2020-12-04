@@ -20,6 +20,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import xyz.nucleoid.plasmid.game.GameSpace;
 import xyz.nucleoid.plasmid.game.player.GameTeam;
+import xyz.nucleoid.plasmid.util.BlockBounds;
 import xyz.nucleoid.plasmid.util.PlayerRef;
 import xyz.nucleoid.plasmid.util.Scheduler;
 
@@ -126,9 +127,10 @@ public final class SiegeCaptureLogic {
         if (flag.incrementCapture(captureTeam, interval * capturingPlayers.size())) {
             this.broadcastCaptured(flag, captureTeam);
 
-            if (flag.flagIndicatorBlocks != null) {
-                ServerWorld world = this.game.gameSpace.getWorld();
-                for (BlockPos blockPos : flag.flagIndicatorBlocks) {
+            ServerWorld world = this.game.gameSpace.getWorld();
+
+            for (BlockBounds blockBounds : flag.flagIndicatorBlocks) {
+                for (BlockPos blockPos : blockBounds) {
                     BlockState blockState = world.getBlockState(blockPos);
                     Block block = blockState.getBlock();
                     if (block == Blocks.BLUE_WOOL || block == Blocks.RED_WOOL) {

@@ -10,5 +10,5 @@
     "max": 100,
     "threshold": 4
   },
-  "time_limit_mins": 5
+  "time_limit_mins": 20
 }

@@ -122,10 +122,10 @@ public class SiegeMapGenerator {
                 flag.prerequisiteFlags.add(prerequisite);
             }
 
-            metadata.getRegions("flag_indicator")
+            flag.flagIndicatorBlocks = metadata.getRegions("flag_indicator")
                     .filter(r -> flagId.equalsIgnoreCase(r.getData().getString("id")))
-                    .findAny()
-                    .ifPresent(r -> flag.flagIndicatorBlocks = r.getBounds());
+                    .map(TemplateRegion::getBounds)
+                    .collect(Collectors.toList());
         });
 
         metadata.getRegions("respawn").forEach(region -> {
