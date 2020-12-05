@@ -357,7 +357,6 @@ public class SiegeActive {
         player.getEnderChestInventory().clear();
         SiegePlayer participant = this.participant(player);
         assert participant != null; // spawnParticipant should only be spawned on a participant
-        participant.kit.equipPlayer(player, participant);
         participant.timeOfSpawn = this.gameSpace.getWorld().getTime();
 
         if (spawnRegion == null) {
@@ -365,6 +364,7 @@ public class SiegeActive {
         }
 
         SiegeSpawnLogic.resetPlayer(player, GameMode.SURVIVAL);
+        participant.kit.equipPlayer(player, participant);
         SiegeSpawnLogic.spawnPlayer(player, spawnRegion, this.gameSpace.getWorld());
     }
 
