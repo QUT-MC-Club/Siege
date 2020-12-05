@@ -40,12 +40,11 @@ public final class SiegeKitStandEntity extends ArmorStandEntity {
     @Override
     public ActionResult interactAt(PlayerEntity player, Vec3d hitPos, Hand hand) {
         SiegePlayer participant = this.game.participant((ServerPlayerEntity) player);
+        if (participant == null || ((ServerPlayerEntity) player).interactionManager.getGameMode() != GameMode.SURVIVAL) {
+            return ActionResult.FAIL;
+        }
 
-        boolean fail = participant == null ||
-                ((ServerPlayerEntity) player).interactionManager.getGameMode() != GameMode.SURVIVAL ||
-                this.team != participant.team;
-
-        if (fail) {
+        if (participant.team != this.team) {
             return ActionResult.FAIL;
         }
 
