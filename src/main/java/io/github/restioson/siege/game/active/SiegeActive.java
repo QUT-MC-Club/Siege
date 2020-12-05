@@ -209,7 +209,7 @@ public class SiegeActive {
             if (participant.team == SiegeTeams.ATTACKERS) attackersCount++;
         }
 
-        if (attackersCount < defendersCount) {
+        if (attackersCount <= defendersCount) {
             return SiegeTeams.ATTACKERS;
         } else {
             return SiegeTeams.DEFENDERS;
