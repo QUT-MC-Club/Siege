@@ -156,9 +156,30 @@ public class SiegeActive {
 
     private void addPlayer(ServerPlayerEntity player) {
         if (!this.participants.containsKey(PlayerRef.of(player))) {
-            this.spawnSpectator(player);
+            this.allocateParticipant(player);
+        }
+        this.spawnParticipant(player, null);
+    }
+
+    private void allocateParticipant(ServerPlayerEntity player) {
+        GameTeam smallestTeam = this.getSmallestTeam();
+        SiegePlayer participant = new SiegePlayer(smallestTeam);
+        this.participants.put(PlayerRef.of(player), participant);
+    }
+
+    private GameTeam getSmallestTeam() {
+        // TODO: store a map of teams to players, this is bad
+        int attackersCount = 0;
+        int defendersCount = 0;
+        for (SiegePlayer participant : this.participants.values()) {
+            if (participant.team == SiegeTeams.DEFENDERS) defendersCount++;
+            if (participant.team == SiegeTeams.ATTACKERS) attackersCount++;
+        }
+
+        if (attackersCount < defendersCount) {
+            return SiegeTeams.ATTACKERS;
         } else {
-            this.spawnParticipant(player, null);
+            return SiegeTeams.DEFENDERS;
         }
     }
 
@@ -341,11 +362,6 @@ public class SiegeActive {
         return participant != null ? participant.team : null;
     }
 
-    private void spawnSpectator(ServerPlayerEntity player) {
-        SiegeSpawnLogic.resetPlayer(player, GameMode.SPECTATOR);
-        SiegeSpawnLogic.spawnPlayer(player, this.map.waitingSpawn, this.gameSpace.getWorld());
-    }
-
     private void tick() {
         ServerWorld world = this.gameSpace.getWorld();
         long time = world.getTime();
@@ -365,7 +381,6 @@ public class SiegeActive {
             }
             return;
         }
-
 
         if (time % 20 == 0) {
             this.captureLogic.tick(world, 20);
