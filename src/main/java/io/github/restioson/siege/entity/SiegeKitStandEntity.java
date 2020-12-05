@@ -52,4 +52,9 @@ public final class SiegeKitStandEntity extends ArmorStandEntity {
         participant.kit = this.type;
         return ActionResult.SUCCESS;
     }
+
+    @Override
+    public boolean isImmobile() {
+        return true;
+    }
 }
