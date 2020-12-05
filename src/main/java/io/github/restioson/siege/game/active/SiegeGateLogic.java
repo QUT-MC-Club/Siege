@@ -154,6 +154,10 @@ public class SiegeGateLogic {
             gate.bashedOpen = false;
         }
 
+        if (gate.bashedOpen) {
+            return;
+        }
+
         boolean ownerTeamPresent = false;
         boolean enemyTeamPresent = false;
 
@@ -173,7 +177,7 @@ public class SiegeGateLogic {
             }
         }
 
-        boolean shouldOpen = ownerTeamPresent && !enemyTeamPresent && !gate.bashedOpen;
+        boolean shouldOpen = ownerTeamPresent && !enemyTeamPresent;
 
         boolean moved = shouldOpen ? gate.tickOpen(world) : gate.tickClose(world);
         if (!moved) {
