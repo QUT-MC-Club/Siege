@@ -41,19 +41,17 @@ public class SiegeGateLogic {
     public ActionResult maybeBraceGate(BlockPos pos, ServerPlayerEntity player, int slot, ItemUsageContext ctx) {
         for (SiegeGate gate : this.active.map.gates) {
             if (gate.brace != null && gate.brace.contains(pos)) {
-                if (gate.health < gate.maxHealth) {
+                if (gate.health < gate.repairedHealthThreshold) {
                     gate.health += 1;
                     player.sendMessage(new LiteralText("Gate health: ").append(Integer.toString(gate.health)).formatted(Formatting.DARK_GREEN), true);
 
                     this.active.gameSpace.getWorld().setBlockState(pos, Blocks.AIR.getDefaultState());
                     ctx.getStack().decrement(1);
-                    player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, slot, ctx.getStack()));
-                    return ActionResult.FAIL;
                 } else {
                     player.sendMessage(new LiteralText("The gate is already at max health!").formatted(Formatting.DARK_GREEN), true);
-                    player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, slot, ctx.getStack()));
-                    return ActionResult.FAIL;
                 }
+                player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, slot, ctx.getStack()));
+                return ActionResult.FAIL;
             }
         }
 

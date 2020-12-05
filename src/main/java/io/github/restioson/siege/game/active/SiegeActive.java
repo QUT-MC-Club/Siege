@@ -422,7 +422,7 @@ public class SiegeActive {
             this.gateLogic.tick();
             this.sidebar.update(time);
 
-            if (time % (20 * 5) == 0) {
+            if (time % (20 * 2) == 0) {
                 this.tickResources();
             }
         }
