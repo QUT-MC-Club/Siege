@@ -163,7 +163,10 @@ public class SiegeActive {
     }
 
     private void removePlayer(ServerPlayerEntity player) {
-        this.participants.remove(PlayerRef.of(player));
+        SiegePlayer participant = this.participants.remove(PlayerRef.of(player));
+        if (participant != null) {
+            this.teams.removePlayer(player, participant.team);
+        }
     }
 
     private ActionResult onDropItem(PlayerEntity player, int slot, ItemStack stack) {

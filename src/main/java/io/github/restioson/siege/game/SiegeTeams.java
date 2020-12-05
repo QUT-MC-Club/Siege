@@ -63,6 +63,11 @@ public final class SiegeTeams implements AutoCloseable {
         this.scoreboard.addPlayerToTeam(player.getEntityName(), scoreboardTeam);
     }
 
+    public void removePlayer(ServerPlayerEntity player, GameTeam team) {
+        Team scoreboardTeam = this.getScoreboardTeam(team);
+        this.scoreboard.removePlayerFromTeam(player.getEntityName(), scoreboardTeam);
+    }
+
     private Team getScoreboardTeam(GameTeam team) {
         return team == ATTACKERS ? this.attackers : this.defenders;
     }
