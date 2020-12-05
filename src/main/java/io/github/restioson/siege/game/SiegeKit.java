@@ -26,7 +26,7 @@ public enum SiegeKit {
     SHIELD_BEARER(new LiteralText("Shield Bearer Kit"));
 
     public static int ARROWS = 16;
-    public static int PLANKS = 16;
+    public static int PLANKS = 8;
     public static int STEAK = 10;
     public static int LADDERS = 4;
 

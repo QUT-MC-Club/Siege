@@ -1,7 +1,7 @@
 package io.github.restioson.siege.game.active;
 
 public enum SiegePersonalResource {
-    WOOD(256);
+    WOOD(64);
 
     public final int max;
 

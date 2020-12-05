@@ -5,8 +5,11 @@ import io.github.restioson.siege.game.SiegeTeams;
 import io.github.restioson.siege.game.map.SiegeGate;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
+import net.minecraft.block.Blocks;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemUsageContext;
 import net.minecraft.item.Items;
+import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -33,6 +36,28 @@ public class SiegeGateLogic {
         for (SiegeGate gate : this.active.map.gates) {
             this.tickGate(gate);
         }
+    }
+
+    public ActionResult maybeBraceGate(BlockPos pos, ServerPlayerEntity player, int slot, ItemUsageContext ctx) {
+        for (SiegeGate gate : this.active.map.gates) {
+            if (gate.brace != null && gate.brace.contains(pos)) {
+                if (gate.health < gate.maxHealth) {
+                    gate.health += 1;
+                    player.sendMessage(new LiteralText("Gate health: ").append(Integer.toString(gate.health)).formatted(Formatting.DARK_GREEN), true);
+
+                    this.active.gameSpace.getWorld().setBlockState(pos, Blocks.AIR.getDefaultState());
+                    ctx.getStack().decrement(1);
+                    player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, slot, ctx.getStack()));
+                    return ActionResult.FAIL;
+                } else {
+                    player.sendMessage(new LiteralText("The gate is already at max health!").formatted(Formatting.DARK_GREEN), true);
+                    player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, slot, ctx.getStack()));
+                    return ActionResult.FAIL;
+                }
+            }
+        }
+
+        return ActionResult.PASS;
     }
 
     public ActionResult maybeBash(BlockPos pos, ServerPlayerEntity player, SiegePlayer participant) {
@@ -109,7 +134,22 @@ public class SiegeGateLogic {
             );
 
             gate.bashedOpen = true;
-        } else if (gate.health == gate.maxHealth && gate.bashedOpen) {
+        } else if (gate.health == gate.repairedHealthThreshold && gate.bashedOpen) {
+            GameTeam team = gate.flag.team;
+            this.active.gameSpace.getPlayers().sendMessage(
+                    new LiteralText("The ")
+                            .append(new LiteralText(gate.flag.name).formatted(Formatting.YELLOW))
+                            .append(" ")
+                            .append(gate.flag.pastToBe())
+                            .append(" been repaired by the ")
+                            .append(new LiteralText(team.getDisplay()).formatted(team.getFormatting()))
+                            .append("!")
+                            .formatted(Formatting.BOLD)
+            );
+
+            BlockPos max = gate.portcullis.getMax();
+            world.playSound(null, max.getX(), max.getY(), max.getZ(), SoundEvents.BLOCK_ANVIL_USE, SoundCategory.BLOCKS, 1.0f, world.random.nextFloat() * 0.25F + 0.6F);
+
             gate.slider.setClosed(world);
             gate.bashedOpen = false;
         }

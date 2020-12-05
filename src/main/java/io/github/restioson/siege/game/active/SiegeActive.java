@@ -216,22 +216,22 @@ public class SiegeActive {
             return ActionResult.FAIL;
         }
 
+        int slot;
+        if (ctx.getHand() == Hand.MAIN_HAND) {
+            slot = player.inventory.selectedSlot;
+        } else {
+            slot = 40; // offhand
+        }
+
         for (BlockBounds noBuildRegion : this.map.noBuildRegions) {
             if (noBuildRegion.contains(blockPos)) {
                 // TODO do this in plasmid
-                int slot;
-                if (ctx.getHand() == Hand.MAIN_HAND) {
-                    slot = player.inventory.selectedSlot;
-                } else {
-                    slot = 40; // offhand
-                }
-
                 player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, slot, ctx.getStack()));
                 return ActionResult.FAIL;
             }
         }
 
-        return ActionResult.PASS;
+        return this.gateLogic.maybeBraceGate(blockPos, player, slot, ctx);
     }
 
     private ActionResult onBreakBlock(ServerPlayerEntity player, BlockPos pos) {
@@ -396,8 +396,11 @@ public class SiegeActive {
         if (time % 20 == 0) {
             this.captureLogic.tick(world, 20);
             this.gateLogic.tick();
-            this.tickResources();
             this.sidebar.update(time);
+
+            if (time % (20 * 5) == 0) {
+                this.tickResources();
+            }
         }
 
         this.tickDead(world, time);
