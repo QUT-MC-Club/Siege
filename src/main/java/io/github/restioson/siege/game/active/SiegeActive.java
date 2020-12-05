@@ -34,6 +34,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import org.jetbrains.annotations.Nullable;
@@ -116,6 +117,7 @@ public class SiegeActive {
             game.on(PlayerAddListener.EVENT, active::addPlayer);
             game.on(PlayerRemoveListener.EVENT, active::removePlayer);
             game.on(UseBlockListener.EVENT, active::onUseBlock);
+            game.on(PlayerPunchBlockListener.EVENT, active::onHitBlock);
 
             game.on(GameTickListener.EVENT, active::tick);
 
@@ -130,6 +132,15 @@ public class SiegeActive {
                 world.spawnEntity(standEntity);
             }
         });
+    }
+
+    private ActionResult onHitBlock(ServerPlayerEntity player, Direction direction, BlockPos pos) {
+        SiegePlayer participant = this.participant(player);
+        if (participant != null) {
+            return this.gateLogic.maybeBash(pos, player, participant);
+        } else {
+            return ActionResult.PASS;
+        }
     }
 
     @Nullable

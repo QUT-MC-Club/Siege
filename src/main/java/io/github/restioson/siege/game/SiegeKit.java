@@ -46,7 +46,7 @@ public enum SiegeKit {
             case SOLDIER:
                 this.giveSoldierEquipment(stand, stand.team);
                 stand.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
-                stand.equipStack(EquipmentSlot.OFFHAND, new ItemStack(Items.IRON_AXE));
+                stand.equipStack(EquipmentSlot.OFFHAND, new ItemStack(Items.STONE_AXE));
                 break;
             case CONSTRUCTOR:
                 this.giveConstructorEquipment(stand, stand.team);
@@ -88,12 +88,13 @@ public enum SiegeKit {
 
     public void equipPlayer(ServerPlayerEntity player, SiegePlayer participant) {
         player.inventory.clear();
+        player.clearStatusEffects();
         GameTeam team = participant.team;
 
         switch (this) {
             case ARCHER:
                 this.giveArcherKit(player, participant);
-                player.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, Integer.MAX_VALUE, 1, false, false, true));
+                player.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, Integer.MAX_VALUE, 0, false, false, true));
                 break;
             case SOLDIER:
                 this.giveSoldierKit(player, team);
@@ -136,7 +137,7 @@ public enum SiegeKit {
     private void giveShieldEquipment(LivingEntity entity, GameTeam team) {
         entity.equipStack(EquipmentSlot.HEAD, ItemStackBuilder.of(Items.LEATHER_HELMET).setColor(team.getColor()).build());
         entity.equipStack(EquipmentSlot.CHEST, ItemStackBuilder.of(Items.IRON_CHESTPLATE).setUnbreakable().build());
-        entity.equipStack(EquipmentSlot.LEGS, ItemStackBuilder.of(Items.LEATHER_LEGGINGS).setColor(team.getColor()).setUnbreakable().build());
+        entity.equipStack(EquipmentSlot.LEGS, ItemStackBuilder.of(Items.IRON_LEGGINGS).setColor(team.getColor()).setUnbreakable().build());
         entity.equipStack(EquipmentSlot.FEET, ItemStackBuilder.of(Items.LEATHER_BOOTS).setColor(team.getColor()).setUnbreakable().build());
         entity.equipStack(EquipmentSlot.OFFHAND, ItemStackBuilder.of(Items.SHIELD).setUnbreakable().build());
     }
@@ -154,7 +155,7 @@ public enum SiegeKit {
     private void giveSoldierKit(PlayerEntity player, GameTeam team) {
         this.giveSoldierEquipment(player, team);
         player.inventory.insertStack(ItemStackBuilder.of(Items.IRON_SWORD).setUnbreakable().build());
-        player.inventory.insertStack(ItemStackBuilder.of(Items.IRON_AXE).setUnbreakable().build());
+        player.inventory.insertStack(ItemStackBuilder.of(Items.STONE_AXE).setUnbreakable().build());
     }
 
     private void giveConstructorKit(PlayerEntity player, SiegePlayer participant) {

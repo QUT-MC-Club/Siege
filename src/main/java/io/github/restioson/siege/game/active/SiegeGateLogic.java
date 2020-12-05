@@ -1,15 +1,26 @@
 package io.github.restioson.siege.game.active;
 
+import io.github.restioson.siege.game.SiegeKit;
+import io.github.restioson.siege.game.SiegeTeams;
 import io.github.restioson.siege.game.map.SiegeGate;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
+import net.minecraft.item.Item;
+import net.minecraft.item.Items;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.LiteralText;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameMode;
+import net.minecraft.world.explosion.Explosion;
+import xyz.nucleoid.plasmid.game.player.GameTeam;
 import xyz.nucleoid.plasmid.util.PlayerRef;
+
+import java.util.Random;
 
 public class SiegeGateLogic {
     private final SiegeActive active;
@@ -24,8 +35,85 @@ public class SiegeGateLogic {
         }
     }
 
+    public ActionResult maybeBash(BlockPos pos, ServerPlayerEntity player, SiegePlayer participant) {
+        Item mainHandItem = player.inventory.getMainHandStack().getItem();
+        boolean holdingBashWeapon = mainHandItem == Items.IRON_SWORD || mainHandItem == Items.STONE_AXE;
+        boolean rightKit = participant.kit == SiegeKit.SHIELD_BEARER || participant.kit == SiegeKit.SOLDIER;
+
+        for (SiegeGate gate : this.active.map.gates) {
+            if (!gate.bashedOpen && gate.health > 0 && gate.portcullis.contains(pos)) {
+                if (participant.team == gate.flag.team) {
+                    player.sendMessage(new LiteralText("You cannot bash your own gate!").formatted(Formatting.RED), true);
+                    return ActionResult.FAIL;
+                } else if (!holdingBashWeapon) {
+                    player.sendMessage(new LiteralText("You can only bash with a sword or axe!").formatted(Formatting.RED), true);
+                    return ActionResult.FAIL;
+                } else if (!rightKit) {
+                    player.sendMessage(new LiteralText("Only soldiers and shieldbearers can bash!").formatted(Formatting.RED), true);
+                    return ActionResult.FAIL;
+                } else if (!player.isSprinting()) {
+                    player.sendMessage(new LiteralText("You must be sprinting to bash!").formatted(Formatting.RED), true);
+                    return ActionResult.FAIL;
+                } else if (player.getItemCooldownManager().isCoolingDown(mainHandItem)) {
+                    return ActionResult.FAIL;
+                }
+
+                player.getItemCooldownManager().set(Items.IRON_SWORD, 20);
+                player.getItemCooldownManager().set(Items.STONE_AXE, 20);
+                ServerWorld world = this.active.gameSpace.getWorld();
+                world.createExplosion(null, pos.getX(), pos.getY(), pos.getZ(), 0.0f, Explosion.DestructionType.NONE);
+                gate.health -= 1;
+                player.sendMessage(new LiteralText("Gate health: ").append(Integer.toString(gate.health)).formatted(Formatting.DARK_GREEN), true);
+                return ActionResult.FAIL;
+            }
+        }
+
+        return ActionResult.PASS;
+    }
+
     public void tickGate(SiegeGate gate) {
         ServerWorld world = this.active.gameSpace.getWorld();
+
+        if (gate.health == 0 && !gate.bashedOpen) {
+            gate.slider.setOpen(world);
+
+            BlockPos min = gate.portcullis.getMin();
+            BlockPos max = gate.portcullis.getMax();
+            Random rand = world.getRandom();
+
+            for (int i = 0; i < 10; i++) {
+                double x = min.getX() + rand.nextInt(max.getX() - min.getX() + 1);
+                double y = min.getY() + rand.nextInt(max.getY() - min.getY() + 1);
+                double z = min.getZ() + rand.nextInt(max.getZ() - min.getZ() + 1);
+
+                world.createExplosion(null, x, y, z, 0.0f, Explosion.DestructionType.NONE);
+            }
+
+            GameTeam bashTeam;
+
+            if (gate.flag.team == SiegeTeams.ATTACKERS) {
+                bashTeam = SiegeTeams.DEFENDERS;
+            } else {
+                bashTeam = SiegeTeams.ATTACKERS;
+            }
+
+            this.active.gameSpace.getPlayers().sendMessage(
+                    new LiteralText("The ")
+                            .append(new LiteralText(gate.flag.name).formatted(Formatting.YELLOW))
+                            .append(" ")
+                            .append(gate.flag.pastToBe())
+                            .append(" been bashed open by the ")
+                            .append(new LiteralText(bashTeam.getDisplay()).formatted(bashTeam.getFormatting()))
+                            .append("!")
+                            .formatted(Formatting.BOLD)
+            );
+
+            gate.bashedOpen = true;
+        } else if (gate.health == gate.maxHealth && gate.bashedOpen) {
+            gate.slider.setClosed(world);
+            gate.bashedOpen = false;
+        }
+
         boolean ownerTeamPresent = false;
         boolean enemyTeamPresent = false;
 

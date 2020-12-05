@@ -88,6 +88,14 @@ public final class GateSlider {
         return this.maxOffset;
     }
 
+    public void setOpen(ServerWorld world) {
+        this.set(world, this.getMaxOffset());
+    }
+
+    public void setClosed(ServerWorld world) {
+        this.set(world, 0);
+    }
+
     static class Slice {
         final BlockState[] states;
         final int sizeX;

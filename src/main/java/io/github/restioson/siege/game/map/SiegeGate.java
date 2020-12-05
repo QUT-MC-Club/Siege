@@ -10,16 +10,21 @@ public class SiegeGate {
     public final int retractHeight;
 
     public final GateSlider slider;
+    public boolean bashedOpen = false;
+    public int health;
+    public int maxHealth;
 
     private int openSlide;
 
-    public SiegeGate(SiegeFlag flag, BlockBounds gateOpen, BlockBounds portcullis, int retractHeight) {
+    public SiegeGate(SiegeFlag flag, BlockBounds gateOpen, BlockBounds portcullis, int retractHeight, int maxHealth) {
         this.flag = flag;
         this.gateOpen = gateOpen;
         this.portcullis = portcullis;
         this.retractHeight = retractHeight;
 
         this.openSlide = 0;
+        this.health = maxHealth;
+        this.maxHealth = maxHealth;
 
         this.slider = new GateSlider(portcullis, retractHeight);
     }

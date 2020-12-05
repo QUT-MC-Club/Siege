@@ -167,7 +167,13 @@ public class SiegeMapGenerator {
                     CompoundTag portcullisData = portcullisRegion.getData();
                     int retractHeight = portcullisData.getInt("retract_height");
 
-                    return new SiegeGate(flag, region.getBounds(), portcullisRegion.getBounds(), retractHeight);
+                    int maxHealth = 25;
+
+                    if (portcullisData.contains("max_health")) {
+                        maxHealth = portcullisData.getInt("max_health");
+                    }
+
+                    return new SiegeGate(flag, region.getBounds(), portcullisRegion.getBounds(), retractHeight, maxHealth);
                 })
                 .collect(Collectors.toList());
     }
