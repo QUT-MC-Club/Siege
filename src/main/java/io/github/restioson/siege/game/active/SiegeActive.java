@@ -197,6 +197,7 @@ public class SiegeActive {
         GameTeam smallestTeam = this.getSmallestTeam();
         SiegePlayer participant = new SiegePlayer(smallestTeam);
         this.participants.put(PlayerRef.of(player), participant);
+        this.teams.addPlayer(player, smallestTeam);
     }
 
     private GameTeam getSmallestTeam() {
