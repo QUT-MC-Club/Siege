@@ -471,6 +471,15 @@ public class SiegeActive {
                     player.playSound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.MASTER, 1.0F, 1.0F);
                     player.addStatusEffect(new StatusEffectInstance(StatusEffects.HERO_OF_THE_VILLAGE, 10, 0, false, false, true));
                 }
+
+                if (winningTeam == SiegeTeams.ATTACKERS) {
+                    player.playSound(SoundEvents.ENTITY_RAVAGER_CELEBRATE, SoundCategory.MASTER, 1.0F, 1.0F);
+                    player.playSound(SoundEvents.ENTITY_PILLAGER_CELEBRATE, SoundCategory.MASTER, 1.0F, 1.0F);
+                }
+
+                if (winningTeam == SiegeTeams.DEFENDERS) {
+                    player.playSound(SoundEvents.ENTITY_VILLAGER_CELEBRATE, SoundCategory.MASTER, 1.0F, 1.0F);
+                }
             });
         }
 
