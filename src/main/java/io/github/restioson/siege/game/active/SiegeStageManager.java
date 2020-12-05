@@ -5,15 +5,18 @@ import io.github.restioson.siege.game.SiegeTeams;
 import io.github.restioson.siege.game.map.SiegeFlag;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.world.GameMode;
+import xyz.nucleoid.plasmid.game.player.GameTeam;
 
 public class SiegeStageManager {
     private final SiegeActive game;
+    private final boolean singlePlayer;
 
     private long closeTime = -1;
     public long finishTime = -1;
 
     SiegeStageManager(SiegeActive game) {
         this.game = game;
+        this.singlePlayer = game.gameSpace.getPlayerCount() <= 1;
     }
 
     public void onOpen(long time, SiegeConfig config) {
@@ -38,6 +41,15 @@ public class SiegeStageManager {
         if (this.testAttackersWin()) {
             this.triggerFinish(time);
             return TickResult.ATTACKERS_WIN;
+        }
+
+        if (!this.singlePlayer && this.game.gameSpace.getPlayerCount() <= 1) {
+            GameTeam team = this.getRemainingTeam();
+            if (team == SiegeTeams.DEFENDERS) {
+                return TickResult.DEFENDERS_WIN;
+            } else {
+                return TickResult.ATTACKERS_WIN;
+            }
         }
 
         return TickResult.CONTINUE_TICK;
@@ -69,6 +81,16 @@ public class SiegeStageManager {
             }
         }
         return true;
+    }
+
+    private GameTeam getRemainingTeam() {
+        for (ServerPlayerEntity player : this.game.gameSpace.getPlayers()) {
+            SiegePlayer participant = this.game.participant(player);
+            if (participant != null) {
+                return participant.team;
+            }
+        }
+        return SiegeTeams.DEFENDERS;
     }
 
     public enum TickResult {
