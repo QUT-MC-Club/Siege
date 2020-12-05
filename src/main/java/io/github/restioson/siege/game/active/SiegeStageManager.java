@@ -45,6 +45,7 @@ public class SiegeStageManager {
 
         if (!this.singlePlayer && this.game.gameSpace.getPlayerCount() <= 1) {
             GameTeam team = this.getRemainingTeam();
+            this.triggerFinish(time);
             if (team == SiegeTeams.DEFENDERS) {
                 return TickResult.DEFENDERS_WIN;
             } else {
