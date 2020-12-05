@@ -281,7 +281,7 @@ public class SiegeActive {
                 return ActionResult.FAIL;
             }
 
-            return ActionResult.FAIL;
+            return ActionResult.PASS;
         }
 
         return ActionResult.PASS;
