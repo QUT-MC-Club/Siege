@@ -155,7 +155,6 @@ public class SiegeGateLogic {
         }
 
         boolean ownerTeamPresent = false;
-        boolean enemyTeamPresent = false;
 
         for (Object2ObjectMap.Entry<PlayerRef, SiegePlayer> entry : Object2ObjectMaps.fastIterable(this.active.participants)) {
             ServerPlayerEntity player = entry.getKey().getEntity(world);
@@ -167,15 +166,11 @@ public class SiegeGateLogic {
                 SiegePlayer participant = entry.getValue();
                 if (participant.team == gate.flag.team) {
                     ownerTeamPresent = true;
-                } else {
-                    enemyTeamPresent = true;
                 }
             }
         }
 
-        boolean shouldOpen = ownerTeamPresent && !enemyTeamPresent;
-
-        boolean moved = shouldOpen ? gate.tickOpen(world) : gate.tickClose(world);
+        boolean moved = ownerTeamPresent ? gate.tickOpen(world) : gate.tickClose(world);
         if (!moved) {
             return;
         }

@@ -16,15 +16,20 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.BlockWithEntity;
 import net.minecraft.block.EnderChestBlock;
 import net.minecraft.block.TrapdoorBlock;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
+import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.item.ArrowItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUsageContext;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.MutableText;
@@ -33,6 +38,7 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
+import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -124,6 +130,8 @@ public class SiegeActive {
             game.on(PlayerDamageListener.EVENT, active::onPlayerDamage);
             game.on(PlayerDeathListener.EVENT, active::onPlayerDeath);
             game.on(PlayerFireArrowListener.EVENT, active::onPlayerFireArrow);
+            game.on(AttackEntityListener.EVENT, active::onAttackEntity);
+            game.on(EntityHitListener.EVENT, active::onHitEntity);
 
             ServerWorld world = gameSpace.getWorld();
 
@@ -132,6 +140,22 @@ public class SiegeActive {
                 world.spawnEntity(standEntity);
             }
         });
+    }
+
+    private ActionResult onHitEntity(ProjectileEntity projectileEntity, EntityHitResult hitResult) {
+        if (hitResult.getEntity() instanceof ServerPlayerEntity) {
+            return ActionResult.PASS;
+        } else {
+            return ActionResult.FAIL;
+        }
+    }
+
+    private ActionResult onAttackEntity(ServerPlayerEntity playerEntity, Hand hand, Entity entity, EntityHitResult entityHitResult) {
+        if (entity instanceof ServerPlayerEntity) {
+            return ActionResult.PASS;
+        } else {
+            return ActionResult.FAIL;
+        }
     }
 
     private ActionResult onHitBlock(ServerPlayerEntity player, Direction direction, BlockPos pos) {
@@ -441,6 +465,15 @@ public class SiegeActive {
     }
 
     private void broadcastWin(GameTeam winningTeam) {
+        for (Map.Entry<PlayerRef, SiegePlayer> entry : this.participants.entrySet()) {
+            entry.getKey().ifOnline(this.gameSpace.getServer(), player -> {
+                if (entry.getValue().team == winningTeam && winningTeam == SiegeTeams.ATTACKERS) {
+                    player.playSound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.MASTER, 1.0F, 1.0F);
+                    player.addStatusEffect(new StatusEffectInstance(StatusEffects.HERO_OF_THE_VILLAGE, 10, 0, false, false, true));
+                }
+            });
+        }
+
         Text message = new LiteralText("The ")
                 .append(winningTeam.getDisplay())
                 .append(" have won the game!")
