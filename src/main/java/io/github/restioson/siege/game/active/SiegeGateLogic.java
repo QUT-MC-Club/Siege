@@ -41,7 +41,7 @@ public class SiegeGateLogic {
     public ActionResult maybeBraceGate(BlockPos pos, ServerPlayerEntity player, int slot, ItemUsageContext ctx) {
         for (SiegeGate gate : this.active.map.gates) {
             if (gate.brace != null && gate.brace.contains(pos)) {
-                if (gate.health < gate.repairedHealthThreshold) {
+                if (gate.health < gate.maxHealth) {
                     gate.health += 1;
                     player.sendMessage(new LiteralText("Gate health: ").append(Integer.toString(gate.health)).formatted(Formatting.DARK_GREEN), true);
 
