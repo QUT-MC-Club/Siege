@@ -13,9 +13,8 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.BlockWithEntity;
+import net.minecraft.block.DoorBlock;
 import net.minecraft.block.EnderChestBlock;
-import net.minecraft.block.TrapdoorBlock;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -277,10 +276,11 @@ public class SiegeActive {
             BlockState state = this.gameSpace.getWorld().getBlockState(pos);
             if (state.getBlock() instanceof EnderChestBlock) {
                 participant.kit.restock(player, participant, this.gameSpace.getWorld());
-                return ActionResult.FAIL;
-            } else if (state.getBlock() instanceof BlockWithEntity || state.getBlock() instanceof TrapdoorBlock) {
-                return ActionResult.FAIL;
+            } else if (state.getBlock() instanceof DoorBlock) {
+                return ActionResult.PASS;
             }
+
+            return ActionResult.FAIL;
         }
 
         return ActionResult.PASS;
