@@ -22,9 +22,7 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
-import net.minecraft.item.ArrowItem;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemUsageContext;
+import net.minecraft.item.*;
 import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -271,6 +269,7 @@ public class SiegeActive {
         }
 
         SiegePlayer participant = this.participant(player);
+        Item inHand = player.getStackInHand(hand).getItem();
         if (participant != null) {
             pos.offset(hitResult.getSide());
             BlockState state = this.gameSpace.getWorld().getBlockState(pos);
@@ -278,6 +277,8 @@ public class SiegeActive {
                 participant.kit.restock(player, participant, this.gameSpace.getWorld());
             } else if (state.getBlock() instanceof DoorBlock) {
                 return ActionResult.PASS;
+            } else if (inHand == Items.WOODEN_AXE || inHand == Items.IRON_AXE) {
+                return ActionResult.FAIL;
             }
 
             return ActionResult.FAIL;
