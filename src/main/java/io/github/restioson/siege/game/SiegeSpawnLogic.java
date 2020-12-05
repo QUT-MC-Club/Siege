@@ -16,6 +16,7 @@ public class SiegeSpawnLogic {
         player.setVelocity(Vec3d.ZERO);
         player.getHungerManager().setFoodLevel(20);
         player.fallDistance = 0.0f;
+        player.clearStatusEffects();
     }
 
     public static Vec3d choosePos(Random random, BlockBounds bounds, float aboveGround) {
