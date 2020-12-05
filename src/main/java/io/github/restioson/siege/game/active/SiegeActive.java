@@ -277,7 +277,7 @@ public class SiegeActive {
                 participant.kit.restock(player, participant, this.gameSpace.getWorld());
             } else if (state.getBlock() instanceof DoorBlock) {
                 return ActionResult.PASS;
-            } else if (inHand == Items.WOODEN_AXE || inHand == Items.IRON_AXE) {
+            } else if (inHand == Items.WOODEN_AXE || inHand == Items.STONE_AXE) {
                 return ActionResult.FAIL;
             }
 
