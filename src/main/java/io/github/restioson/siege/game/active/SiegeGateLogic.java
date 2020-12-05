@@ -68,11 +68,11 @@ public class SiegeGateLogic {
                 if (participant.team == gate.flag.team) {
                     player.sendMessage(new LiteralText("You cannot bash your own gate!").formatted(Formatting.RED), true);
                     return ActionResult.FAIL;
-                } else if (!holdingBashWeapon) {
-                    player.sendMessage(new LiteralText("You can only bash with a sword or axe!").formatted(Formatting.RED), true);
-                    return ActionResult.FAIL;
                 } else if (!rightKit) {
                     player.sendMessage(new LiteralText("Only soldiers and shieldbearers can bash!").formatted(Formatting.RED), true);
+                    return ActionResult.FAIL;
+                } else if (!holdingBashWeapon) {
+                    player.sendMessage(new LiteralText("You can only bash with a sword or axe!").formatted(Formatting.RED), true);
                     return ActionResult.FAIL;
                 } else if (!player.isSprinting()) {
                     player.sendMessage(new LiteralText("You must be sprinting to bash!").formatted(Formatting.RED), true);
