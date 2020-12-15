@@ -6,6 +6,7 @@ import io.github.restioson.siege.game.SiegeTeams;
 import io.github.restioson.siege.game.map.SiegeFlag;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
+import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import net.minecraft.block.*;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LightningEntity;
@@ -27,6 +28,7 @@ import xyz.nucleoid.plasmid.util.Scheduler;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public final class SiegeCaptureLogic {
@@ -37,6 +39,7 @@ public final class SiegeCaptureLogic {
 
     private final List<ServerPlayerEntity> defendersPresent = new ArrayList<>();
     private final List<ServerPlayerEntity> attackersPresent = new ArrayList<>();
+    private final Set<ServerPlayerEntity> playersPresent = new ReferenceOpenHashSet<>();
 
     SiegeCaptureLogic(SiegeActive game) {
         this.gameSpace = game.gameSpace;
@@ -54,9 +57,11 @@ public final class SiegeCaptureLogic {
     private void tickCaptureFlag(ServerWorld world, SiegeFlag flag, int interval) {
         List<ServerPlayerEntity> defendersPresent = this.defendersPresent;
         List<ServerPlayerEntity> attackersPresent = this.attackersPresent;
+        Set<ServerPlayerEntity> playersPresent = this.playersPresent;
 
         defendersPresent.clear();
         attackersPresent.clear();
+        playersPresent.clear();
 
         for (Object2ObjectMap.Entry<PlayerRef, SiegePlayer> entry : Object2ObjectMaps.fastIterable(this.game.participants)) {
             ServerPlayerEntity player = entry.getKey().getEntity(world);
@@ -79,6 +84,9 @@ public final class SiegeCaptureLogic {
                 }
             }
         }
+
+        playersPresent.addAll(attackersPresent);
+        playersPresent.addAll(defendersPresent);
 
         boolean defendersAtFlag = !defendersPresent.isEmpty();
         boolean defendersActuallyCapturing = defendersAtFlag && this.game.config.recapture;
@@ -123,7 +131,7 @@ public final class SiegeCaptureLogic {
         }
 
         flag.updateCaptureBar();
-        flag.updateCapturingPlayers(capturingPlayers);
+        flag.updateCapturingPlayers(playersPresent);
     }
 
     private void tickCapturing(SiegeFlag flag, int interval, GameTeam captureTeam, List<ServerPlayerEntity> capturingPlayers) {
