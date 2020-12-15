@@ -68,7 +68,7 @@ public final class SiegeSidebar {
     }
 
     private static int getSortIndex(SiegeFlag flag) {
-        if (flag.capturingState != null) {
+        if (flag.capturingState != null && flag.capturingState.hasAlert()) {
             return SORT_CAPTURING;
         } else if (flag.team == SiegeTeams.ATTACKERS) {
             return SORT_ATTACKERS;
