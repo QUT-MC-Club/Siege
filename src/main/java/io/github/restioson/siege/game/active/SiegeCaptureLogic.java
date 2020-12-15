@@ -118,7 +118,7 @@ public final class SiegeCaptureLogic {
             }
         }
 
-        if (capturingState == CapturingState.CAPTURING && !flag.isReadyForCapture()) {
+        if (capturingState != null && !flag.isReadyForCapture()) {
             capturingState = CapturingState.PREREQUISITE_REQUIRED;
         }
 
@@ -203,7 +203,6 @@ public final class SiegeCaptureLogic {
             }
 
             for (ServerPlayerEntity player : capturingPlayers) {
-                player.sendMessage(new LiteralText("Captured!").formatted(Formatting.AQUA), true);
                 player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.NEUTRAL, 1.0F, 1.0F);
             }
         } else {
