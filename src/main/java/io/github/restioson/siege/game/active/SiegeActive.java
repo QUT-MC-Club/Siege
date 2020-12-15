@@ -67,7 +67,6 @@ public class SiegeActive {
     final SiegeStageManager stageManager;
 
     final SiegeSidebar sidebar;
-    final SiegeTimerBar timerBar;
 
     final SiegeCaptureLogic captureLogic;
     final SiegeGateLogic gateLogic;
@@ -90,7 +89,6 @@ public class SiegeActive {
         this.stageManager = new SiegeStageManager(this);
 
         this.sidebar = new SiegeSidebar(this, widgets);
-        this.timerBar = new SiegeTimerBar(widgets);
 
         this.captureLogic = new SiegeCaptureLogic(this);
         this.gateLogic = new SiegeGateLogic(this);
@@ -423,6 +421,7 @@ public class SiegeActive {
         if (time % 20 == 0) {
             this.captureLogic.tick(world, 20);
             this.gateLogic.tick();
+
             this.sidebar.update(time);
 
             if (time % (20 * 2) == 0) {
@@ -431,7 +430,6 @@ public class SiegeActive {
         }
 
         this.tickDead(world, time);
-        this.timerBar.update(this.stageManager.finishTime - time, this.config.timeLimitMins * 20 * 60);
     }
 
     private void tickResources() {

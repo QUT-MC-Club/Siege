@@ -27,6 +27,10 @@ public final class SiegeSidebar {
 
     public void update(long time) {
         this.widget.set(content -> {
+            long ticksUntilEnd = this.game.stageManager.finishTime - time;
+            content.writeLine(getTimeLeft(ticksUntilEnd));
+            content.writeLine("");
+
             List<SiegeFlag> flags = new ArrayList<>(this.game.map.flags);
             flags.sort(Comparator.comparingInt(SiegeSidebar::getSortIndex));
 
@@ -65,6 +69,14 @@ public final class SiegeSidebar {
                 content.writeLine(line);
             }
         });
+    }
+
+    private static String getTimeLeft(long ticksUntilEnd) {
+        long secondsUntilEnd = ticksUntilEnd / 20;
+
+        long minutes = secondsUntilEnd / 60;
+        long seconds = secondsUntilEnd % 60;
+        return String.format("%sTime Left: %s%02d:%02d", Formatting.GOLD, Formatting.AQUA, minutes, seconds);
     }
 
     private static int getSortIndex(SiegeFlag flag) {
