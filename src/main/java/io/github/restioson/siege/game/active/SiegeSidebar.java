@@ -42,7 +42,7 @@ public final class SiegeSidebar {
                 boolean capturing = false;
                 boolean italic = false;
 
-                if (flag.capturingState != null) {
+                if (flag.capturingState != null && flag.capturingState.hasAlert()) {
                     if (flag.capturingState == CapturingState.CONTESTED) {
                         color = blink ? color : Formatting.GRAY;
                     } else {

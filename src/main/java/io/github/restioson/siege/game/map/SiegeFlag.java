@@ -1,13 +1,21 @@
 package io.github.restioson.siege.game.map;
 
+import io.github.restioson.siege.game.SiegeTeams;
 import io.github.restioson.siege.game.active.CapturingState;
 import io.github.restioson.siege.game.active.SiegeCaptureLogic;
+import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
+import net.minecraft.entity.boss.BossBar;
+import net.minecraft.entity.boss.ServerBossBar;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.LiteralText;
 import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.plasmid.game.player.GameTeam;
 import xyz.nucleoid.plasmid.util.BlockBounds;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 public final class SiegeFlag {
     public final String id;
@@ -27,6 +35,9 @@ public final class SiegeFlag {
 
     // The flags which must be captured before this flag can be captured
     public List<SiegeFlag> prerequisiteFlags = new ArrayList<>();
+
+    public final ServerBossBar captureBar = new ServerBossBar(new LiteralText("Capturing"), BossBar.Color.RED, BossBar.Style.NOTCHED_10);
+    private final Set<ServerPlayerEntity> capturingPlayers = new ReferenceOpenHashSet<>();
 
     public SiegeFlag(String id, String name, GameTeam team, BlockBounds bounds) {
         this.id = id;
@@ -51,6 +62,20 @@ public final class SiegeFlag {
         }
     }
 
+    public boolean isReadyForCapture() {
+        if (this.team == SiegeTeams.ATTACKERS) {
+            return true;
+        }
+
+        for (SiegeFlag flag : this.prerequisiteFlags) {
+            if (flag.team == this.team) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public boolean incrementCapture(GameTeam team, int amount) {
         this.captureProgressTicks += amount;
 
@@ -58,6 +83,7 @@ public final class SiegeFlag {
             this.captureProgressTicks = 0;
             this.team = team;
             this.capturingState = null;
+
             return true;
         }
 
@@ -70,9 +96,45 @@ public final class SiegeFlag {
         if (this.captureProgressTicks <= 0) {
             this.captureProgressTicks = 0;
             this.capturingState = null;
+
             return true;
         }
 
         return false;
+    }
+
+    public void updateCapturingPlayers(Collection<ServerPlayerEntity> players) {
+        for (ServerPlayerEntity player : players) {
+            if (this.capturingPlayers.add(player)) {
+                this.captureBar.addPlayer(player);
+            }
+        }
+
+        this.capturingPlayers.removeIf(player -> {
+            if (!players.contains(player)) {
+                this.captureBar.removePlayer(player);
+                return true;
+            }
+            return false;
+        });
+    }
+
+    public void updateCaptureBar() {
+        if (this.capturingState != null) {
+            this.captureBar.setVisible(true);
+            this.captureBar.setName(this.capturingState.getName());
+            this.captureBar.setPercent((float) this.captureProgressTicks / SiegeCaptureLogic.CAPTURE_TIME_TICKS);
+
+            BossBar.Color color;
+            if (this.capturingState != CapturingState.CONTESTED) {
+                color = this.team == SiegeTeams.ATTACKERS ? BossBar.Color.RED : BossBar.Color.BLUE;
+            } else {
+                color = BossBar.Color.WHITE;
+            }
+
+            this.captureBar.setColor(color);
+        } else {
+            this.captureBar.setVisible(false);
+        }
     }
 }

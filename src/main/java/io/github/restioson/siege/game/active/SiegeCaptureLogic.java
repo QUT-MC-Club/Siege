@@ -110,6 +110,10 @@ public final class SiegeCaptureLogic {
             }
         }
 
+        if (capturingState == CapturingState.CAPTURING && !flag.isReadyForCapture()) {
+            capturingState = CapturingState.PREREQUISITE_REQUIRED;
+        }
+
         flag.capturingState = capturingState;
 
         if (capturingState == CapturingState.CAPTURING) {
@@ -117,6 +121,9 @@ public final class SiegeCaptureLogic {
         } else if (capturingState == CapturingState.SECURING) {
             this.tickSecuring(flag, interval);
         }
+
+        flag.updateCaptureBar();
+        flag.updateCapturingPlayers(capturingPlayers);
     }
 
     private void tickCapturing(SiegeFlag flag, int interval, GameTeam captureTeam, List<ServerPlayerEntity> capturingPlayers) {
@@ -192,9 +199,7 @@ public final class SiegeCaptureLogic {
                 player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.NEUTRAL, 1.0F, 1.0F);
             }
         } else {
-            int capturePercent = flag.captureProgressTicks * 100 / CAPTURE_TIME_TICKS;
             for (ServerPlayerEntity player : capturingPlayers) {
-                player.sendMessage(new LiteralText("Capturing: " + capturePercent + "%").formatted(Formatting.RED), true);
                 player.playSound(SoundEvents.BLOCK_STONE_PLACE,  SoundCategory.NEUTRAL, 1.0F, 1.0F);
             }
         }

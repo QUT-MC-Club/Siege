@@ -15,7 +15,6 @@ minecraft {
 }
 
 repositories {
-    mavenLocal()
     maven { url = "https://jitpack.io/" }
     maven { url = "https://maven.gegy.dev/" }
 }
