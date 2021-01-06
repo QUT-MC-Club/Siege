@@ -14,6 +14,7 @@ public class WarpingPlayer {
     public WarpingPlayer(ServerPlayerEntity player, SiegeFlag destination, long time) {
         this.player = PlayerRef.of(player);
         this.pos = player.getBlockPos();
+        this.destination = destination;
         this.startTime = time;
     }
 }

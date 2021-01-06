@@ -181,8 +181,36 @@ public class SiegeActive {
 
     private void onOpen() {
         ServerWorld world = this.gameSpace.getWorld();
+
+        String[] lines = new String[]{
+                "Siege - capture all the flags to win!",
+                "There are two teams - attackers and defenders. Defenders must defend",
+                "blue flags and attackers must capture them. To capture a flag, stand",
+                "near it. To defend it, kill the capturers, and stand near it to halt",
+                "the capture progress."
+        };
+
         for (Map.Entry<PlayerRef, SiegePlayer> entry : this.participants.entrySet()) {
-            entry.getKey().ifOnline(world, p -> this.spawnParticipant(p, this.map.getFirstSpawn(entry.getValue().team)));
+            entry.getKey().ifOnline(world, p -> {
+                for (String line : lines) {
+                    Text text = new LiteralText(line).formatted(Formatting.GOLD);
+                    p.sendMessage(text, false);
+                }
+
+                if (this.config.recapture) {
+                    p.sendMessage(new LiteralText("Defenders may also capture attacker's flags.").formatted(Formatting.GOLD), false);
+                }
+
+                if (this.config.defenderEnderPearl && entry.getValue().team == SiegeTeams.DEFENDERS) {
+                    p.sendMessage(
+                            new LiteralText("You can use your ender pearl to warp to a flag that is under attack.")
+                                    .formatted(Formatting.GOLD),
+                            false
+                    );
+                }
+
+                this.spawnParticipant(p, this.map.getFirstSpawn(entry.getValue().team));
+            });
         }
 
         this.stageManager.onOpen(world.getTime(), this.config);
@@ -495,7 +523,7 @@ public class SiegeActive {
             }
 
             if (world.getTime() - warpingPlayer.startTime > 20 * 3) {
-                SiegeSpawnLogic.spawnPlayer(player, warpingPlayer.destination.bounds, world);
+                player.teleport(world, warpingPlayer.pos.getX(), warpingPlayer.pos.getY(), warpingPlayer.pos.getZ(), 0.0F, 0.0F);
                 return true;
             }
 

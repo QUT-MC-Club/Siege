@@ -67,7 +67,8 @@ public enum SiegeKit {
                             .setCount(1)
                             .setName(new LiteralText("Warp to Front Lines"))
                             .addEnchantment(Enchantments.LUCK_OF_THE_SEA, 1)
-                            .addLore(new LiteralText("This ender pearl will take you\nto a flag in need of assistance!"))
+                            .addLore(new LiteralText("This ender pearl will take you"))
+                            .addLore(new LiteralText("to a flag in need of assistance!"))
                             .build()
             );
         }

@@ -85,7 +85,7 @@ public class SiegeMapGenerator {
             String name = data.getString("name");
             GameTeam team = this.parseTeam(data);
 
-            SiegeFlag flag = new SiegeFlag(id, name, team, bounds);
+            SiegeFlag flag = new SiegeFlag(id, name, team, bounds, null);
             if (data.contains("capturable") && !data.getBoolean("capturable")) {
                 flag.capturable = false;
             }
@@ -162,7 +162,10 @@ public class SiegeMapGenerator {
                     TemplateRegion portcullisRegion = metadata.getRegions("portcullis")
                             .filter(r -> id.equalsIgnoreCase(r.getData().getString("id")))
                             .findFirst()
-                            .orElseThrow(() -> new GameOpenException(new LiteralText("Gate missing portcullis!")));
+                            .orElseThrow(() -> {
+                                Siege.LOGGER.error("Gate \"{}\" missing portcullis!", id);
+                                return new GameOpenException(new LiteralText("Gate missing portcullis!"));
+                            });
 
                     CompoundTag portcullisData = portcullisRegion.getData();
                     int retractHeight = portcullisData.getInt("retract_height");
@@ -188,6 +191,14 @@ public class SiegeMapGenerator {
                     return new SiegeGate(flag, region.getBounds(), portcullisRegion.getBounds(), brace, retractHeight, repairHealthThreshold, maxHealth);
                 })
                 .collect(Collectors.toList());
+
+        for (SiegeFlag flag : flags.values()) {
+            // TODO: remove this restriction (it's for warp enderpearl)
+            if (flag.team == SiegeTeams.DEFENDERS && flag.respawn == null) {
+                Siege.LOGGER.error("Flag \"{}\" missing respawn!", flag.name);
+                throw new GameOpenException(new LiteralText("Flag missing respawn!"));
+            }
+        }
     }
 
     private GameTeam parseTeam(CompoundTag data) {

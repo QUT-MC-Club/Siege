@@ -39,11 +39,12 @@ public final class SiegeFlag {
     public final ServerBossBar captureBar = new ServerBossBar(new LiteralText("Capturing"), BossBar.Color.RED, BossBar.Style.NOTCHED_10);
     private final Set<ServerPlayerEntity> capturingPlayers = new ReferenceOpenHashSet<>();
 
-    public SiegeFlag(String id, String name, GameTeam team, BlockBounds bounds) {
+    public SiegeFlag(String id, String name, GameTeam team, BlockBounds bounds, @Nullable BlockBounds respawn) {
         this.id = id;
         this.name = name;
         this.team = team;
         this.bounds = bounds;
+        this.respawn = respawn;
     }
 
     public String pastToBe() {
