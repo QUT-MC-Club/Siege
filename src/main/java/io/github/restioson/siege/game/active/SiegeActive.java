@@ -450,14 +450,9 @@ public class SiegeActive {
                 Vec3d center = flag.respawn.getCenter();
                 double distance = player.squaredDistanceTo(center);
                 boolean flagFrontLine = flag.capturingState == CapturingState.CAPTURING || flag.capturingState == CapturingState.CONTESTED;
-                if (distance < minDistance) {
-                    if (respawn.frontLine && flagFrontLine) {
-                        respawn.setFlag(flag);
-                        minDistance = distance;
-                    } else if (!respawn.frontLine) {
-                        respawn.setFlag(flag);
-                        minDistance = distance;
-                    }
+                if (distance < minDistance || (flagFrontLine && !respawn.frontLine)) {
+                    respawn.setFlag(flag);
+                    minDistance = distance;
                 }
             }
         }
@@ -522,7 +517,8 @@ public class SiegeActive {
             }
 
             if (world.getTime() - warpingPlayer.startTime > 20 * 3) {
-                player.teleport(world, warpingPlayer.pos.getX(), warpingPlayer.pos.getY(), warpingPlayer.pos.getZ(), 0.0F, 0.0F);
+                Vec3d pos = SiegeSpawnLogic.choosePos(player.getRandom(), warpingPlayer.destination.bounds, 0.5f);
+                player.teleport(world, pos.x, pos.y, pos.z, 0.0F, 0.0F);
                 return true;
             }
 
