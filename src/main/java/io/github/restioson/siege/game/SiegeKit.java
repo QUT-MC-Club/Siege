@@ -3,6 +3,7 @@ package io.github.restioson.siege.game;
 import io.github.restioson.siege.entity.SiegeKitStandEntity;
 import io.github.restioson.siege.game.active.SiegePersonalResource;
 import io.github.restioson.siege.game.active.SiegePlayer;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -25,8 +26,8 @@ public enum SiegeKit {
     CONSTRUCTOR(new LiteralText("Constructor Kit")),
     SHIELD_BEARER(new LiteralText("Shield Bearer Kit"));
 
-    public static int ARROWS = 16;
-    public static int PLANKS = 8;
+    public static int ARROWS = 32;
+    public static int PLANKS = 16;
     public static int STEAK = 10;
     public static int LADDERS = 4;
 
@@ -59,7 +60,20 @@ public enum SiegeKit {
         }
     }
 
-    public void restock(ServerPlayerEntity player, SiegePlayer participant, ServerWorld world) {
+    private void maybeGiveEnderPearl(ServerPlayerEntity player, SiegePlayer participant, SiegeConfig config) {
+        if (config.defenderEnderPearl && participant.team == SiegeTeams.DEFENDERS && player.inventory.count(Items.ENDER_PEARL) == 0) {
+            player.inventory.insertStack(
+                    ItemStackBuilder.of(Items.ENDER_PEARL)
+                            .setCount(1)
+                            .setName(new LiteralText("Warp to Front Lines"))
+                            .addEnchantment(Enchantments.LUCK_OF_THE_SEA, 1)
+                            .addLore(new LiteralText("This ender pearl will take you\nto a flag in need of assistance!"))
+                            .build()
+            );
+        }
+    }
+
+    public void restock(ServerPlayerEntity player, SiegePlayer participant, ServerWorld world, SiegeConfig config) {
         switch (participant.kit) {
             case ARCHER:
                 int arrowsRequired = SiegeKit.ARROWS - player.inventory.count(Items.ARROW);
@@ -83,10 +97,13 @@ public enum SiegeKit {
 
         int steakRequired = SiegeKit.STEAK - player.inventory.count(Items.COOKED_BEEF);
         player.inventory.offerOrDrop(world, ItemStackBuilder.of(Items.COOKED_BEEF).setCount(steakRequired).build());
+
+        this.maybeGiveEnderPearl(player, participant, config);
+
         player.sendMessage(new LiteralText("Items restocked!").formatted(Formatting.DARK_GREEN, Formatting.BOLD), true);
     }
 
-    public void equipPlayer(ServerPlayerEntity player, SiegePlayer participant) {
+    public void equipPlayer(ServerPlayerEntity player, SiegePlayer participant, SiegeConfig config) {
         player.inventory.clear();
         player.clearStatusEffects();
         GameTeam team = participant.team;
@@ -108,6 +125,8 @@ public enum SiegeKit {
         }
 
         player.inventory.insertStack(ItemStackBuilder.of(Items.COOKED_BEEF).setCount(STEAK).build());
+
+        this.maybeGiveEnderPearl(player, participant, config);
     }
 
     // give{x}Equipment is for armour stands and players
@@ -128,7 +147,7 @@ public enum SiegeKit {
 
     private void giveConstructorEquipment(LivingEntity entity, GameTeam team) {
         entity.equipStack(EquipmentSlot.HEAD, ItemStackBuilder.of(Items.LEATHER_HELMET).setColor(team.getColor()).setUnbreakable().build());
-        entity.equipStack(EquipmentSlot.CHEST, ItemStackBuilder.of(Items.LEATHER_CHESTPLATE).setColor(team.getColor()).setUnbreakable().build());
+        entity.equipStack(EquipmentSlot.CHEST, ItemStackBuilder.of(Items.IRON_CHESTPLATE).setUnbreakable().build());
         entity.equipStack(EquipmentSlot.LEGS, ItemStackBuilder.of(Items.LEATHER_LEGGINGS).setColor(team.getColor()).setUnbreakable().build());
         entity.equipStack(EquipmentSlot.FEET, ItemStackBuilder.of(Items.LEATHER_BOOTS).setColor(team.getColor()).setUnbreakable().build());
         entity.equipStack(EquipmentSlot.OFFHAND, new ItemStack(SiegeTeams.planksForTeam(team)));
@@ -147,7 +166,13 @@ public enum SiegeKit {
     private void giveArcherKit(PlayerEntity player, SiegePlayer participant) {
         this.giveArcherEquipment(player, participant.team);
         player.inventory.insertStack(ItemStackBuilder.of(Items.WOODEN_SWORD).setUnbreakable().build());
-        player.inventory.insertStack(ItemStackBuilder.of(Items.BOW).setUnbreakable().build());
+        player.inventory.insertStack(
+                ItemStackBuilder.of(Items.BOW)
+                        .addEnchantment(Enchantments.PUNCH, 1)
+                        .addEnchantment(Enchantments.POWER, 1)
+                        .setUnbreakable()
+                        .build()
+        );
         player.inventory.insertStack(ItemStackBuilder.of(Items.ARROW).setCount(ARROWS).build());
         participant.decrementResource(SiegePersonalResource.WOOD, ARROWS);
     }

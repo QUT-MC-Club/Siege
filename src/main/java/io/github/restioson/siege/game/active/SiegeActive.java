@@ -19,6 +19,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.player.ItemCooldownManager;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
@@ -34,6 +35,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -53,10 +55,12 @@ import xyz.nucleoid.plasmid.util.BlockBounds;
 import xyz.nucleoid.plasmid.util.PlayerRef;
 import xyz.nucleoid.plasmid.widget.GlobalWidgets;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 public class SiegeActive {
-    final SiegeConfig config;
+    public final SiegeConfig config;
 
     public final GameSpace gameSpace;
     final SiegeMap map;
@@ -64,6 +68,7 @@ public class SiegeActive {
     final SiegeTeams teams;
 
     public final Object2ObjectMap<PlayerRef, SiegePlayer> participants;
+    public final List<WarpingPlayer> warpingPlayers;
     final SiegeStageManager stageManager;
 
     final SiegeSidebar sidebar;
@@ -76,6 +81,7 @@ public class SiegeActive {
         this.config = config;
         this.map = map;
         this.participants = new Object2ObjectOpenHashMap<>();
+        this.warpingPlayers = new LinkedList<>();
 
         this.teams = gameSpace.addResource(new SiegeTeams(gameSpace));
 
@@ -119,6 +125,7 @@ public class SiegeActive {
             game.on(PlayerRemoveListener.EVENT, active::removePlayer);
             game.on(UseBlockListener.EVENT, active::onUseBlock);
             game.on(PlayerPunchBlockListener.EVENT, active::onHitBlock);
+            game.on(UseItemListener.EVENT, active::onUseItem);
 
             game.on(GameTickListener.EVENT, active::tick);
 
@@ -273,7 +280,7 @@ public class SiegeActive {
             pos.offset(hitResult.getSide());
             BlockState state = this.gameSpace.getWorld().getBlockState(pos);
             if (state.getBlock() instanceof EnderChestBlock) {
-                participant.kit.restock(player, participant, this.gameSpace.getWorld());
+                participant.kit.restock(player, participant, this.gameSpace.getWorld(), this.config);
                 return ActionResult.FAIL;
             } else if (state.getBlock() instanceof BlockWithEntity) {
                 return ActionResult.FAIL;
@@ -285,6 +292,39 @@ public class SiegeActive {
         }
 
         return ActionResult.PASS;
+    }
+
+    private TypedActionResult<ItemStack> onUseItem(ServerPlayerEntity player, Hand hand) {
+        SiegePlayer participant = this.participant(player);
+        ItemStack stack = player.getStackInHand(hand);
+        Item item = stack.getItem();
+        if (participant != null) {
+            ItemCooldownManager cooldownManager = player.getItemCooldownManager();
+            if (item == Items.ENDER_PEARL && !cooldownManager.isCoolingDown(Items.ENDER_PEARL)) {
+                SiegeSpawn spawn = this.getSpawnFor(player);
+                if (spawn.flag != null && spawn.frontLine) {
+                    this.warpingPlayers.add(new WarpingPlayer(player, spawn.flag, this.gameSpace.getWorld().getTime()));
+                    cooldownManager.set(Items.ENDER_PEARL, 10 * 20);
+                    player.sendMessage(new LiteralText(String.format("Warping to %s...", spawn.flag.name)).formatted(Formatting.GREEN), true);
+                    return new TypedActionResult<>(ActionResult.FAIL, new ItemStack(Items.AIR));
+                } else {
+                    player.sendMessage(new LiteralText("There are no flags in need of assistance").formatted(Formatting.RED), true);
+                }
+
+                int slot;
+                if (hand == Hand.MAIN_HAND) {
+                    slot = player.inventory.selectedSlot;
+                } else {
+                    slot = 40; // offhand
+                }
+
+                // TODO do this in plasmid
+                player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, slot, stack));
+                return new TypedActionResult<>(ActionResult.FAIL, stack);
+            }
+        }
+
+        return new TypedActionResult<>(ActionResult.PASS, stack);
     }
 
     private ActionResult onPlayerDamage(ServerPlayerEntity player, DamageSource source, float v) {
@@ -361,41 +401,41 @@ public class SiegeActive {
         participant.timeOfSpawn = this.gameSpace.getWorld().getTime();
 
         if (spawnRegion == null) {
-            spawnRegion = this.getRespawnFor(player);
+            spawnRegion = this.getSpawnFor(player).bounds;
         }
 
         SiegeSpawnLogic.resetPlayer(player, GameMode.SURVIVAL);
-        participant.kit.equipPlayer(player, participant);
+        participant.kit.equipPlayer(player, participant, this.config);
         SiegeSpawnLogic.spawnPlayer(player, spawnRegion, this.gameSpace.getWorld());
     }
 
-    private BlockBounds getRespawnFor(ServerPlayerEntity player) {
+    private SiegeSpawn getSpawnFor(ServerPlayerEntity player) {
         GameTeam team = this.getTeamFor(player);
         if (team == null) {
-            return this.map.waitingSpawn;
+            return new SiegeSpawn(null, this.map.waitingSpawn);
         }
 
-        BlockBounds respawn = this.map.waitingSpawn;
+        SiegeSpawn respawn = new SiegeSpawn(null, this.map.waitingSpawn);
         double minDistance = Double.MAX_VALUE;
 
         for (SiegeFlag flag : this.map.flags) {
             if (flag.respawn != null && flag.team == team) {
                 Vec3d center = flag.respawn.getCenter();
                 double distance = player.squaredDistanceTo(center);
+                boolean flagFrontLine = flag.capturingState == CapturingState.CAPTURING || flag.capturingState == CapturingState.CONTESTED;
                 if (distance < minDistance) {
-                    respawn = flag.respawn;
-                    minDistance = distance;
+                    if (respawn.frontLine && flagFrontLine) {
+                        respawn.setFlag(flag);
+                        minDistance = distance;
+                    } else if (!respawn.frontLine) {
+                        respawn.setFlag(flag);
+                        minDistance = distance;
+                    }
                 }
             }
         }
 
         return respawn;
-    }
-
-    @Nullable
-    private GameTeam getTeamFor(ServerPlayerEntity player) {
-        SiegePlayer participant = this.participant(player);
-        return participant != null ? participant.team : null;
     }
 
     private void tick() {
@@ -423,6 +463,7 @@ public class SiegeActive {
             this.gateLogic.tick();
 
             this.sidebar.update(time);
+            this.tickWarpingPlayers();
 
             if (time % (20 * 2) == 0) {
                 this.tickResources();
@@ -430,6 +471,36 @@ public class SiegeActive {
         }
 
         this.tickDead(world, time);
+    }
+
+    @Nullable
+    private GameTeam getTeamFor(ServerPlayerEntity player) {
+        SiegePlayer participant = this.participant(player);
+        return participant != null ? participant.team : null;
+    }
+
+    private void tickWarpingPlayers() {
+        ServerWorld world = this.gameSpace.getWorld();
+
+        this.warpingPlayers.removeIf(warpingPlayer -> {
+            ServerPlayerEntity player = warpingPlayer.player.getEntity(world);
+
+            if (player == null) {
+                return true;
+            }
+
+            if (player.getBlockPos() != warpingPlayer.pos) {
+                player.sendMessage(new LiteralText("Warp cancelled because you moved!").formatted(Formatting.RED), true);
+                return true;
+            }
+
+            if (world.getTime() - warpingPlayer.startTime > 20 * 3) {
+                SiegeSpawnLogic.spawnPlayer(player, warpingPlayer.destination.bounds, world);
+                return true;
+            }
+
+            return false;
+        });
     }
 
     private void tickResources() {
@@ -462,6 +533,29 @@ public class SiegeActive {
                     }
                 }
             });
+        }
+    }
+
+    static class SiegeSpawn {
+        @Nullable
+        SiegeFlag flag;
+        boolean frontLine;
+        BlockBounds bounds;
+
+        public SiegeSpawn(@Nullable SiegeFlag flag, BlockBounds bounds) {
+            this.flag = flag;
+
+            if (flag != null) {
+                this.frontLine = flag.capturingState == CapturingState.CAPTURING || flag.capturingState == CapturingState.CONTESTED;
+            }
+
+            this.bounds = bounds;
+        }
+
+        public void setFlag(SiegeFlag flag) {
+            this.flag = flag;
+            this.frontLine = flag.capturingState == CapturingState.CAPTURING || flag.capturingState == CapturingState.CONTESTED;
+            this.bounds = flag.bounds;
         }
     }
 

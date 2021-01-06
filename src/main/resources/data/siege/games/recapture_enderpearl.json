@@ -10,5 +10,7 @@
     "max": 100,
     "threshold": 4
   },
+  "recapture": true,
+  "defender_ender_pearl": true,
   "time_limit_mins": 20
 }
