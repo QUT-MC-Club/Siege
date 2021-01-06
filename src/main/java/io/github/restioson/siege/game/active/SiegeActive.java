@@ -333,8 +333,7 @@ public class SiegeActive {
                 if (spawn.flag != null && spawn.frontLine) {
                     this.warpingPlayers.add(new WarpingPlayer(player, spawn.flag, this.gameSpace.getWorld().getTime()));
                     cooldownManager.set(Items.ENDER_PEARL, 10 * 20);
-                    player.sendMessage(new LiteralText(String.format("Warping to %s...", spawn.flag.name)).formatted(Formatting.GREEN), true);
-                    return new TypedActionResult<>(ActionResult.FAIL, new ItemStack(Items.AIR));
+                    player.sendMessage(new LiteralText(String.format("Warping to %s... hold still!", spawn.flag.name)).formatted(Formatting.GREEN), true);
                 } else {
                     player.sendMessage(new LiteralText("There are no flags in need of assistance").formatted(Formatting.RED), true);
                 }
