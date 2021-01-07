@@ -19,7 +19,7 @@ public class SiegePlayer {
     public SiegePlayer(GameTeam team) {
         this.team = team;
         this.kit = SiegeKit.SOLDIER;
-        this.resources.defaultReturnValue(0);
+        this.resources.defaultReturnValue(64); // TODO do this better but wood is only currently so eh
     }
 
     public ServerPlayerEntity attacker(long time, ServerWorld world) {

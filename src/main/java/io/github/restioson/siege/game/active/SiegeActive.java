@@ -182,20 +182,16 @@ public class SiegeActive {
     private void onOpen() {
         ServerWorld world = this.gameSpace.getWorld();
 
-        String[] lines = new String[]{
-                "Siege - capture all the flags to win!",
-                "There are two teams - attackers and defenders. Defenders must defend",
-                "blue flags and attackers must capture them. To capture a flag, stand",
-                "near it. To defend it, kill the capturers, and stand near it to halt",
-                "the capture progress."
-        };
+        String help = "Siege - capture all the flags to win! There are two teams - attackers and defenders. Defenders " +
+                "must defend blue flags and attackers must capture them. To capture a flag, stand near it. To defend " +
+                "it, kill the capturers, and stand near it to halt the capture progress. You can bash gates by" +
+                "sprinting and hitting them as a soldier or shieldbearer. They can be braced and repaired by placing" +
+                "wood near them as a constructor.";
 
         for (Map.Entry<PlayerRef, SiegePlayer> entry : this.participants.entrySet()) {
             entry.getKey().ifOnline(world, p -> {
-                for (String line : lines) {
-                    Text text = new LiteralText(line).formatted(Formatting.GOLD);
-                    p.sendMessage(text, false);
-                }
+                Text text = new LiteralText(help).formatted(Formatting.GOLD);
+                p.sendMessage(text, false);
 
                 if (this.config.recapture) {
                     p.sendMessage(new LiteralText("Defenders may also capture attacker's flags.").formatted(Formatting.GOLD), false);
@@ -309,6 +305,7 @@ public class SiegeActive {
             BlockState state = this.gameSpace.getWorld().getBlockState(pos);
             if (state.getBlock() instanceof EnderChestBlock) {
                 participant.kit.restock(player, participant, this.gameSpace.getWorld(), this.config);
+                player.sendMessage(new LiteralText("Items restocked!").formatted(Formatting.DARK_GREEN, Formatting.BOLD), true);
                 return ActionResult.FAIL;
             } else if (state.getBlock() instanceof BlockWithEntity) {
                 return ActionResult.FAIL;
@@ -432,7 +429,7 @@ public class SiegeActive {
         }
 
         SiegeSpawnLogic.resetPlayer(player, GameMode.SURVIVAL);
-        participant.kit.equipPlayer(player, participant, this.config);
+        participant.kit.equipPlayer(player, participant, this.gameSpace.getWorld(), this.config);
         SiegeSpawnLogic.spawnPlayer(player, spawnRegion, this.gameSpace.getWorld());
     }
 
@@ -517,7 +514,8 @@ public class SiegeActive {
             }
 
             if (world.getTime() - warpingPlayer.startTime > 20 * 3) {
-                Vec3d pos = SiegeSpawnLogic.choosePos(player.getRandom(), warpingPlayer.destination.bounds, 0.5f);
+                assert warpingPlayer.destination.respawn != null; // TODO remove restriction
+                Vec3d pos = SiegeSpawnLogic.choosePos(player.getRandom(), warpingPlayer.destination.respawn, 0.5f);
                 player.teleport(world, pos.x, pos.y, pos.z, 0.0F, 0.0F);
                 return true;
             }

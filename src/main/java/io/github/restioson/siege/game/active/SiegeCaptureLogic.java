@@ -88,10 +88,11 @@ public final class SiegeCaptureLogic {
         playersPresent.addAll(attackersPresent);
         playersPresent.addAll(defendersPresent);
 
+        boolean recapture = this.game.config.recapture;
         boolean defendersAtFlag = !defendersPresent.isEmpty();
-        boolean defendersActuallyCapturing = defendersAtFlag && this.game.config.recapture;
+        boolean defendersActuallyCapturing = defendersAtFlag && recapture;
         boolean attackersCapturing = !attackersPresent.isEmpty();
-        boolean contested = defendersAtFlag && attackersCapturing;
+        boolean contested = defendersAtFlag && attackersCapturing && !(flag.team == SiegeTeams.ATTACKERS && recapture);
         boolean capturing = defendersActuallyCapturing || attackersCapturing;
 
         CapturingState capturingState = null;

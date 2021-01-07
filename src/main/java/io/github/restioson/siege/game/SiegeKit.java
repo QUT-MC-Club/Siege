@@ -16,7 +16,6 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import xyz.nucleoid.plasmid.game.player.GameTeam;
 import xyz.nucleoid.plasmid.util.ItemStackBuilder;
 
@@ -26,8 +25,8 @@ public enum SiegeKit {
     CONSTRUCTOR(new LiteralText("Constructor Kit")),
     SHIELD_BEARER(new LiteralText("Shield Bearer Kit"));
 
-    public static int ARROWS = 32;
-    public static int PLANKS = 16;
+    public static int ARROWS = 16;
+    public static int PLANKS = 12;
     public static int STEAK = 10;
     public static int LADDERS = 4;
 
@@ -100,11 +99,13 @@ public enum SiegeKit {
         player.inventory.offerOrDrop(world, ItemStackBuilder.of(Items.COOKED_BEEF).setCount(steakRequired).build());
 
         this.maybeGiveEnderPearl(player, participant, config);
-
-        player.sendMessage(new LiteralText("Items restocked!").formatted(Formatting.DARK_GREEN, Formatting.BOLD), true);
     }
 
-    public void equipPlayer(ServerPlayerEntity player, SiegePlayer participant, SiegeConfig config) {
+    public void equipPlayer(ServerPlayerEntity player, SiegePlayer participant, ServerWorld world, SiegeConfig config) {
+        int wood = player.inventory.count(Items.ARROW) + player.inventory.count(SiegeTeams.planksForTeam(SiegeTeams.ATTACKERS))
+                + player.inventory.count(SiegeTeams.planksForTeam(SiegeTeams.DEFENDERS));
+        participant.incrementResource(SiegePersonalResource.WOOD, wood);
+
         player.inventory.clear();
         player.clearStatusEffects();
         GameTeam team = participant.team;
@@ -128,6 +129,7 @@ public enum SiegeKit {
         player.inventory.insertStack(ItemStackBuilder.of(Items.COOKED_BEEF).setCount(STEAK).build());
 
         this.maybeGiveEnderPearl(player, participant, config);
+        this.restock(player, participant, world, config);
     }
 
     // give{x}Equipment is for armour stands and players
@@ -169,13 +171,10 @@ public enum SiegeKit {
         player.inventory.insertStack(ItemStackBuilder.of(Items.WOODEN_SWORD).setUnbreakable().build());
         player.inventory.insertStack(
                 ItemStackBuilder.of(Items.BOW)
-                        .addEnchantment(Enchantments.PUNCH, 1)
                         .addEnchantment(Enchantments.POWER, 1)
                         .setUnbreakable()
                         .build()
         );
-        player.inventory.insertStack(ItemStackBuilder.of(Items.ARROW).setCount(ARROWS).build());
-        participant.decrementResource(SiegePersonalResource.WOOD, ARROWS);
     }
 
     private void giveSoldierKit(PlayerEntity player, GameTeam team) {
@@ -186,12 +185,9 @@ public enum SiegeKit {
 
     private void giveConstructorKit(PlayerEntity player, SiegePlayer participant) {
         this.giveConstructorEquipment(player, participant.team);
-        player.equipStack(EquipmentSlot.OFFHAND, ItemStackBuilder.of(SiegeTeams.planksForTeam(participant.team)).setCount(PLANKS).build());
         player.inventory.insertStack(ItemStackBuilder.of(Items.WOODEN_SWORD).setUnbreakable().build());
         player.inventory.insertStack(ItemStackBuilder.of(Items.WOODEN_AXE).setUnbreakable().build());
         player.inventory.insertStack(ItemStackBuilder.of(Items.LADDER).setCount(LADDERS).build());
-
-        participant.decrementResource(SiegePersonalResource.WOOD, LADDERS + PLANKS);
     }
 
     private void giveShieldKit(PlayerEntity player, GameTeam team) {

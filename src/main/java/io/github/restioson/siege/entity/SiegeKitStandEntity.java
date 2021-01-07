@@ -48,8 +48,8 @@ public final class SiegeKitStandEntity extends ArmorStandEntity {
             return ActionResult.FAIL;
         }
 
-        this.type.equipPlayer((ServerPlayerEntity) player, participant, this.game.config);
         participant.kit = this.type;
+        this.type.equipPlayer((ServerPlayerEntity) player, participant, this.game.gameSpace.getWorld(), this.game.config);
         return ActionResult.SUCCESS;
     }
 
