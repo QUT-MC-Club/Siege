@@ -407,14 +407,18 @@ public class SiegeActive {
     }
 
     private void spawnDeadParticipant(ServerPlayerEntity player) {
-        player.inventory.clear();
         player.getEnderChestInventory().clear();
         player.setGameMode(GameMode.SPECTATOR);
+        SiegePlayer participant = this.participant(player);
 
-        SiegePlayer siegePlayer = this.participant(player);
-        if (siegePlayer != null) {
-            siegePlayer.timeOfDeath = this.gameSpace.getWorld().getTime();
+        if (participant != null) {
+            participant.timeOfDeath = this.gameSpace.getWorld().getTime();
+            int wood = player.inventory.count(Items.ARROW) + player.inventory.count(SiegeTeams.planksForTeam(SiegeTeams.ATTACKERS))
+                    + player.inventory.count(SiegeTeams.planksForTeam(SiegeTeams.DEFENDERS));
+            participant.incrementResource(SiegePersonalResource.WOOD, wood);
         }
+
+        player.inventory.clear();
     }
 
     private void spawnParticipant(ServerPlayerEntity player, @Nullable BlockBounds spawnRegion) {
