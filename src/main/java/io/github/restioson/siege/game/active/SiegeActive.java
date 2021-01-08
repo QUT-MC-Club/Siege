@@ -309,7 +309,13 @@ public class SiegeActive {
                 return ActionResult.FAIL;
             } else if (state.getBlock() instanceof BlockWithEntity) {
                 return ActionResult.FAIL;
-            } else if (inHand == Items.WOODEN_AXE || inHand == Items.STONE_AXE) {
+            } else if (inHand == Items.STONE_AXE || inHand == Items.IRON_SWORD) {
+                if (this.gateLogic.maybeBash(pos, player, participant) == ActionResult.FAIL) {
+                    return ActionResult.FAIL;
+                }
+            }
+
+            if (inHand == Items.WOODEN_AXE || inHand == Items.STONE_AXE) {
                 return ActionResult.FAIL;
             }
 
