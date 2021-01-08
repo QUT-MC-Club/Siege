@@ -359,15 +359,20 @@ public class SiegeActive {
 
     private ActionResult onPlayerDamage(ServerPlayerEntity player, DamageSource source, float v) {
         SiegePlayer participant = this.participant(player);
+        long time = this.gameSpace.getWorld().getTime();
 
-        if (participant != null && this.gameSpace.getWorld().getTime() < participant.timeOfSpawn + 5 * 20) {
+        if (participant != null && this.gameSpace.getWorld().getTime() < participant.timeOfSpawn + 5 * 20 && !participant.attackedThisLife) {
             return ActionResult.FAIL;
         }
 
         if (participant != null && source.getAttacker() != null && source.getAttacker() instanceof ServerPlayerEntity) {
-            long time = this.gameSpace.getWorld().getTime();
             PlayerRef attacker = PlayerRef.of((ServerPlayerEntity) source.getAttacker());
             participant.lastTimeWasAttacked = new AttackRecord(attacker, time);
+
+            SiegePlayer attackerParticipant = this.participant(attacker);
+            if (attackerParticipant != null) {
+                attackerParticipant.attackedThisLife = true;
+            }
         }
 
         return ActionResult.PASS;
