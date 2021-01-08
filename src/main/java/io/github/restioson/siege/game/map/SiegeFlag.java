@@ -145,6 +145,11 @@ public final class SiegeFlag {
         }
     }
 
+    public void closeCaptureBar() {
+        this.captureBar.clearPlayers();
+        this.captureBar.setVisible(false);
+    }
+
     public boolean isFrontLine(long time) {
         CapturingState state = this.capturingState;
         return (state != null && state.hasAlert())

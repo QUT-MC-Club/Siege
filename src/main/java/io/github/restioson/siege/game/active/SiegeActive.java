@@ -234,6 +234,9 @@ public class SiegeActive {
     }
 
     private void onClose() {
+        for (SiegeFlag flag : this.map.flags) {
+            flag.closeCaptureBar();
+        }
     }
 
     private void addPlayer(ServerPlayerEntity player) {
