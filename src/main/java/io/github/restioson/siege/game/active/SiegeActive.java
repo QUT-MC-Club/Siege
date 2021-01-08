@@ -663,7 +663,7 @@ public class SiegeActive {
                         return null;
                     }
 
-                    return new BestPlayer(p.getDisplayName(), getter.applyAsDouble(e.getValue()));
+                    return new BestPlayer(p.getDisplayName().asString(), getter.applyAsDouble(e.getValue()));
                 });
     }
 
@@ -702,23 +702,33 @@ public class SiegeActive {
         Formatting colour = Formatting.GOLD;
 
         mostKills.ifPresent(p -> {
-            players.sendMessage(new LiteralText(String.format("Most kills - %s with %d", p.displayName, (int) p.score)).formatted(colour));
+            players.sendMessage(new LiteralText(String.format("Most kills - %s with %d", p.name, (int) p.score)).formatted(colour));
         });
         highestKd.ifPresent(p -> {
-            players.sendMessage(new LiteralText(String.format("Highest KD - %s with %.2f", p.displayName, p.score)).formatted(colour));
+            players.sendMessage(new LiteralText(String.format("Highest KD - %s with %.2f", p.name, p.score)).formatted(colour));
         });
         mostCaptures.ifPresent(p -> {
-            players.sendMessage(new LiteralText(String.format("Most captures - %s with %d", p.displayName, (int) p.score)).formatted(colour));
+            players.sendMessage(new LiteralText(String.format("Most captures - %s with %d", p.name, (int) p.score)).formatted(colour));
         });
         mostSecures.ifPresent(p -> {
-            players.sendMessage(new LiteralText(String.format("Most secures - %s with %d", p.displayName, (int) p.score)).formatted(colour));
+            players.sendMessage(new LiteralText(String.format("Most secures - %s with %d", p.name, (int) p.score)).formatted(colour));
         });
 
+        int attacker_kills = 0;
+        int defender_kills = 0;
+        int attacker_deaths = 0;
+        int defender_deaths = 0; // separate because other deaths exist
+
         for (Map.Entry<PlayerRef, SiegePlayer> entry : this.participants.entrySet()) {
-            entry.getKey().ifOnline(this.gameSpace.getWorld(), p -> {
-                double kd = (double) entry.getValue().kills / Math.max(1, entry.getValue().deaths);
+            ServerPlayerEntity p = entry.getKey().getEntity(this.gameSpace.getWorld());
+
+            if (p != null) {
+                int kills = entry.getValue().kills;
+                int deaths = entry.getValue().deaths;
+
+                double kd = (double) kills / Math.max(1, deaths);
                 MutableText text = new LiteralText("\nYour statistics:\n")
-                        .append(String.format("Kills - %d\n", entry.getValue().kills))
+                        .append(String.format("Kills - %d\n", kills))
                         .append(String.format("K/D - %.2f\n", kd));
 
                 if (entry.getValue().team == SiegeTeams.DEFENDERS) {
@@ -728,16 +738,36 @@ public class SiegeActive {
                 }
 
                 p.sendMessage(text.formatted(colour), false);
-            });
+
+                if (entry.getValue().team == SiegeTeams.DEFENDERS) {
+                    defender_kills += kills;
+                    defender_deaths += deaths;
+                } else {
+                    attacker_kills += kills;
+                    attacker_deaths += deaths;
+                }
+            }
         }
+
+        double attacker_kd = (double) attacker_kills / Math.max(attacker_deaths, 1);
+        double defender_kd = (double) defender_kills / Math.max(defender_deaths, 1);
+
+        Formatting bold = Formatting.BOLD;
+        // TODO cleanup
+        players.sendMessage(new LiteralText(String.format("Attacker kills - %d", attacker_kills)).formatted(colour).formatted(bold));
+        players.sendMessage(new LiteralText(String.format("Attacker deaths - %d", attacker_deaths)).formatted(colour).formatted(bold));
+        players.sendMessage(new LiteralText(String.format("Attacker K/D - %.2f", attacker_kd)).formatted(colour).formatted(bold));
+        players.sendMessage(new LiteralText(String.format("Defender kills - %d", attacker_kills)).formatted(colour).formatted(bold));
+        players.sendMessage(new LiteralText(String.format("Defender deaths - %d", attacker_kills)).formatted(colour).formatted(bold));
+        players.sendMessage(new LiteralText(String.format("Defender K/D - %.2f", defender_kd)).formatted(colour).formatted(bold));
     }
 
     static class BestPlayer {
-        Text displayName;
+        String name;
         double score;
 
-        public BestPlayer(Text displayName, double score) {
-            this.displayName = displayName;
+        public BestPlayer(String name, double score) {
+            this.name = name;
             this.score = score;
         }
     }

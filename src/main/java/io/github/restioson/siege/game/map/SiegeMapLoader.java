@@ -136,6 +136,19 @@ public class SiegeMapLoader {
                 flag.prerequisiteFlags.add(prerequisite);
             }
 
+            ListTag recapturePrerequisites = data.getList("recapture_prerequisites", NbtType.STRING);
+            for (int i = 0; i < recapturePrerequisites.size(); i++) {
+                String prerequisiteId = recapturePrerequisites.getString(i);
+
+                SiegeFlag prerequisite = flags.get(prerequisiteId);
+                if (prerequisite == null) {
+                    Siege.LOGGER.error("Unknown flag \"{}\"", prerequisiteId);
+                    throw new GameOpenException(new LiteralText("unknown flag"));
+                }
+
+                flag.recapturePrerequisites.add(prerequisite);
+            }
+
             flag.flagIndicatorBlocks = metadata.getRegions("flag_indicator")
                     .filter(r -> flagId.equalsIgnoreCase(r.getData().getString("id")))
                     .map(TemplateRegion::getBounds)

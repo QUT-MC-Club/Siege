@@ -40,6 +40,7 @@ public final class SiegeFlag {
 
     // The flags which must be captured before this flag can be captured
     public List<SiegeFlag> prerequisiteFlags = new ArrayList<>();
+    public List<SiegeFlag> recapturePrerequisites = new ArrayList<>();
 
     public final ServerBossBar captureBar = new ServerBossBar(new LiteralText("Capturing"), BossBar.Color.RED, BossBar.Style.NOTCHED_10);
     private final Set<ServerPlayerEntity> capturingPlayers = new ReferenceOpenHashSet<>();
@@ -71,7 +72,11 @@ public final class SiegeFlag {
 
     public boolean isReadyForCapture() {
         if (this.team == SiegeTeams.ATTACKERS) {
-            return true;
+            for (SiegeFlag flag : this.recapturePrerequisites) {
+                if (flag.team == this.team) {
+                    return false;
+                }
+            }
         }
 
         for (SiegeFlag flag : this.prerequisiteFlags) {
