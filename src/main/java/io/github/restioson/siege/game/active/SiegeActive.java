@@ -498,7 +498,8 @@ public class SiegeActive {
             if (flag.respawn != null && flag.team == team) {
                 double distance = player.squaredDistanceTo(flag.respawn.getCenter());
                 boolean frontLine = flag.isFrontLine(time);
-                if (distance < minDistance || (frontLine && !respawn.frontLine)) {
+
+                if ((distance < minDistance && frontLine == respawn.frontLine) || (frontLine && !respawn.frontLine)) {
                     respawn.setFlag(flag, frontLine);
                     minDistance = distance;
                 }
