@@ -729,6 +729,7 @@ public class SiegeActive {
                 double kd = (double) kills / Math.max(1, deaths);
                 MutableText text = new LiteralText("\nYour statistics:\n")
                         .append(String.format("Kills - %d\n", kills))
+                        .append(String.format("Deaths - %d\n", deaths))
                         .append(String.format("K/D - %.2f\n", kd));
 
                 if (entry.getValue().team == SiegeTeams.DEFENDERS) {
