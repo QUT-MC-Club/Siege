@@ -23,7 +23,7 @@ public class SiegePlayer {
         this.kit = SiegeKit.SOLDIER;
         this.resources.put(SiegePersonalResource.WOOD, SiegePersonalResource.WOOD.max);
         this.resources.put(SiegePersonalResource.TNT, SiegePersonalResource.TNT.max);
-        this.resources.defaultReturnValue(0); // TODO do this better but wood is only currently so eh
+        this.resources.defaultReturnValue(0);
     }
 
     public ServerPlayerEntity attacker(long time, ServerWorld world) {

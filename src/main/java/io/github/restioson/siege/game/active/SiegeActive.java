@@ -633,7 +633,7 @@ public class SiegeActive {
         public void setFlag(SiegeFlag flag) {
             this.flag = flag;
             this.frontLine = flag.capturingState == CapturingState.CAPTURING || flag.capturingState == CapturingState.CONTESTED;
-            this.bounds = flag.bounds;
+            this.bounds = flag.respawn;
         }
     }
 
