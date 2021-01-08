@@ -56,7 +56,7 @@ public enum SiegeKit {
                 break;
             case SHIELD_BEARER:
                 this.giveShieldEquipment(stand, stand.getTeam());
-                stand.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
+                stand.equipStack(EquipmentSlot.MAINHAND, new ItemStack(Items.STONE_SWORD));
                 break;
             case DEMOLITIONER:
                 this.giveDemolitionerEquipment(stand, stand.getTeam());
@@ -143,6 +143,7 @@ public enum SiegeKit {
                 break;
             case SHIELD_BEARER:
                 this.giveShieldKit(player, team);
+                player.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, Integer.MAX_VALUE, 0, false, false, true));
                 break;
             case DEMOLITIONER:
                 this.giveDemolitionerKit(player, team);
@@ -224,7 +225,7 @@ public enum SiegeKit {
 
     private void giveShieldKit(PlayerEntity player, GameTeam team) {
         this.giveShieldEquipment(player, team);
-        player.inventory.insertStack(ItemStackBuilder.of(Items.IRON_SWORD).setUnbreakable().build());
+        player.inventory.insertStack(ItemStackBuilder.of(Items.STONE_SWORD).setUnbreakable().build());
     }
 
     private void giveDemolitionerKit(PlayerEntity player, GameTeam team) {

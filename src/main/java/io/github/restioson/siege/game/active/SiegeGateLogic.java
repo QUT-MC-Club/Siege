@@ -42,11 +42,13 @@ public class SiegeGateLogic {
         for (SiegeGate gate : this.active.map.gates) {
             if (gate.brace != null && gate.brace.contains(pos)) {
                 if (gate.health < gate.maxHealth) {
+                    ServerWorld world = this.active.gameSpace.getWorld();
                     gate.health += 1;
-                    player.sendMessage(new LiteralText("Gate health: ").append(Integer.toString(gate.health)).formatted(Formatting.DARK_GREEN), true);
-
-                    this.active.gameSpace.getWorld().setBlockState(pos, Blocks.AIR.getDefaultState());
-                    return ActionResult.PASS;
+                    gate.broadcastHealth(player, this.active, world);
+                    world.setBlockState(pos, Blocks.AIR.getDefaultState());
+                    ctx.getStack().decrement(1);
+                    player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, slot, ctx.getStack()));
+                    return ActionResult.FAIL;
                 } else {
                     player.sendMessage(new LiteralText("The gate is already at max health!").formatted(Formatting.DARK_GREEN), true);
                 }
@@ -87,7 +89,8 @@ public class SiegeGateLogic {
                 world.createExplosion(null, pos.getX(), pos.getY(), pos.getZ(), 0.0f, Explosion.DestructionType.NONE);
                 gate.health -= 1;
                 gate.timeOfLastBash = time;
-                player.sendMessage(new LiteralText("Gate health: ").append(Integer.toString(gate.health)).formatted(Formatting.DARK_GREEN), true);
+                gate.broadcastHealth(player, this.active, world);
+
                 return ActionResult.FAIL;
             }
         }

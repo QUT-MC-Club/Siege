@@ -14,9 +14,16 @@ public class SiegePlayer {
     public AttackRecord lastTimeWasAttacked;
     public long timeOfDeath;
     public long timeOfSpawn;
+
     // If they have attacked this life, then their respawn invulnerability is removed
     public boolean attackedThisLife;
     private final Object2IntOpenHashMap<SiegePersonalResource> resources = new Object2IntOpenHashMap<>();
+
+    // Statistics
+    public int deaths;
+    public int kills;
+    public int captures;
+    public int secures;
 
     public SiegePlayer(GameTeam team) {
         this.team = team;

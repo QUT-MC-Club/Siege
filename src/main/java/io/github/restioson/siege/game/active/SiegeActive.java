@@ -54,9 +54,8 @@ import xyz.nucleoid.plasmid.util.BlockBounds;
 import xyz.nucleoid.plasmid.util.PlayerRef;
 import xyz.nucleoid.plasmid.widget.GlobalWidgets;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.ToDoubleFunction;
 
 public class SiegeActive {
     public final SiegeConfig config;
@@ -347,6 +346,8 @@ public class SiegeActive {
                     player.sendMessage(new LiteralText(error).formatted(Formatting.RED, Formatting.BOLD), true);
                 }
                 return ActionResult.FAIL;
+            } else if (state.getBlock() instanceof DoorBlock) {
+                return ActionResult.PASS;
             } else if (state.getBlock() instanceof BlockWithEntity) {
                 return ActionResult.FAIL;
             } else if (inHand == Items.STONE_AXE || inHand == Items.IRON_SWORD) {
@@ -377,6 +378,7 @@ public class SiegeActive {
                     this.warpingPlayers.add(new WarpingPlayer(player, spawn.flag, this.gameSpace.getWorld().getTime()));
                     cooldownManager.set(Items.ENDER_PEARL, 10 * 20);
                     player.sendMessage(new LiteralText(String.format("Warping to %s... hold still!", spawn.flag.name)).formatted(Formatting.GREEN), true);
+                    player.playSound(SoundEvents.ENTITY_ENDER_PEARL_THROW, SoundCategory.NEUTRAL, 1.0F, 1.0F);
                 } else {
                     player.sendMessage(new LiteralText("There are no flags in need of assistance").formatted(Formatting.RED), true);
                 }
@@ -419,7 +421,7 @@ public class SiegeActive {
     }
 
     private ActionResult onPlayerDeath(ServerPlayerEntity player, DamageSource source) {
-        MutableText deathMessage = this.getDeathMessage(player, source);
+        MutableText deathMessage = this.getDeathMessageAndIncStats(player, source);
         this.gameSpace.getPlayers().sendMessage(deathMessage.formatted(Formatting.GRAY));
 
         this.spawnDeadParticipant(player);
@@ -427,20 +429,35 @@ public class SiegeActive {
         return ActionResult.FAIL;
     }
 
-    private MutableText getDeathMessage(ServerPlayerEntity player, DamageSource source) {
+    private MutableText getDeathMessageAndIncStats(ServerPlayerEntity player, DamageSource source) {
         SiegePlayer participant = this.participant(player);
         ServerWorld world = this.gameSpace.getWorld();
         long time = world.getTime();
 
         MutableText eliminationMessage = new LiteralText(" was killed by ");
+        SiegePlayer attacker = null;
+
         if (source.getAttacker() != null) {
             eliminationMessage.append(source.getAttacker().getDisplayName());
+
+            if (source.getAttacker() instanceof ServerPlayerEntity) {
+                attacker = this.participant((ServerPlayerEntity) source.getAttacker());
+            }
         } else if (participant != null && participant.attacker(time, world) != null) {
             eliminationMessage.append(participant.attacker(time, world).getDisplayName());
+            attacker = this.participant(participant.attacker(time, world));
         } else if (source == DamageSource.DROWN) {
             eliminationMessage.append("forgetting to just keep swimming");
         } else {
             eliminationMessage = new LiteralText(" died");
+        }
+
+        if (attacker != null) {
+            attacker.kills += 1;
+        }
+
+        if (participant != null) {
+            participant.deaths += 1;
         }
 
         return new LiteralText("").append(player.getDisplayName()).append(eliminationMessage);
@@ -565,6 +582,7 @@ public class SiegeActive {
 
             if (player.getBlockPos() != warpingPlayer.pos) {
                 player.sendMessage(new LiteralText("Warp cancelled because you moved!").formatted(Formatting.RED), true);
+                player.playSound(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.NEUTRAL, 1.0F, 1.0F);
                 return true;
             }
 
@@ -572,6 +590,7 @@ public class SiegeActive {
                 assert warpingPlayer.destination.respawn != null; // TODO remove restriction
                 Vec3d pos = SiegeSpawnLogic.choosePos(player.getRandom(), warpingPlayer.destination.respawn, 0.5f);
                 player.teleport(world, pos.x, pos.y, pos.z, 0.0F, 0.0F);
+                player.playSound(SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.NEUTRAL, 1.0F, 1.0F);
                 return true;
             }
 
@@ -633,6 +652,21 @@ public class SiegeActive {
         }
     }
 
+    private Optional<BestPlayer> getPlayerWithHighest(ToDoubleFunction<SiegePlayer> getter) {
+        return this.participants.entrySet()
+                .stream()
+                .max(Comparator.comparingDouble(e -> getter.applyAsDouble(e.getValue())))
+                .map(e -> {
+                    ServerPlayerEntity p = e.getKey().getEntity(this.gameSpace.getWorld());
+
+                    if (p == null) {
+                        return null;
+                    }
+
+                    return new BestPlayer(p.getDisplayName(), getter.applyAsDouble(e.getValue()));
+                });
+    }
+
     private void broadcastWin(GameTeam winningTeam) {
         for (Map.Entry<PlayerRef, SiegePlayer> entry : this.participants.entrySet()) {
             entry.getKey().ifOnline(this.gameSpace.getServer(), player -> {
@@ -659,5 +693,52 @@ public class SiegeActive {
         PlayerSet players = this.gameSpace.getPlayers();
         players.sendMessage(message);
         players.sendSound(SoundEvents.ENTITY_VILLAGER_YES);
+
+        Optional<BestPlayer> mostKills = this.getPlayerWithHighest(p -> p.kills);
+        Optional<BestPlayer> highestKd = this.getPlayerWithHighest(p -> (double) p.kills / Math.max(1, p.deaths));
+        Optional<BestPlayer> mostCaptures = this.getPlayerWithHighest(p -> p.captures);
+        Optional<BestPlayer> mostSecures = this.getPlayerWithHighest(p -> p.secures);
+
+        Formatting colour = Formatting.GOLD;
+
+        mostKills.ifPresent(p -> {
+            players.sendMessage(new LiteralText(String.format("Most kills - %s with %d", p.displayName, (int) p.score)).formatted(colour));
+        });
+        highestKd.ifPresent(p -> {
+            players.sendMessage(new LiteralText(String.format("Highest KD - %s with %.2f", p.displayName, p.score)).formatted(colour));
+        });
+        mostCaptures.ifPresent(p -> {
+            players.sendMessage(new LiteralText(String.format("Most captures - %s with %d", p.displayName, (int) p.score)).formatted(colour));
+        });
+        mostSecures.ifPresent(p -> {
+            players.sendMessage(new LiteralText(String.format("Most secures - %s with %d", p.displayName, (int) p.score)).formatted(colour));
+        });
+
+        for (Map.Entry<PlayerRef, SiegePlayer> entry : this.participants.entrySet()) {
+            entry.getKey().ifOnline(this.gameSpace.getWorld(), p -> {
+                double kd = (double) entry.getValue().kills / Math.max(1, entry.getValue().deaths);
+                MutableText text = new LiteralText("\nYour statistics:\n")
+                        .append(String.format("Kills - %d\n", entry.getValue().kills))
+                        .append(String.format("K/D - %.2f\n", kd));
+
+                if (entry.getValue().team == SiegeTeams.DEFENDERS) {
+                    text.append(String.format("Secures - %d", entry.getValue().secures));
+                } else {
+                    text.append(String.format("Captures - %d", entry.getValue().captures));
+                }
+
+                p.sendMessage(text.formatted(colour), false);
+            });
+        }
+    }
+
+    static class BestPlayer {
+        Text displayName;
+        double score;
+
+        public BestPlayer(Text displayName, double score) {
+            this.displayName = displayName;
+            this.score = score;
+        }
     }
 }
