@@ -1,6 +1,7 @@
 package io.github.restioson.siege.game.active;
 
 import com.google.common.collect.ImmutableList;
+import io.github.restioson.siege.entity.SiegeKitStandEntity;
 import io.github.restioson.siege.game.SiegeSpawnLogic;
 import io.github.restioson.siege.game.SiegeTeams;
 import io.github.restioson.siege.game.map.SiegeFlag;
@@ -142,6 +143,10 @@ public final class SiegeCaptureLogic {
         }
 
         if (flag.incrementCapture(captureTeam, interval * capturingPlayers.size())) {
+            for (SiegeKitStandEntity kitStand : flag.kitStands) {
+                kitStand.onControllingFlagCaptured();
+            }
+
             this.broadcastCaptured(flag, captureTeam);
 
             ServerWorld world = this.game.gameSpace.getWorld();

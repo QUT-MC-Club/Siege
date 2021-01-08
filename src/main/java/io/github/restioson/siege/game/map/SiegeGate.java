@@ -16,6 +16,7 @@ public class SiegeGate {
     public int repairedHealthThreshold;
     public int maxHealth;
     private int openSlide;
+    public long timeOfLastBash;
 
     @Nullable
     public BlockBounds brace;

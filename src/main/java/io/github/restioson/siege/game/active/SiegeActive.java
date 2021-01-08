@@ -7,14 +7,13 @@ import io.github.restioson.siege.game.SiegeKit;
 import io.github.restioson.siege.game.SiegeSpawnLogic;
 import io.github.restioson.siege.game.SiegeTeams;
 import io.github.restioson.siege.game.map.SiegeFlag;
+import io.github.restioson.siege.game.map.SiegeGate;
 import io.github.restioson.siege.game.map.SiegeKitStandLocation;
 import io.github.restioson.siege.game.map.SiegeMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.BlockWithEntity;
-import net.minecraft.block.EnderChestBlock;
+import net.minecraft.block.*;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -76,6 +75,8 @@ public class SiegeActive {
     final SiegeCaptureLogic captureLogic;
     final SiegeGateLogic gateLogic;
 
+    public static int TNT_GATE_DAMAGE = 15;
+
     private SiegeActive(GameSpace gameSpace, SiegeMap map, SiegeConfig config, GlobalWidgets widgets, Multimap<GameTeam, ServerPlayerEntity> players) {
         this.gameSpace = gameSpace;
         this.config = config;
@@ -113,6 +114,7 @@ public class SiegeActive {
             game.setRule(GameRule.INTERACTION, RuleResult.ALLOW);
             game.setRule(GameRule.FALL_DAMAGE, RuleResult.ALLOW);
             game.setRule(GameRule.PLACE_BLOCKS, RuleResult.ALLOW);
+            game.setRule(GameRule.UNSTABLE_TNT, RuleResult.ALLOW);
 
             game.on(GameOpenListener.EVENT, active::onOpen);
             game.on(GameCloseListener.EVENT, active::onClose);
@@ -124,6 +126,7 @@ public class SiegeActive {
             game.on(PlayerAddListener.EVENT, active::addPlayer);
             game.on(PlayerRemoveListener.EVENT, active::removePlayer);
             game.on(UseBlockListener.EVENT, active::onUseBlock);
+            game.on(ExplosionListener.EVENT, active::onExplosion);
             game.on(PlayerPunchBlockListener.EVENT, active::onHitBlock);
             game.on(UseItemListener.EVENT, active::onUseItem);
 
@@ -140,8 +143,26 @@ public class SiegeActive {
             for (SiegeKitStandLocation stand : active.map.kitStands) {
                 SiegeKitStandEntity standEntity = new SiegeKitStandEntity(world, active, stand);
                 world.spawnEntity(standEntity);
+
+                if (standEntity.controllingFlag != null) {
+                    standEntity.controllingFlag.kitStands.add(standEntity);
+                }
             }
         });
+    }
+
+    private void onExplosion(List<BlockPos> affectedBlocks) {
+        gate:
+        for (SiegeGate gate : this.map.gates) {
+            for (BlockPos pos : affectedBlocks) {
+                if (!gate.bashedOpen && gate.health > 0 && gate.portcullis.contains(pos)) {
+                    gate.health = Math.max(0, gate.health - TNT_GATE_DAMAGE);
+                    break gate;
+                }
+            }
+        }
+
+        affectedBlocks.removeIf(this.map::isProtectedBlock);
     }
 
     private ActionResult onHitEntity(ProjectileEntity projectileEntity, EntityHitResult hitResult) {
@@ -163,7 +184,7 @@ public class SiegeActive {
     private ActionResult onHitBlock(ServerPlayerEntity player, Direction direction, BlockPos pos) {
         SiegePlayer participant = this.participant(player);
         if (participant != null) {
-            return this.gateLogic.maybeBash(pos, player, participant);
+            return this.gateLogic.maybeBash(pos, player, participant, this.gameSpace.getWorld().getTime());
         } else {
             return ActionResult.PASS;
         }
@@ -263,9 +284,11 @@ public class SiegeActive {
             ItemUsageContext ctx
     ) {
         SiegePlayer participant = this.participant(player);
-        if (participant != null && participant.kit != SiegeKit.CONSTRUCTOR) {
+        if (participant == null) {
             return ActionResult.FAIL;
         }
+
+        Block block = blockState.getBlock();
 
         int slot;
         if (ctx.getHand() == Hand.MAIN_HAND) {
@@ -274,15 +297,23 @@ public class SiegeActive {
             slot = 40; // offhand
         }
 
-        for (BlockBounds noBuildRegion : this.map.noBuildRegions) {
-            if (noBuildRegion.contains(blockPos)) {
-                // TODO do this in plasmid
-                player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, slot, ctx.getStack()));
-                return ActionResult.FAIL;
+        if (participant.kit == SiegeKit.CONSTRUCTOR && block != Blocks.TNT) {
+            // TNT may be placed anyway
+            for (BlockBounds noBuildRegion : this.map.noBuildRegions) {
+                if (noBuildRegion.contains(blockPos)) {
+                    // TODO do this in plasmid
+                    player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, slot, ctx.getStack()));
+                    return ActionResult.FAIL;
+                }
             }
-        }
 
-        return this.gateLogic.maybeBraceGate(blockPos, player, slot, ctx);
+            return this.gateLogic.maybeBraceGate(blockPos, player, slot, ctx);
+        } else if (participant.kit == SiegeKit.DEMOLITIONER && block == Blocks.TNT) {
+            return ActionResult.PASS;
+        } else {
+            player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, slot, ctx.getStack()));
+            return ActionResult.FAIL;
+        }
     }
 
     private ActionResult onBreakBlock(ServerPlayerEntity player, BlockPos pos) {
@@ -299,18 +330,24 @@ public class SiegeActive {
         }
 
         SiegePlayer participant = this.participant(player);
+        ServerWorld world = this.gameSpace.getWorld();
         Item inHand = player.getStackInHand(hand).getItem();
         if (participant != null) {
             pos.offset(hitResult.getSide());
-            BlockState state = this.gameSpace.getWorld().getBlockState(pos);
+            BlockState state = world.getBlockState(pos);
             if (state.getBlock() instanceof EnderChestBlock) {
-                participant.kit.restock(player, participant, this.gameSpace.getWorld(), this.config);
-                player.sendMessage(new LiteralText("Items restocked!").formatted(Formatting.DARK_GREEN, Formatting.BOLD), true);
+                String error = participant.kit.restock(player, participant, world, this.config);
+
+                if (error == null) {
+                    player.sendMessage(new LiteralText("Items restocked!").formatted(Formatting.DARK_GREEN, Formatting.BOLD), true);
+                } else {
+                    player.sendMessage(new LiteralText(error).formatted(Formatting.RED, Formatting.BOLD), true);
+                }
                 return ActionResult.FAIL;
             } else if (state.getBlock() instanceof BlockWithEntity) {
                 return ActionResult.FAIL;
             } else if (inHand == Items.STONE_AXE || inHand == Items.IRON_SWORD) {
-                if (this.gateLogic.maybeBash(pos, player, participant) == ActionResult.FAIL) {
+                if (this.gateLogic.maybeBash(pos, player, participant, world.getTime()) == ActionResult.FAIL) {
                     return ActionResult.FAIL;
                 }
             }
@@ -332,7 +369,7 @@ public class SiegeActive {
         if (participant != null) {
             ItemCooldownManager cooldownManager = player.getItemCooldownManager();
             if (item == Items.ENDER_PEARL && !cooldownManager.isCoolingDown(Items.ENDER_PEARL)) {
-                SiegeSpawn spawn = this.getSpawnFor(player);
+                SiegeSpawn spawn = this.getSpawnFor(player, this.gameSpace.getWorld().getTime());
                 if (spawn.flag != null && spawn.frontLine) {
                     this.warpingPlayers.add(new WarpingPlayer(player, spawn.flag, this.gameSpace.getWorld().getTime()));
                     cooldownManager.set(Items.ENDER_PEARL, 10 * 20);
@@ -440,7 +477,7 @@ public class SiegeActive {
         participant.timeOfSpawn = this.gameSpace.getWorld().getTime();
 
         if (spawnRegion == null) {
-            spawnRegion = this.getSpawnFor(player).bounds;
+            spawnRegion = this.getSpawnFor(player, this.gameSpace.getWorld().getTime()).bounds;
         }
 
         SiegeSpawnLogic.resetPlayer(player, GameMode.SURVIVAL);
@@ -448,7 +485,7 @@ public class SiegeActive {
         SiegeSpawnLogic.spawnPlayer(player, spawnRegion, this.gameSpace.getWorld());
     }
 
-    private SiegeSpawn getSpawnFor(ServerPlayerEntity player) {
+    private SiegeSpawn getSpawnFor(ServerPlayerEntity player, long time) {
         GameTeam team = this.getTeamFor(player);
         if (team == null) {
             return new SiegeSpawn(null, this.map.waitingSpawn);
@@ -461,7 +498,8 @@ public class SiegeActive {
             if (flag.respawn != null && flag.team == team) {
                 Vec3d center = flag.respawn.getCenter();
                 double distance = player.squaredDistanceTo(center);
-                boolean flagFrontLine = flag.capturingState == CapturingState.CAPTURING || flag.capturingState == CapturingState.CONTESTED;
+                boolean flagFrontLine = flag.capturingState == CapturingState.CAPTURING || flag.capturingState == CapturingState.CONTESTED ||
+                        (flag.gate != null && time - flag.gate.timeOfLastBash < 5 * 20);
                 if (distance < minDistance || (flagFrontLine && !respawn.frontLine)) {
                     respawn.setFlag(flag);
                     minDistance = distance;
@@ -500,7 +538,7 @@ public class SiegeActive {
             this.tickWarpingPlayers();
 
             if (time % (20 * 2) == 0) {
-                this.tickResources();
+                this.tickResources(time);
             }
         }
 
@@ -539,9 +577,13 @@ public class SiegeActive {
         });
     }
 
-    private void tickResources() {
+    private void tickResources(long time) {
         for (SiegePlayer player : this.participants.values()) {
             player.incrementResource(SiegePersonalResource.WOOD, 1);
+
+            if (time % (60 * 20) == 0) {
+                player.incrementResource(SiegePersonalResource.TNT, 1);
+            }
         }
     }
 

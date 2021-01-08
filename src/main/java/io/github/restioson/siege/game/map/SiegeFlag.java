@@ -1,5 +1,6 @@
 package io.github.restioson.siege.game.map;
 
+import io.github.restioson.siege.entity.SiegeKitStandEntity;
 import io.github.restioson.siege.game.SiegeTeams;
 import io.github.restioson.siege.game.active.CapturingState;
 import io.github.restioson.siege.game.active.SiegeCaptureLogic;
@@ -24,9 +25,13 @@ public final class SiegeFlag {
     public boolean capturable = true;
     public boolean pluralName = false;
     public List<BlockBounds> flagIndicatorBlocks;
+    public List<SiegeKitStandEntity> kitStands;
 
     @Nullable
     public BlockBounds respawn;
+
+    @Nullable
+    public SiegeGate gate;
 
     public GameTeam team;
 
@@ -45,6 +50,7 @@ public final class SiegeFlag {
         this.team = team;
         this.bounds = bounds;
         this.respawn = respawn;
+        this.kitStands = new ArrayList<>();
     }
 
     public String pastToBe() {

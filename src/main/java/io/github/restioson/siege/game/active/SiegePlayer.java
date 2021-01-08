@@ -21,7 +21,9 @@ public class SiegePlayer {
     public SiegePlayer(GameTeam team) {
         this.team = team;
         this.kit = SiegeKit.SOLDIER;
-        this.resources.defaultReturnValue(64); // TODO do this better but wood is only currently so eh
+        this.resources.put(SiegePersonalResource.WOOD, SiegePersonalResource.WOOD.max);
+        this.resources.put(SiegePersonalResource.TNT, SiegePersonalResource.TNT.max);
+        this.resources.defaultReturnValue(0); // TODO do this better but wood is only currently so eh
     }
 
     public ServerPlayerEntity attacker(long time, ServerWorld world) {
@@ -36,13 +38,6 @@ public class SiegePlayer {
         int newAmount = this.resources.addTo(resource, amount);
         if (newAmount > resource.max) {
             this.resources.replace(resource, resource.max);
-        }
-    }
-
-    public void decrementResource(SiegePersonalResource resource, int amount) {
-        int newAmount = this.resources.addTo(resource, -amount);
-        if (newAmount < 0) {
-            this.resources.replace(resource, 0);
         }
     }
 

@@ -46,7 +46,7 @@ public class SiegeGateLogic {
                     player.sendMessage(new LiteralText("Gate health: ").append(Integer.toString(gate.health)).formatted(Formatting.DARK_GREEN), true);
 
                     this.active.gameSpace.getWorld().setBlockState(pos, Blocks.AIR.getDefaultState());
-                    ctx.getStack().decrement(1);
+                    return ActionResult.PASS;
                 } else {
                     player.sendMessage(new LiteralText("The gate is already at max health!").formatted(Formatting.DARK_GREEN), true);
                 }
@@ -58,7 +58,7 @@ public class SiegeGateLogic {
         return ActionResult.PASS;
     }
 
-    public ActionResult maybeBash(BlockPos pos, ServerPlayerEntity player, SiegePlayer participant) {
+    public ActionResult maybeBash(BlockPos pos, ServerPlayerEntity player, SiegePlayer participant, long time) {
         Item mainHandItem = player.inventory.getMainHandStack().getItem();
         boolean holdingBashWeapon = mainHandItem == Items.IRON_SWORD || mainHandItem == Items.STONE_AXE;
         boolean rightKit = participant.kit == SiegeKit.SHIELD_BEARER || participant.kit == SiegeKit.SOLDIER;
@@ -86,6 +86,7 @@ public class SiegeGateLogic {
                 ServerWorld world = this.active.gameSpace.getWorld();
                 world.createExplosion(null, pos.getX(), pos.getY(), pos.getZ(), 0.0f, Explosion.DestructionType.NONE);
                 gate.health -= 1;
+                gate.timeOfLastBash = time;
                 player.sendMessage(new LiteralText("Gate health: ").append(Integer.toString(gate.health)).formatted(Formatting.DARK_GREEN), true);
                 return ActionResult.FAIL;
             }
