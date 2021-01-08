@@ -663,7 +663,7 @@ public class SiegeActive {
                         return null;
                     }
 
-                    return new BestPlayer(p.getDisplayName().asString(), getter.applyAsDouble(e.getValue()));
+                    return new BestPlayer(p.server.getUserName(), getter.applyAsDouble(e.getValue()));
                 });
     }
 
