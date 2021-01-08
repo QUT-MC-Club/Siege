@@ -28,7 +28,6 @@ public enum SiegeKit {
     public static int ARROWS = 16;
     public static int PLANKS = 12;
     public static int STEAK = 10;
-    public static int LADDERS = 4;
 
     public final Text name;
 
@@ -85,11 +84,7 @@ public enum SiegeKit {
                 int planksRequired = SiegeKit.PLANKS - player.inventory.count(planks);
                 int planksToGive = participant.tryDecrementResource(SiegePersonalResource.WOOD, planksRequired);
 
-                int laddersRequired = SiegeKit.LADDERS - player.inventory.count(Items.LADDER);
-                int laddersToGive = participant.tryDecrementResource(SiegePersonalResource.WOOD, laddersRequired);
-
                 player.inventory.offerOrDrop(world, ItemStackBuilder.of(planks).setCount(planksToGive).build());
-                player.inventory.offerOrDrop(world, ItemStackBuilder.of(Items.LADDER).setCount(laddersToGive).build());
                 break;
             default:
                 break;
@@ -187,7 +182,6 @@ public enum SiegeKit {
         this.giveConstructorEquipment(player, participant.team);
         player.inventory.insertStack(ItemStackBuilder.of(Items.WOODEN_SWORD).setUnbreakable().build());
         player.inventory.insertStack(ItemStackBuilder.of(Items.WOODEN_AXE).setUnbreakable().build());
-        player.inventory.insertStack(ItemStackBuilder.of(Items.LADDER).setCount(LADDERS).build());
     }
 
     private void giveShieldKit(PlayerEntity player, GameTeam team) {
