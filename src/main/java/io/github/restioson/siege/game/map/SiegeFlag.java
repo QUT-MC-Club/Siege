@@ -144,4 +144,10 @@ public final class SiegeFlag {
             this.captureBar.setVisible(false);
         }
     }
+
+    public boolean isFrontLine(long time) {
+        CapturingState state = this.capturingState;
+        return (state != null && state.hasAlert())
+                || (this.gate != null && time - this.gate.timeOfLastBash < 5 * 20);
+    }
 }

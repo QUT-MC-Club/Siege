@@ -496,12 +496,10 @@ public class SiegeActive {
 
         for (SiegeFlag flag : this.map.flags) {
             if (flag.respawn != null && flag.team == team) {
-                Vec3d center = flag.respawn.getCenter();
-                double distance = player.squaredDistanceTo(center);
-                boolean flagFrontLine = flag.capturingState == CapturingState.CAPTURING || flag.capturingState == CapturingState.CONTESTED ||
-                        (flag.gate != null && time - flag.gate.timeOfLastBash < 5 * 20);
-                if (distance < minDistance || (flagFrontLine && !respawn.frontLine)) {
-                    respawn.setFlag(flag);
+                double distance = player.squaredDistanceTo(flag.respawn.getCenter());
+                boolean frontLine = flag.isFrontLine(time);
+                if (distance < minDistance || (frontLine && !respawn.frontLine)) {
+                    respawn.setFlag(flag, frontLine);
                     minDistance = distance;
                 }
             }
@@ -624,9 +622,9 @@ public class SiegeActive {
             this.bounds = bounds;
         }
 
-        public void setFlag(SiegeFlag flag) {
+        public void setFlag(SiegeFlag flag, boolean frontLine) {
             this.flag = flag;
-            this.frontLine = flag.capturingState == CapturingState.CAPTURING || flag.capturingState == CapturingState.CONTESTED;
+            this.frontLine = frontLine;
             this.bounds = flag.respawn;
         }
     }
