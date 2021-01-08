@@ -152,7 +152,7 @@ public final class SiegeFlag {
 
     public boolean isFrontLine(long time) {
         CapturingState state = this.capturingState;
-        return (state != null && state.hasAlert())
+        return (state != null && state.hasAlert() && state != CapturingState.SECURING)
                 || (this.gate != null && time - this.gate.timeOfLastBash < 5 * 20);
     }
 }
