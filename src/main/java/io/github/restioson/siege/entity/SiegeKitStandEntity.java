@@ -57,4 +57,8 @@ public final class SiegeKitStandEntity extends ArmorStandEntity {
     public boolean isImmobile() {
         return true;
     }
+
+    @Override
+    public void takeKnockback(float f, double d, double e) {
+    }
 }
