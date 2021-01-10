@@ -197,13 +197,13 @@ public class SiegeMapLoader {
                     CompoundTag portcullisData = portcullisRegion.getData();
                     int retractHeight = portcullisData.getInt("retract_height");
 
-                    int repairHealthThreshold = 25;
+                    int repairHealthThreshold = 50;
 
                     if (portcullisData.contains("repair_health_threshold")) {
                         repairHealthThreshold = portcullisData.getInt("repair_health_threshold");
                     }
 
-                    int maxHealth = 50;
+                    int maxHealth = 100;
 
                     if (portcullisData.contains("max_health")) {
                         repairHealthThreshold = portcullisData.getInt("max_health");

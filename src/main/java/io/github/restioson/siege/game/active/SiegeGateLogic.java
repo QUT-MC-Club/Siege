@@ -101,7 +101,7 @@ public class SiegeGateLogic {
     public void tickGate(SiegeGate gate) {
         ServerWorld world = this.active.gameSpace.getWorld();
 
-        if (gate.health == 0 && !gate.bashedOpen) {
+        if (gate.health <= 0 && !gate.bashedOpen) {
             gate.slider.setOpen(world);
 
             BlockPos min = gate.portcullis.getMin();
@@ -136,7 +136,7 @@ public class SiegeGateLogic {
             );
 
             gate.bashedOpen = true;
-        } else if (gate.health == gate.repairedHealthThreshold && gate.bashedOpen) {
+        } else if (gate.health >= gate.repairedHealthThreshold && gate.bashedOpen) {
             GameTeam team = gate.flag.team;
             this.active.gameSpace.getPlayers().sendMessage(
                     new LiteralText("The ")

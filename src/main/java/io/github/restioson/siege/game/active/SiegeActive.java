@@ -156,6 +156,7 @@ public class SiegeActive {
             for (BlockPos pos : affectedBlocks) {
                 if (!gate.bashedOpen && gate.health > 0 && gate.portcullis.contains(pos)) {
                     gate.health = Math.max(0, gate.health - TNT_GATE_DAMAGE);
+                    gate.timeOfLastBash = this.gameSpace.getWorld().getTime();
                     break gate;
                 }
             }
