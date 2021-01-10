@@ -204,7 +204,7 @@ public enum SiegeKit {
         player.inventory.insertStack(ItemStackBuilder.of(Items.WOODEN_SWORD).setUnbreakable().build());
         player.inventory.insertStack(
                 ItemStackBuilder.of(Items.BOW)
-                        .addEnchantment(Enchantments.POWER, 1)
+                        .addEnchantment(Enchantments.PUNCH, 1)
                         .setUnbreakable()
                         .build()
         );
