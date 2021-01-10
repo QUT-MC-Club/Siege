@@ -95,7 +95,12 @@ public enum SiegeKit {
                 int planksRequired = SiegeKit.PLANKS - player.inventory.count(planks);
                 int planksToGive = participant.tryDecrementResource(SiegePersonalResource.WOOD, planksRequired);
 
-                player.inventory.offerOrDrop(world, ItemStackBuilder.of(planks).setCount(planksToGive).build());
+                if (planksRequired == SiegeKit.PLANKS) {
+                    player.equipStack(EquipmentSlot.OFFHAND, ItemStackBuilder.of(planks).setCount(planksToGive).build());
+                } else {
+                    player.inventory.offerOrDrop(world, ItemStackBuilder.of(planks).setCount(planksToGive).build());
+                }
+
                 break;
             case DEMOLITIONER:
                 int tntRequired = SiegeKit.TNT - player.inventory.count(Items.TNT);

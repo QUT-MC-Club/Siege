@@ -69,7 +69,7 @@ public final class SiegeSidebar {
 
                 if (capturing || percent > 0) {
                     line = "(" + percent + "%) " + line;
-                } else if (flag.gate != null && flag.gate.timeOfLastBash < 5 * 20) {
+                } else if (flag.gate != null && time - flag.gate.timeOfLastBash < 5 * 20) {
                     line = "(!) " + line;
                 }
 
