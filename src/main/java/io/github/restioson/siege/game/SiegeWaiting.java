@@ -42,6 +42,7 @@ public class SiegeWaiting {
 
         BubbleWorldConfig worldConfig = new BubbleWorldConfig()
                 .setGenerator(map.asGenerator(context.getServer()))
+                .setTimeOfDay(map.time)
                 .setDefaultGameMode(GameMode.SPECTATOR);
 
         return context.createOpenProcedure(worldConfig, game -> {
