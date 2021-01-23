@@ -4,12 +4,16 @@ import io.github.restioson.siege.Siege;
 import io.github.restioson.siege.game.SiegeKit;
 import io.github.restioson.siege.game.SiegeTeams;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import joptsimple.internal.Strings;
 import net.fabricmc.fabric.api.util.NbtType;
 import net.minecraft.block.BlockState;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.text.LiteralText;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.biome.BiomeKeys;
 import xyz.nucleoid.plasmid.game.GameOpenException;
 import xyz.nucleoid.plasmid.game.player.GameTeam;
@@ -37,7 +41,13 @@ public class SiegeMapLoader {
             MapTemplate template = MapTemplateSerializer.INSTANCE.loadFromResource(this.config.id);
 
             SiegeMap map = new SiegeMap(template, this.config.attackerSpawnAngle);
-            template.setBiome(BiomeKeys.PLAINS);
+
+            String biomeId = template.getMetadata().getData().getString("biome");
+            if (!Strings.isNullOrEmpty(biomeId)) {
+                template.setBiome(RegistryKey.of(Registry.BIOME_KEY, new Identifier(biomeId)));
+            } else {
+                template.setBiome(BiomeKeys.PLAINS);
+            }
 
             BlockBounds waitingSpawn = template.getMetadata().getFirstRegionBounds("waiting_spawn");
             if (waitingSpawn == null) {
