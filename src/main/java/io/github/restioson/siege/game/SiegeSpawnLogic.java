@@ -1,6 +1,8 @@
 package io.github.restioson.siege.game;
 
 import io.github.restioson.siege.game.map.SiegeSpawn;
+import net.minecraft.entity.player.HungerManager;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -15,10 +17,17 @@ public class SiegeSpawnLogic {
     public static void resetPlayer(ServerPlayerEntity player, GameMode gameMode) {
         player.setGameMode(gameMode);
         player.setVelocity(Vec3d.ZERO);
-        player.getHungerManager().setFoodLevel(20);
         player.fallDistance = 0.0f;
         player.clearStatusEffects();
         player.setFireTicks(0);
+        resetHunger(player);
+    }
+
+    private static void resetHunger(ServerPlayerEntity player) {
+        CompoundTag resetTag = new CompoundTag();
+        HungerManager hungerManager = new HungerManager();
+        hungerManager.toTag(resetTag);
+        player.getHungerManager().fromTag(resetTag);
     }
 
     public static Vec3d choosePos(Random random, BlockBounds bounds, float aboveGround) {
