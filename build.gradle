@@ -16,7 +16,7 @@ minecraft {
 
 repositories {
     maven { url = "https://jitpack.io/" }
-    maven { url = "https://maven.gegy.dev/" }
+    maven { url = "https://maven.nucleoid.xyz/" }
 }
 
 dependencies {

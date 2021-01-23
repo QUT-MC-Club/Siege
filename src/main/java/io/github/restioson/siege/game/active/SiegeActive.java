@@ -47,6 +47,7 @@ import xyz.nucleoid.plasmid.game.player.JoinResult;
 import xyz.nucleoid.plasmid.game.player.PlayerSet;
 import xyz.nucleoid.plasmid.game.rule.GameRule;
 import xyz.nucleoid.plasmid.game.rule.RuleResult;
+import xyz.nucleoid.plasmid.shop.ShopUi;
 import xyz.nucleoid.plasmid.util.BlockBounds;
 import xyz.nucleoid.plasmid.util.PlayerRef;
 import xyz.nucleoid.plasmid.widget.GlobalWidgets;
@@ -370,16 +371,20 @@ public class SiegeActive {
         Item item = stack.getItem();
         if (participant != null) {
             ItemCooldownManager cooldownManager = player.getItemCooldownManager();
+
             if (item == Items.ENDER_PEARL && !cooldownManager.isCoolingDown(Items.ENDER_PEARL)) {
-                SiegeSpawnResult spawn = this.getSpawnFor(player, this.gameSpace.getWorld().getTime());
-                if (spawn.flag != null && spawn.frontLine) {
-                    this.warpingPlayers.add(new WarpingPlayer(player, spawn.flag, this.gameSpace.getWorld().getTime()));
+                ShopUi ui = WarpSelectionUi.create(this.gameSpace.getWorld(), this.map, participant.team, selectedFlag -> {
+                    if (cooldownManager.isCoolingDown(Items.ENDER_PEARL)) {
+                        return;
+                    }
                     cooldownManager.set(Items.ENDER_PEARL, 10 * 20);
-                    player.sendMessage(new LiteralText(String.format("Warping to %s... hold still!", spawn.flag.name)).formatted(Formatting.GREEN), true);
+
+                    this.warpingPlayers.add(new WarpingPlayer(player, selectedFlag, this.gameSpace.getWorld().getTime()));
+                    player.sendMessage(new LiteralText(String.format("Warping to %s... hold still!", selectedFlag.name)).formatted(Formatting.GREEN), true);
                     player.playSound(SoundEvents.ENTITY_ENDER_PEARL_THROW, SoundCategory.NEUTRAL, 1.0F, 1.0F);
-                } else {
-                    player.sendMessage(new LiteralText("There are no flags in need of assistance").formatted(Formatting.RED), true);
-                }
+                });
+
+                player.openHandledScreen(ui);
 
                 int slot;
                 if (hand == Hand.MAIN_HAND) {

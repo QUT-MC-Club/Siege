@@ -7,6 +7,7 @@ import io.github.restioson.siege.game.active.SiegeCaptureLogic;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import net.minecraft.entity.boss.BossBar;
 import net.minecraft.entity.boss.ServerBossBar;
+import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.LiteralText;
 import org.jetbrains.annotations.Nullable;
@@ -26,6 +27,9 @@ public final class SiegeFlag {
     public boolean pluralName = false;
     public List<BlockBounds> flagIndicatorBlocks;
     public List<SiegeKitStandEntity> kitStands;
+
+    @Nullable
+    public ItemStack icon;
 
     @Nullable
     public SiegeSpawn attackerRespawn;

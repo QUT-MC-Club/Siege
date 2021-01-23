@@ -7,6 +7,7 @@ import io.github.restioson.siege.game.SiegeTeams;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.fabricmc.fabric.api.util.NbtType;
 import net.minecraft.block.BlockState;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.text.LiteralText;
@@ -123,6 +124,11 @@ public class SiegeMapLoader {
 
             if (data.contains("plural") && data.getBoolean("plural")) {
                 flag.pluralName = true;
+            }
+
+            if (data.contains("icon")) {
+                String icon = data.getString("icon");
+                flag.icon = new ItemStack(Registry.ITEM.get(new Identifier(icon)));
             }
 
             flags.put(id, flag);
