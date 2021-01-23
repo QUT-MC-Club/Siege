@@ -1,10 +1,10 @@
 package io.github.restioson.siege.game.map;
 
+import com.google.common.base.Strings;
 import io.github.restioson.siege.Siege;
 import io.github.restioson.siege.game.SiegeKit;
 import io.github.restioson.siege.game.SiegeTeams;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import joptsimple.internal.Strings;
 import net.fabricmc.fabric.api.util.NbtType;
 import net.minecraft.block.BlockState;
 import net.minecraft.nbt.CompoundTag;
