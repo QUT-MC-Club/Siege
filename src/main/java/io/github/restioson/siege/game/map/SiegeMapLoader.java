@@ -15,6 +15,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.biome.BiomeKeys;
+import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.plasmid.game.GameOpenException;
 import xyz.nucleoid.plasmid.game.player.GameTeam;
 import xyz.nucleoid.plasmid.map.template.MapTemplate;
@@ -109,7 +110,7 @@ public class SiegeMapLoader {
             String name = data.getString("name");
             GameTeam team = this.parseTeam(data);
 
-            SiegeFlag flag = new SiegeFlag(id, name, team, bounds, null);
+            SiegeFlag flag = new SiegeFlag(id, name, team, bounds);
             if (data.contains("capturable") && !data.getBoolean("capturable")) {
                 flag.capturable = false;
             }
@@ -170,7 +171,14 @@ public class SiegeMapLoader {
             String flagId = data.getString("id");
             SiegeFlag flag = flags.get(flagId);
             if (flag != null) {
-                flag.respawn = region.getBounds();
+                GameTeam team = this.parseOptionalTeam(data);
+                if (team == SiegeTeams.DEFENDERS) {
+                    flag.defenderRespawn = region.getBounds();
+                } else if (team == SiegeTeams.ATTACKERS) {
+                    flag.attackerRespawn = region.getBounds();
+                } else {
+                    flag.defenderRespawn = flag.attackerRespawn = region.getBounds();
+                }
 
                 if (data.contains("starting_spawn") && data.getBoolean("starting_spawn")) {
                     if (flag.team == SiegeTeams.DEFENDERS) {
@@ -233,7 +241,7 @@ public class SiegeMapLoader {
 
         for (SiegeFlag flag : flags.values()) {
             // TODO: remove this restriction (it's for warp enderpearl)
-            if (flag.team == SiegeTeams.DEFENDERS && flag.respawn == null) {
+            if (flag.team == SiegeTeams.DEFENDERS && flag.defenderRespawn == null) {
                 Siege.LOGGER.error("Flag \"{}\" missing respawn!", flag.name);
                 throw new GameOpenException(new LiteralText("Flag missing respawn!"));
             }
@@ -248,6 +256,12 @@ public class SiegeMapLoader {
             return SiegeTeams.DEFENDERS;
         }
         return team;
+    }
+
+    @Nullable
+    private GameTeam parseOptionalTeam(CompoundTag data) {
+        String teamName = data.getString("team");
+        return SiegeTeams.byKey(teamName);
     }
 
     private SiegeKit parseKitStandType(CompoundTag data) {

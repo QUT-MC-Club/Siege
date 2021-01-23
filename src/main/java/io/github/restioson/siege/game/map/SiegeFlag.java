@@ -28,7 +28,9 @@ public final class SiegeFlag {
     public List<SiegeKitStandEntity> kitStands;
 
     @Nullable
-    public BlockBounds respawn;
+    public BlockBounds attackerRespawn;
+    @Nullable
+    public BlockBounds defenderRespawn;
 
     @Nullable
     public SiegeGate gate;
@@ -45,13 +47,21 @@ public final class SiegeFlag {
     public final ServerBossBar captureBar = new ServerBossBar(new LiteralText("Capturing"), BossBar.Color.RED, BossBar.Style.NOTCHED_10);
     private final Set<ServerPlayerEntity> capturingPlayers = new ReferenceOpenHashSet<>();
 
-    public SiegeFlag(String id, String name, GameTeam team, BlockBounds bounds, @Nullable BlockBounds respawn) {
+    public SiegeFlag(String id, String name, GameTeam team, BlockBounds bounds) {
         this.id = id;
         this.name = name;
         this.team = team;
         this.bounds = bounds;
-        this.respawn = respawn;
         this.kitStands = new ArrayList<>();
+    }
+
+    @Nullable
+    public BlockBounds getRespawnFor(GameTeam team) {
+        if (team == SiegeTeams.ATTACKERS) {
+            return this.attackerRespawn;
+        } else {
+            return this.defenderRespawn;
+        }
     }
 
     public String pastToBe() {

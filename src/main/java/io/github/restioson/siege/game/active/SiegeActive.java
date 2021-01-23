@@ -516,12 +516,13 @@ public class SiegeActive {
         double minDistance = Double.MAX_VALUE;
 
         for (SiegeFlag flag : this.map.flags) {
-            if (flag.respawn != null && flag.team == team) {
-                double distance = player.squaredDistanceTo(flag.respawn.getCenter());
+            BlockBounds flagRespawn = flag.getRespawnFor(team);
+            if (flagRespawn != null && flag.team == team) {
+                double distance = player.squaredDistanceTo(flagRespawn.getCenter());
                 boolean frontLine = flag.isFrontLine(time);
 
                 if ((distance < minDistance && frontLine == respawn.frontLine) || (frontLine && !respawn.frontLine)) {
-                    respawn.setFlag(flag, frontLine);
+                    respawn.setFlag(flag, flagRespawn, frontLine);
                     minDistance = distance;
                 }
             }
@@ -588,8 +589,9 @@ public class SiegeActive {
             }
 
             if (world.getTime() - warpingPlayer.startTime > 20 * 3) {
-                assert warpingPlayer.destination.respawn != null; // TODO remove restriction
-                Vec3d pos = SiegeSpawnLogic.choosePos(player.getRandom(), warpingPlayer.destination.respawn, 0.5f);
+                BlockBounds respawn = warpingPlayer.destination.getRespawnFor(warpingPlayer.destination.team);
+                assert respawn != null; // TODO remove restriction
+                Vec3d pos = SiegeSpawnLogic.choosePos(player.getRandom(), respawn, 0.5f);
                 player.teleport(world, pos.x, pos.y, pos.z, 0.0F, 0.0F);
                 player.playSound(SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.NEUTRAL, 1.0F, 1.0F);
                 return true;
@@ -646,10 +648,10 @@ public class SiegeActive {
             this.bounds = bounds;
         }
 
-        public void setFlag(SiegeFlag flag, boolean frontLine) {
+        public void setFlag(SiegeFlag flag, BlockBounds respawn, boolean frontLine) {
             this.flag = flag;
             this.frontLine = frontLine;
-            this.bounds = flag.respawn;
+            this.bounds = respawn;
         }
     }
 
