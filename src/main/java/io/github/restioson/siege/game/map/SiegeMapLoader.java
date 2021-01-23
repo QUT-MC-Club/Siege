@@ -44,11 +44,16 @@ public class SiegeMapLoader {
 
             SiegeMap map = new SiegeMap(template, this.config.attackerSpawnAngle);
 
-            String biomeId = metadata.getData().getString("biome");
+            CompoundTag mapData = metadata.getData();
+            String biomeId = mapData.getString("biome");
             if (!Strings.isNullOrEmpty(biomeId)) {
                 template.setBiome(RegistryKey.of(Registry.BIOME_KEY, new Identifier(biomeId)));
             } else {
                 template.setBiome(BiomeKeys.PLAINS);
+            }
+
+            if (mapData.contains("time")) {
+                map.time = mapData.getLong("time");
             }
 
             TemplateRegion waitingSpawn = metadata.getFirstRegion("waiting_spawn");

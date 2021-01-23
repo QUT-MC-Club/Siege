@@ -758,8 +758,8 @@ public class SiegeActive {
         players.sendMessage(new LiteralText(String.format("Attacker kills - %d", attacker_kills)).formatted(colour).formatted(bold));
         players.sendMessage(new LiteralText(String.format("Attacker deaths - %d", attacker_deaths)).formatted(colour).formatted(bold));
         players.sendMessage(new LiteralText(String.format("Attacker K/D - %.2f", attacker_kd)).formatted(colour).formatted(bold));
-        players.sendMessage(new LiteralText(String.format("Defender kills - %d", attacker_kills)).formatted(colour).formatted(bold));
-        players.sendMessage(new LiteralText(String.format("Defender deaths - %d", attacker_kills)).formatted(colour).formatted(bold));
+        players.sendMessage(new LiteralText(String.format("Defender kills - %d", defender_kills)).formatted(colour).formatted(bold));
+        players.sendMessage(new LiteralText(String.format("Defender deaths - %d", defender_deaths)).formatted(colour).formatted(bold));
         players.sendMessage(new LiteralText(String.format("Defender K/D - %.2f", defender_kd)).formatted(colour).formatted(bold));
     }
 

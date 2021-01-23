@@ -3,14 +3,8 @@ package io.github.restioson.siege.game.map;
 import io.github.restioson.siege.game.SiegeTeams;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryKey;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.BiomeKeys;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 import xyz.nucleoid.plasmid.game.player.GameTeam;
 import xyz.nucleoid.plasmid.map.template.MapTemplate;
@@ -39,18 +33,7 @@ public class SiegeMap {
         this.template = template;
         this.attackerSpawnAngle = attackerSpawnAngle;
         this.bounds = template.getBounds();
-        CompoundTag data = template.getMetadata().getData();
         this.time = 1000;
-
-        if (data.contains("time")) {
-            this.time = data.getLong("time");
-        }
-
-        RegistryKey<Biome> biome = BiomeKeys.PLAINS;
-        if (data.contains("biome")) {
-            biome = RegistryKey.of(Registry.BIOME_KEY, new Identifier(data.getString("biome")));
-        }
-        template.setBiome(biome);
     }
 
     public SiegeSpawn getFirstSpawn(GameTeam team) {
