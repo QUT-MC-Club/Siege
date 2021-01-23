@@ -6,10 +6,7 @@ import io.github.restioson.siege.game.SiegeConfig;
 import io.github.restioson.siege.game.SiegeKit;
 import io.github.restioson.siege.game.SiegeSpawnLogic;
 import io.github.restioson.siege.game.SiegeTeams;
-import io.github.restioson.siege.game.map.SiegeFlag;
-import io.github.restioson.siege.game.map.SiegeGate;
-import io.github.restioson.siege.game.map.SiegeKitStandLocation;
-import io.github.restioson.siege.game.map.SiegeMap;
+import io.github.restioson.siege.game.map.*;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
@@ -374,7 +371,7 @@ public class SiegeActive {
         if (participant != null) {
             ItemCooldownManager cooldownManager = player.getItemCooldownManager();
             if (item == Items.ENDER_PEARL && !cooldownManager.isCoolingDown(Items.ENDER_PEARL)) {
-                SiegeSpawn spawn = this.getSpawnFor(player, this.gameSpace.getWorld().getTime());
+                SiegeSpawnResult spawn = this.getSpawnFor(player, this.gameSpace.getWorld().getTime());
                 if (spawn.flag != null && spawn.frontLine) {
                     this.warpingPlayers.add(new WarpingPlayer(player, spawn.flag, this.gameSpace.getWorld().getTime()));
                     cooldownManager.set(Items.ENDER_PEARL, 10 * 20);
@@ -490,35 +487,35 @@ public class SiegeActive {
         player.inventory.clear();
     }
 
-    private void spawnParticipant(ServerPlayerEntity player, @Nullable BlockBounds spawnRegion) {
+    private void spawnParticipant(ServerPlayerEntity player, @Nullable SiegeSpawn spawn) {
         player.inventory.clear();
         player.getEnderChestInventory().clear();
         SiegePlayer participant = this.participant(player);
         assert participant != null; // spawnParticipant should only be spawned on a participant
         participant.timeOfSpawn = this.gameSpace.getWorld().getTime();
 
-        if (spawnRegion == null) {
-            spawnRegion = this.getSpawnFor(player, this.gameSpace.getWorld().getTime()).bounds;
+        if (spawn == null) {
+            spawn = this.getSpawnFor(player, this.gameSpace.getWorld().getTime()).spawn;
         }
 
         SiegeSpawnLogic.resetPlayer(player, GameMode.SURVIVAL);
         participant.kit.equipPlayer(player, participant, this.gameSpace.getWorld(), this.config);
-        SiegeSpawnLogic.spawnPlayer(player, spawnRegion, this.gameSpace.getWorld());
+        SiegeSpawnLogic.spawnPlayer(player, spawn, this.gameSpace.getWorld());
     }
 
-    private SiegeSpawn getSpawnFor(ServerPlayerEntity player, long time) {
+    private SiegeSpawnResult getSpawnFor(ServerPlayerEntity player, long time) {
         GameTeam team = this.getTeamFor(player);
         if (team == null) {
-            return new SiegeSpawn(null, this.map.waitingSpawn);
+            return new SiegeSpawnResult(null, this.map.waitingSpawn);
         }
 
-        SiegeSpawn respawn = new SiegeSpawn(null, this.map.waitingSpawn);
+        SiegeSpawnResult respawn = new SiegeSpawnResult(null, this.map.waitingSpawn);
         double minDistance = Double.MAX_VALUE;
 
         for (SiegeFlag flag : this.map.flags) {
-            BlockBounds flagRespawn = flag.getRespawnFor(team);
+            SiegeSpawn flagRespawn = flag.getRespawnFor(team);
             if (flagRespawn != null && flag.team == team) {
-                double distance = player.squaredDistanceTo(flagRespawn.getCenter());
+                double distance = player.squaredDistanceTo(flagRespawn.bounds.getCenter());
                 boolean frontLine = flag.isFrontLine(time);
 
                 if ((distance < minDistance && frontLine == respawn.frontLine) || (frontLine && !respawn.frontLine)) {
@@ -589,10 +586,10 @@ public class SiegeActive {
             }
 
             if (world.getTime() - warpingPlayer.startTime > 20 * 3) {
-                BlockBounds respawn = warpingPlayer.destination.getRespawnFor(warpingPlayer.destination.team);
+                SiegeSpawn respawn = warpingPlayer.destination.getRespawnFor(warpingPlayer.destination.team);
                 assert respawn != null; // TODO remove restriction
-                Vec3d pos = SiegeSpawnLogic.choosePos(player.getRandom(), respawn, 0.5f);
-                player.teleport(world, pos.x, pos.y, pos.z, 0.0F, 0.0F);
+                Vec3d pos = SiegeSpawnLogic.choosePos(player.getRandom(), respawn.bounds, 0.5f);
+                player.teleport(world, pos.x, pos.y, pos.z, respawn.yaw, 0.0F);
                 player.playSound(SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.NEUTRAL, 1.0F, 1.0F);
                 return true;
             }
@@ -632,26 +629,26 @@ public class SiegeActive {
         }
     }
 
-    static class SiegeSpawn {
+    static class SiegeSpawnResult {
         @Nullable
         SiegeFlag flag;
         boolean frontLine;
-        BlockBounds bounds;
+        SiegeSpawn spawn;
 
-        public SiegeSpawn(@Nullable SiegeFlag flag, BlockBounds bounds) {
+        public SiegeSpawnResult(@Nullable SiegeFlag flag, SiegeSpawn spawn) {
             this.flag = flag;
 
             if (flag != null) {
                 this.frontLine = flag.capturingState == CapturingState.CAPTURING || flag.capturingState == CapturingState.CONTESTED;
             }
 
-            this.bounds = bounds;
+            this.spawn = spawn;
         }
 
-        public void setFlag(SiegeFlag flag, BlockBounds respawn, boolean frontLine) {
+        public void setFlag(SiegeFlag flag, SiegeSpawn spawn, boolean frontLine) {
             this.flag = flag;
             this.frontLine = frontLine;
-            this.bounds = respawn;
+            this.spawn = spawn;
         }
     }
 

@@ -40,24 +40,25 @@ public class SiegeMapLoader {
     public SiegeMap create() throws GameOpenException {
         try {
             MapTemplate template = MapTemplateSerializer.INSTANCE.loadFromResource(this.config.id);
+            MapTemplateMetadata metadata = template.getMetadata();
 
             SiegeMap map = new SiegeMap(template, this.config.attackerSpawnAngle);
 
-            String biomeId = template.getMetadata().getData().getString("biome");
+            String biomeId = metadata.getData().getString("biome");
             if (!Strings.isNullOrEmpty(biomeId)) {
                 template.setBiome(RegistryKey.of(Registry.BIOME_KEY, new Identifier(biomeId)));
             } else {
                 template.setBiome(BiomeKeys.PLAINS);
             }
 
-            BlockBounds waitingSpawn = template.getMetadata().getFirstRegionBounds("waiting_spawn");
+            TemplateRegion waitingSpawn = metadata.getFirstRegion("waiting_spawn");
             if (waitingSpawn == null) {
                 throw new GameOpenException(new LiteralText("waiting_spawn region required but not found"));
             }
 
-            map.setWaitingSpawn(waitingSpawn);
+            map.setWaitingSpawn(new SiegeSpawn(waitingSpawn.getBounds(), waitingSpawn.getData().getFloat("yaw")));
 
-            this.addFlagsToMap(map, template.getMetadata());
+            this.addFlagsToMap(map, metadata);
             map.kitStands.addAll(this.collectKitStands(map.flags, template));
 
             for (BlockPos pos : template.getBounds()) {
@@ -171,20 +172,23 @@ public class SiegeMapLoader {
             String flagId = data.getString("id");
             SiegeFlag flag = flags.get(flagId);
             if (flag != null) {
+                float yaw = data.getFloat("yaw");
+                SiegeSpawn respawn = new SiegeSpawn(region.getBounds(), yaw);
+
                 GameTeam team = this.parseOptionalTeam(data);
                 if (team == SiegeTeams.DEFENDERS) {
-                    flag.defenderRespawn = region.getBounds();
+                    flag.defenderRespawn = respawn;
                 } else if (team == SiegeTeams.ATTACKERS) {
-                    flag.attackerRespawn = region.getBounds();
+                    flag.attackerRespawn = respawn;
                 } else {
-                    flag.defenderRespawn = flag.attackerRespawn = region.getBounds();
+                    flag.defenderRespawn = flag.attackerRespawn = respawn;
                 }
 
                 if (data.contains("starting_spawn") && data.getBoolean("starting_spawn")) {
                     if (flag.team == SiegeTeams.DEFENDERS) {
-                        map.defenderFirstSpawn = region.getBounds();
+                        map.defenderFirstSpawn = respawn;
                     } else {
-                        map.attackerFirstSpawn = region.getBounds();
+                        map.attackerFirstSpawn = respawn;
                     }
                 }
             } else {

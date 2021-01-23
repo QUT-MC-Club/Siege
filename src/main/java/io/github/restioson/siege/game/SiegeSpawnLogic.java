@@ -1,5 +1,6 @@
 package io.github.restioson.siege.game;
 
+import io.github.restioson.siege.game.map.SiegeSpawn;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -31,8 +32,8 @@ public class SiegeSpawnLogic {
         return new Vec3d(x, y, z);
     }
 
-    public static void spawnPlayer(ServerPlayerEntity player, BlockBounds bounds, ServerWorld world) {
-        Vec3d pos = SiegeSpawnLogic.choosePos(player.getRandom(), bounds, 0.5f);
-        player.teleport(world, pos.x, pos.y, pos.z, 0.0F, 0.0F);
+    public static void spawnPlayer(ServerPlayerEntity player, SiegeSpawn spawn, ServerWorld world) {
+        Vec3d pos = SiegeSpawnLogic.choosePos(player.getRandom(), spawn.bounds, 0.5f);
+        player.teleport(world, pos.x, pos.y, pos.z, spawn.yaw, 0.0F);
     }
 }

@@ -28,9 +28,9 @@ public final class SiegeFlag {
     public List<SiegeKitStandEntity> kitStands;
 
     @Nullable
-    public BlockBounds attackerRespawn;
+    public SiegeSpawn attackerRespawn;
     @Nullable
-    public BlockBounds defenderRespawn;
+    public SiegeSpawn defenderRespawn;
 
     @Nullable
     public SiegeGate gate;
@@ -56,7 +56,7 @@ public final class SiegeFlag {
     }
 
     @Nullable
-    public BlockBounds getRespawnFor(GameTeam team) {
+    public SiegeSpawn getRespawnFor(GameTeam team) {
         if (team == SiegeTeams.ATTACKERS) {
             return this.attackerRespawn;
         } else {

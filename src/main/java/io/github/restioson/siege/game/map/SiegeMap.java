@@ -26,11 +26,11 @@ public class SiegeMap {
     public final List<SiegeKitStandLocation> kitStands = new ArrayList<>();
     public final int attackerSpawnAngle;
     public final BlockBounds bounds;
-    public BlockBounds waitingSpawn = BlockBounds.EMPTY;
+    public SiegeSpawn waitingSpawn = null;
     public List<BlockBounds> noBuildRegions = new ArrayList<>();
     public List<SiegeGate> gates = new ArrayList<>();
-    public BlockBounds attackerFirstSpawn;
-    public BlockBounds defenderFirstSpawn;
+    public SiegeSpawn attackerFirstSpawn;
+    public SiegeSpawn defenderFirstSpawn;
     public long time;
 
     private final LongSet protectedBlocks = new LongOpenHashSet();
@@ -53,7 +53,7 @@ public class SiegeMap {
         template.setBiome(biome);
     }
 
-    public BlockBounds getFirstSpawn(GameTeam team) {
+    public SiegeSpawn getFirstSpawn(GameTeam team) {
         if (team == SiegeTeams.ATTACKERS) {
             return this.attackerFirstSpawn;
         } else {
@@ -61,8 +61,8 @@ public class SiegeMap {
         }
     }
 
-    public void setWaitingSpawn(BlockBounds bounds) {
-        this.waitingSpawn = bounds;
+    public void setWaitingSpawn(SiegeSpawn spawn) {
+        this.waitingSpawn = spawn;
     }
 
     public void addProtectedBlock(long pos) {
