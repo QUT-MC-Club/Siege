@@ -291,28 +291,18 @@ public class SiegeActive {
 
         Block block = blockState.getBlock();
 
-        int slot;
-        if (ctx.getHand() == Hand.MAIN_HAND) {
-            slot = player.inventory.selectedSlot;
-        } else {
-            slot = 40; // offhand
-        }
-
         if (participant.kit == SiegeKit.CONSTRUCTOR && block != Blocks.TNT) {
             // TNT may be placed anyway
             for (BlockBounds noBuildRegion : this.map.noBuildRegions) {
                 if (noBuildRegion.contains(blockPos)) {
-                    // TODO do this in plasmid
-                    player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, slot, ctx.getStack()));
                     return ActionResult.FAIL;
                 }
             }
 
-            return this.gateLogic.maybeBraceGate(blockPos, player, slot, ctx);
+            return this.gateLogic.maybeBraceGate(blockPos, player, ctx);
         } else if (participant.kit == SiegeKit.DEMOLITIONER && block == Blocks.TNT) {
             return ActionResult.PASS;
         } else {
-            player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, slot, ctx.getStack()));
             return ActionResult.FAIL;
         }
     }

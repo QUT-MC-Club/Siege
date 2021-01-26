@@ -9,7 +9,6 @@ import net.minecraft.block.Blocks;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemUsageContext;
 import net.minecraft.item.Items;
-import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -38,7 +37,7 @@ public class SiegeGateLogic {
         }
     }
 
-    public ActionResult maybeBraceGate(BlockPos pos, ServerPlayerEntity player, int slot, ItemUsageContext ctx) {
+    public ActionResult maybeBraceGate(BlockPos pos, ServerPlayerEntity player, ItemUsageContext ctx) {
         for (SiegeGate gate : this.active.map.gates) {
             if (gate.brace != null && gate.brace.contains(pos)) {
                 if (gate.health < gate.maxHealth) {
@@ -47,12 +46,10 @@ public class SiegeGateLogic {
                     gate.broadcastHealth(player, this.active, world);
                     world.setBlockState(pos, Blocks.AIR.getDefaultState());
                     ctx.getStack().decrement(1);
-                    player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, slot, ctx.getStack()));
                     return ActionResult.FAIL;
                 } else {
                     player.sendMessage(new LiteralText("The gate is already at max health!").formatted(Formatting.DARK_GREEN), true);
                 }
-                player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, slot, ctx.getStack()));
                 return ActionResult.FAIL;
             }
         }
