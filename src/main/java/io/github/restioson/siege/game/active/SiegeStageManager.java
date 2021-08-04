@@ -5,7 +5,7 @@ import io.github.restioson.siege.game.SiegeTeams;
 import io.github.restioson.siege.game.map.SiegeFlag;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.world.GameMode;
-import xyz.nucleoid.plasmid.game.player.GameTeam;
+import xyz.nucleoid.plasmid.game.common.team.GameTeam;
 
 public class SiegeStageManager {
     private final SiegeActive game;
@@ -16,11 +16,11 @@ public class SiegeStageManager {
 
     SiegeStageManager(SiegeActive game) {
         this.game = game;
-        this.singlePlayer = game.gameSpace.getPlayerCount() <= 1;
+        this.singlePlayer = game.gameSpace.getPlayers().size() <= 1;
     }
 
     public void onOpen(long time, SiegeConfig config) {
-        this.finishTime = time + (config.timeLimitMins * 20 * 60);
+        this.finishTime = time + (config.timeLimitMins() * 20 * 60);
     }
 
     public TickResult tick(long time) {
@@ -43,7 +43,7 @@ public class SiegeStageManager {
             return TickResult.ATTACKERS_WIN;
         }
 
-        if (!this.singlePlayer && this.game.gameSpace.getPlayerCount() <= 1) {
+        if (!this.singlePlayer && this.game.gameSpace.getPlayers().size() <= 1) {
             GameTeam team = this.getRemainingTeam();
             this.triggerFinish(time);
             if (team == SiegeTeams.DEFENDERS) {
@@ -65,7 +65,7 @@ public class SiegeStageManager {
 
     private void triggerFinish(long time) {
         for (ServerPlayerEntity player : this.game.gameSpace.getPlayers()) {
-            player.setGameMode(GameMode.SPECTATOR);
+            player.changeGameMode(GameMode.SPECTATOR);
         }
 
         this.closeTime = time + (5 * 20);

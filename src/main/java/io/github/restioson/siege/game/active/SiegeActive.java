@@ -1,6 +1,7 @@
 package io.github.restioson.siege.game.active;
 
 import com.google.common.collect.Multimap;
+import eu.pb4.sgui.api.gui.SimpleGui;
 import io.github.restioson.siege.entity.SiegeKitStandEntity;
 import io.github.restioson.siege.game.SiegeConfig;
 import io.github.restioson.siege.game.SiegeKit;
@@ -20,7 +21,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.item.*;
-import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -38,19 +38,34 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
+import net.minecraft.world.explosion.Explosion;
 import org.jetbrains.annotations.Nullable;
+import xyz.nucleoid.map_templates.BlockBounds;
+import xyz.nucleoid.plasmid.game.GameActivity;
 import xyz.nucleoid.plasmid.game.GameCloseReason;
 import xyz.nucleoid.plasmid.game.GameSpace;
-import xyz.nucleoid.plasmid.game.event.*;
-import xyz.nucleoid.plasmid.game.player.GameTeam;
-import xyz.nucleoid.plasmid.game.player.JoinResult;
+import xyz.nucleoid.plasmid.game.common.GlobalWidgets;
+import xyz.nucleoid.plasmid.game.common.team.GameTeam;
+import xyz.nucleoid.plasmid.game.common.team.GameTeamKey;
+import xyz.nucleoid.plasmid.game.event.GameActivityEvents;
+import xyz.nucleoid.plasmid.game.event.GamePlayerEvents;
+import xyz.nucleoid.plasmid.game.player.PlayerOffer;
+import xyz.nucleoid.plasmid.game.player.PlayerOfferResult;
 import xyz.nucleoid.plasmid.game.player.PlayerSet;
-import xyz.nucleoid.plasmid.game.rule.GameRule;
-import xyz.nucleoid.plasmid.game.rule.RuleResult;
-import xyz.nucleoid.plasmid.shop.ShopUi;
-import xyz.nucleoid.plasmid.util.BlockBounds;
+import xyz.nucleoid.plasmid.game.rule.GameRuleType;
 import xyz.nucleoid.plasmid.util.PlayerRef;
-import xyz.nucleoid.plasmid.widget.GlobalWidgets;
+import xyz.nucleoid.stimuli.event.block.BlockBreakEvent;
+import xyz.nucleoid.stimuli.event.block.BlockPlaceEvent;
+import xyz.nucleoid.stimuli.event.block.BlockPunchEvent;
+import xyz.nucleoid.stimuli.event.block.BlockUseEvent;
+import xyz.nucleoid.stimuli.event.item.ItemThrowEvent;
+import xyz.nucleoid.stimuli.event.item.ItemUseEvent;
+import xyz.nucleoid.stimuli.event.player.PlayerAttackEntityEvent;
+import xyz.nucleoid.stimuli.event.player.PlayerDamageEvent;
+import xyz.nucleoid.stimuli.event.player.PlayerDeathEvent;
+import xyz.nucleoid.stimuli.event.projectile.ArrowFireEvent;
+import xyz.nucleoid.stimuli.event.projectile.ProjectileHitEvent;
+import xyz.nucleoid.stimuli.event.world.ExplosionDetonatedEvent;
 
 import java.util.*;
 import java.util.function.ToDoubleFunction;
@@ -58,6 +73,7 @@ import java.util.function.ToDoubleFunction;
 public class SiegeActive {
     public final SiegeConfig config;
 
+    public final ServerWorld world;
     public final GameSpace gameSpace;
     final SiegeMap map;
 
@@ -74,19 +90,20 @@ public class SiegeActive {
 
     public static int TNT_GATE_DAMAGE = 15;
 
-    private SiegeActive(GameSpace gameSpace, SiegeMap map, SiegeConfig config, GlobalWidgets widgets, Multimap<GameTeam, ServerPlayerEntity> players) {
-        this.gameSpace = gameSpace;
+    private SiegeActive(ServerWorld world, GameActivity activity, SiegeMap map, SiegeConfig config, GlobalWidgets widgets, Multimap<GameTeamKey, ServerPlayerEntity> players) {
+        this.world = world;
+        this.gameSpace = activity.getGameSpace();
         this.config = config;
         this.map = map;
         this.participants = new Object2ObjectOpenHashMap<>();
         this.warpingPlayers = new LinkedList<>();
 
-        this.teams = gameSpace.addResource(new SiegeTeams(gameSpace));
+        this.teams = new SiegeTeams(activity);
 
-        for (GameTeam team : players.keySet()) {
-            for (ServerPlayerEntity player : players.get(team)) {
-                this.participants.put(PlayerRef.of(player), new SiegePlayer(team));
-                this.teams.addPlayer(player, team);
+        for (GameTeamKey key : players.keySet()) {
+            for (ServerPlayerEntity player : players.get(key)) {
+                this.participants.put(PlayerRef.of(player), new SiegePlayer(SiegeTeams.byKey(key)));
+                this.teams.addPlayer(player, key);
             }
         }
 
@@ -98,44 +115,41 @@ public class SiegeActive {
         this.gateLogic = new SiegeGateLogic(this);
     }
 
-    public static void open(GameSpace gameSpace, SiegeMap map, SiegeConfig config, Multimap<GameTeam, ServerPlayerEntity> players) {
-        gameSpace.openGame(game -> {
-            GlobalWidgets widgets = new GlobalWidgets(game);
+    public static void open(ServerWorld world, GameSpace gameSpace, SiegeMap map, SiegeConfig config, Multimap<GameTeamKey, ServerPlayerEntity> players) {
+        gameSpace.setActivity(activity -> {
+            GlobalWidgets widgets = GlobalWidgets.addTo(activity);
 
-            SiegeActive active = new SiegeActive(gameSpace, map, config, widgets, players);
+            SiegeActive active = new SiegeActive(world, activity, map, config, widgets, players);
 
-            game.setRule(GameRule.CRAFTING, RuleResult.DENY);
-            game.setRule(GameRule.PORTALS, RuleResult.DENY);
-            game.setRule(GameRule.PVP, RuleResult.ALLOW);
-            game.setRule(GameRule.HUNGER, RuleResult.ALLOW);
-            game.setRule(GameRule.INTERACTION, RuleResult.ALLOW);
-            game.setRule(GameRule.FALL_DAMAGE, RuleResult.ALLOW);
-            game.setRule(GameRule.PLACE_BLOCKS, RuleResult.ALLOW);
-            game.setRule(GameRule.UNSTABLE_TNT, RuleResult.ALLOW);
+            activity.deny(GameRuleType.CRAFTING);
+            activity.deny(GameRuleType.PORTALS);
+            activity.allow(GameRuleType.PVP);
+            activity.allow(GameRuleType.HUNGER);
+            activity.allow(GameRuleType.INTERACTION);
+            activity.allow(GameRuleType.FALL_DAMAGE);
+            activity.allow(GameRuleType.PLACE_BLOCKS);
+            activity.allow(GameRuleType.UNSTABLE_TNT);
 
-            game.on(GameOpenListener.EVENT, active::onOpen);
-            game.on(GameCloseListener.EVENT, active::onClose);
-            game.on(DropItemListener.EVENT, active::onDropItem);
-            game.on(BreakBlockListener.EVENT, active::onBreakBlock);
-            game.on(PlaceBlockListener.EVENT, active::onPlaceBlock);
+            activity.listen(GameActivityEvents.ENABLE, active::onOpen);
+            activity.listen(GameActivityEvents.DISABLE, active::onClose);
+            activity.listen(ItemThrowEvent.EVENT, active::onDropItem);
+            activity.listen(BlockBreakEvent.EVENT, active::onBreakBlock);
+            activity.listen(BlockPlaceEvent.BEFORE, active::onPlaceBlock);
 
-            game.on(OfferPlayerListener.EVENT, player -> JoinResult.ok());
-            game.on(PlayerAddListener.EVENT, active::addPlayer);
-            game.on(PlayerRemoveListener.EVENT, active::removePlayer);
-            game.on(UseBlockListener.EVENT, active::onUseBlock);
-            game.on(ExplosionListener.EVENT, active::onExplosion);
-            game.on(PlayerPunchBlockListener.EVENT, active::onHitBlock);
-            game.on(UseItemListener.EVENT, active::onUseItem);
+            activity.listen(GamePlayerEvents.OFFER, active::offerPlayer);
+            activity.listen(GamePlayerEvents.REMOVE, active::removePlayer);
+            activity.listen(BlockUseEvent.EVENT, active::onUseBlock);
+            activity.listen(ExplosionDetonatedEvent.EVENT, active::onExplosion);
+            activity.listen(BlockPunchEvent.EVENT, active::onHitBlock);
+            activity.listen(ItemUseEvent.EVENT, active::onUseItem);
 
-            game.on(GameTickListener.EVENT, active::tick);
+            activity.listen(GameActivityEvents.TICK, active::tick);
 
-            game.on(PlayerDamageListener.EVENT, active::onPlayerDamage);
-            game.on(PlayerDeathListener.EVENT, active::onPlayerDeath);
-            game.on(PlayerFireArrowListener.EVENT, active::onPlayerFireArrow);
-            game.on(AttackEntityListener.EVENT, active::onAttackEntity);
-            game.on(EntityHitListener.EVENT, active::onHitEntity);
-
-            ServerWorld world = gameSpace.getWorld();
+            activity.listen(PlayerDamageEvent.EVENT, active::onPlayerDamage);
+            activity.listen(PlayerDeathEvent.EVENT, active::onPlayerDeath);
+            activity.listen(ArrowFireEvent.EVENT, active::onPlayerFireArrow);
+            activity.listen(PlayerAttackEntityEvent.EVENT, active::onAttackEntity);
+            activity.listen(ProjectileHitEvent.ENTITY, active::onProjectileHitEntity);
 
             for (SiegeKitStandLocation stand : active.map.kitStands) {
                 SiegeKitStandEntity standEntity = new SiegeKitStandEntity(world, active, stand);
@@ -148,22 +162,22 @@ public class SiegeActive {
         });
     }
 
-    private void onExplosion(List<BlockPos> affectedBlocks) {
+    private void onExplosion(Explosion explosion, boolean particles) {
         gate:
         for (SiegeGate gate : this.map.gates) {
-            for (BlockPos pos : affectedBlocks) {
+            for (BlockPos pos : explosion.getAffectedBlocks()) {
                 if (!gate.bashedOpen && gate.health > 0 && gate.portcullis.contains(pos)) {
                     gate.health = Math.max(0, gate.health - TNT_GATE_DAMAGE);
-                    gate.timeOfLastBash = this.gameSpace.getWorld().getTime();
+                    gate.timeOfLastBash = this.world.getTime();
                     break gate;
                 }
             }
         }
 
-        affectedBlocks.removeIf(this.map::isProtectedBlock);
+        explosion.getAffectedBlocks().removeIf(this.map::isProtectedBlock);
     }
 
-    private ActionResult onHitEntity(ProjectileEntity projectileEntity, EntityHitResult hitResult) {
+    private ActionResult onProjectileHitEntity(ProjectileEntity projectileEntity, EntityHitResult hitResult) {
         if (hitResult.getEntity() instanceof ServerPlayerEntity) {
             return ActionResult.PASS;
         } else {
@@ -182,7 +196,7 @@ public class SiegeActive {
     private ActionResult onHitBlock(ServerPlayerEntity player, Direction direction, BlockPos pos) {
         SiegePlayer participant = this.participant(player);
         if (participant != null) {
-            return this.gateLogic.maybeBash(pos, player, participant, this.gameSpace.getWorld().getTime());
+            return this.gateLogic.maybeBash(pos, player, participant, this.world.getTime());
         } else {
             return ActionResult.PASS;
         }
@@ -199,8 +213,6 @@ public class SiegeActive {
     }
 
     private void onOpen() {
-        ServerWorld world = this.gameSpace.getWorld();
-
         String help = "Siege - capture all the flags to win! There are two teams - attackers and defenders. Defenders " +
                 "must defend blue flags and attackers must capture them. To capture a flag, stand near it. To defend " +
                 "it, kill the capturers, and stand near it to halt the capture progress. You can bash gates by" +
@@ -208,15 +220,15 @@ public class SiegeActive {
                 "wood near them as a constructor.";
 
         for (Map.Entry<PlayerRef, SiegePlayer> entry : this.participants.entrySet()) {
-            entry.getKey().ifOnline(world, p -> {
+            entry.getKey().ifOnline(this.world, p -> {
                 Text text = new LiteralText(help).formatted(Formatting.GOLD);
                 p.sendMessage(text, false);
 
-                if (this.config.recapture) {
+                if (this.config.recapture()) {
                     p.sendMessage(new LiteralText("Defenders may also capture attacker's flags.").formatted(Formatting.GOLD), false);
                 }
 
-                if (this.config.defenderEnderPearl && entry.getValue().team == SiegeTeams.DEFENDERS) {
+                if (this.config.defenderEnderPearl() && entry.getValue().team == SiegeTeams.DEFENDERS) {
                     p.sendMessage(
                             new LiteralText("You can use your ender pearl to warp to a flag that is under attack.")
                                     .formatted(Formatting.GOLD),
@@ -228,7 +240,7 @@ public class SiegeActive {
             });
         }
 
-        this.stageManager.onOpen(world.getTime(), this.config);
+        this.stageManager.onOpen(this.world.getTime(), this.config);
     }
 
     private void onClose() {
@@ -237,40 +249,28 @@ public class SiegeActive {
         }
     }
 
-    private void addPlayer(ServerPlayerEntity player) {
+    private PlayerOfferResult offerPlayer(PlayerOffer offer) {
+        var player = offer.player();
         if (!this.participants.containsKey(PlayerRef.of(player))) {
             this.allocateParticipant(player);
         }
-        this.spawnParticipant(player, null);
+
+        var spawn = this.getSpawnFor(player, this.world.getTime());
+        return SiegeSpawnLogic.acceptPlayer(offer, this.world, spawn.spawn, GameMode.SURVIVAL)
+                .and(() -> this.completeParticipantSpawn(player));
     }
 
     private void allocateParticipant(ServerPlayerEntity player) {
-        GameTeam smallestTeam = this.getSmallestTeam();
-        SiegePlayer participant = new SiegePlayer(smallestTeam);
+        GameTeamKey smallestTeam = this.teams.getSmallestTeam();
+        SiegePlayer participant = new SiegePlayer(SiegeTeams.byKey(smallestTeam));
         this.participants.put(PlayerRef.of(player), participant);
         this.teams.addPlayer(player, smallestTeam);
-    }
-
-    private GameTeam getSmallestTeam() {
-        // TODO: store a map of teams to players, this is bad
-        int attackersCount = 0;
-        int defendersCount = 0;
-        for (SiegePlayer participant : this.participants.values()) {
-            if (participant.team == SiegeTeams.DEFENDERS) defendersCount++;
-            if (participant.team == SiegeTeams.ATTACKERS) attackersCount++;
-        }
-
-        if (attackersCount <= defendersCount) {
-            return SiegeTeams.ATTACKERS;
-        } else {
-            return SiegeTeams.DEFENDERS;
-        }
     }
 
     private void removePlayer(ServerPlayerEntity player) {
         SiegePlayer participant = this.participants.remove(PlayerRef.of(player));
         if (participant != null) {
-            this.teams.removePlayer(player, participant.team);
+            this.teams.removePlayer(player, participant.team.key());
         }
     }
 
@@ -280,6 +280,7 @@ public class SiegeActive {
 
     private ActionResult onPlaceBlock(
             ServerPlayerEntity player,
+            ServerWorld world,
             BlockPos blockPos,
             BlockState blockState,
             ItemUsageContext ctx
@@ -307,7 +308,7 @@ public class SiegeActive {
         }
     }
 
-    private ActionResult onBreakBlock(ServerPlayerEntity player, BlockPos pos) {
+    private ActionResult onBreakBlock(ServerPlayerEntity player, ServerWorld world, BlockPos pos) {
         if (this.map.isProtectedBlock(pos.asLong())) {
             return ActionResult.FAIL;
         }
@@ -321,13 +322,12 @@ public class SiegeActive {
         }
 
         SiegePlayer participant = this.participant(player);
-        ServerWorld world = this.gameSpace.getWorld();
         Item inHand = player.getStackInHand(hand).getItem();
         if (participant != null) {
             pos.offset(hitResult.getSide());
-            BlockState state = world.getBlockState(pos);
+            BlockState state = this.world.getBlockState(pos);
             if (state.getBlock() instanceof EnderChestBlock) {
-                String error = participant.kit.restock(player, participant, world, this.config);
+                String error = participant.kit.restock(player, participant, this.world, this.config);
 
                 if (error == null) {
                     player.sendMessage(new LiteralText("Items restocked!").formatted(Formatting.DARK_GREEN, Formatting.BOLD), true);
@@ -340,7 +340,7 @@ public class SiegeActive {
             } else if (state.getBlock() instanceof BlockWithEntity) {
                 return ActionResult.FAIL;
             } else if (inHand == Items.STONE_AXE || inHand == Items.IRON_SWORD) {
-                if (this.gateLogic.maybeBash(pos, player, participant, world.getTime()) == ActionResult.FAIL) {
+                if (this.gateLogic.maybeBash(pos, player, participant, this.world.getTime()) == ActionResult.FAIL) {
                     return ActionResult.FAIL;
                 }
             }
@@ -363,28 +363,19 @@ public class SiegeActive {
             ItemCooldownManager cooldownManager = player.getItemCooldownManager();
 
             if (item == Items.ENDER_PEARL && !cooldownManager.isCoolingDown(Items.ENDER_PEARL)) {
-                ShopUi ui = WarpSelectionUi.create(this.gameSpace.getWorld(), this.map, participant.team, selectedFlag -> {
+                SimpleGui ui = WarpSelectionUi.create(player, this.map, participant.team, selectedFlag -> {
                     if (cooldownManager.isCoolingDown(Items.ENDER_PEARL)) {
                         return;
                     }
                     cooldownManager.set(Items.ENDER_PEARL, 10 * 20);
 
-                    this.warpingPlayers.add(new WarpingPlayer(player, selectedFlag, this.gameSpace.getWorld().getTime()));
+                    this.warpingPlayers.add(new WarpingPlayer(player, selectedFlag, this.world.getTime()));
                     player.sendMessage(new LiteralText(String.format("Warping to %s... hold still!", selectedFlag.name)).formatted(Formatting.GREEN), true);
                     player.playSound(SoundEvents.ENTITY_ENDER_PEARL_THROW, SoundCategory.NEUTRAL, 1.0F, 1.0F);
                 });
 
-                player.openHandledScreen(ui);
+                ui.open();
 
-                int slot;
-                if (hand == Hand.MAIN_HAND) {
-                    slot = player.inventory.selectedSlot;
-                } else {
-                    slot = 40; // offhand
-                }
-
-                // TODO do this in plasmid
-                player.networkHandler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, slot, stack));
                 return new TypedActionResult<>(ActionResult.FAIL, stack);
             }
         }
@@ -394,9 +385,9 @@ public class SiegeActive {
 
     private ActionResult onPlayerDamage(ServerPlayerEntity player, DamageSource source, float v) {
         SiegePlayer participant = this.participant(player);
-        long time = this.gameSpace.getWorld().getTime();
+        long time = this.world.getTime();
 
-        if (participant != null && this.gameSpace.getWorld().getTime() < participant.timeOfSpawn + 5 * 20 && !participant.attackedThisLife) {
+        if (participant != null && this.world.getTime() < participant.timeOfSpawn + 5 * 20 && !participant.attackedThisLife) {
             return ActionResult.FAIL;
         }
 
@@ -424,7 +415,7 @@ public class SiegeActive {
 
     private MutableText getDeathMessageAndIncStats(ServerPlayerEntity player, DamageSource source) {
         SiegePlayer participant = this.participant(player);
-        ServerWorld world = this.gameSpace.getWorld();
+        var world = this.world;
         long time = world.getTime();
 
         MutableText eliminationMessage = new LiteralText(" was killed by ");
@@ -469,33 +460,39 @@ public class SiegeActive {
 
     private void spawnDeadParticipant(ServerPlayerEntity player) {
         player.getEnderChestInventory().clear();
-        player.setGameMode(GameMode.SPECTATOR);
+        player.changeGameMode(GameMode.SPECTATOR);
         SiegePlayer participant = this.participant(player);
 
+        var inventory = player.getInventory();
         if (participant != null) {
-            participant.timeOfDeath = this.gameSpace.getWorld().getTime();
-            int wood = player.inventory.count(Items.ARROW) + player.inventory.count(SiegeTeams.planksForTeam(SiegeTeams.ATTACKERS))
-                    + player.inventory.count(SiegeTeams.planksForTeam(SiegeTeams.DEFENDERS));
+            participant.timeOfDeath = this.world.getTime();
+            int wood = inventory.count(Items.ARROW) + inventory.count(SiegeTeams.planksForTeam(SiegeTeams.ATTACKERS.key()))
+                    + inventory.count(SiegeTeams.planksForTeam(SiegeTeams.DEFENDERS.key()));
             participant.incrementResource(SiegePersonalResource.WOOD, wood);
         }
 
-        player.inventory.clear();
+        inventory.clear();
     }
 
     private void spawnParticipant(ServerPlayerEntity player, @Nullable SiegeSpawn spawn) {
-        player.inventory.clear();
-        player.getEnderChestInventory().clear();
-        SiegePlayer participant = this.participant(player);
-        assert participant != null; // spawnParticipant should only be spawned on a participant
-        participant.timeOfSpawn = this.gameSpace.getWorld().getTime();
-
         if (spawn == null) {
-            spawn = this.getSpawnFor(player, this.gameSpace.getWorld().getTime()).spawn;
+            spawn = this.getSpawnFor(player, this.world.getTime()).spawn;
         }
 
         SiegeSpawnLogic.resetPlayer(player, GameMode.SURVIVAL);
-        participant.kit.equipPlayer(player, participant, this.gameSpace.getWorld(), this.config);
-        SiegeSpawnLogic.spawnPlayer(player, spawn, this.gameSpace.getWorld());
+        SiegeSpawnLogic.spawnPlayer(player, spawn, this.world);
+
+        this.completeParticipantSpawn(player);
+    }
+
+    private void completeParticipantSpawn(ServerPlayerEntity player) {
+        player.getInventory().clear();
+        player.getEnderChestInventory().clear();
+        SiegePlayer participant = this.participant(player);
+        assert participant != null; // spawnParticipant should only be spawned on a participant
+
+        participant.timeOfSpawn = this.world.getTime();
+        participant.kit.equipPlayer(player, participant, this.world, this.config);
     }
 
     private SiegeSpawnResult getSpawnFor(ServerPlayerEntity player, long time) {
@@ -510,7 +507,7 @@ public class SiegeActive {
         for (SiegeFlag flag : this.map.flags) {
             SiegeSpawn flagRespawn = flag.getRespawnFor(team);
             if (flagRespawn != null && flag.team == team) {
-                double distance = player.squaredDistanceTo(flagRespawn.bounds.getCenter());
+                double distance = player.squaredDistanceTo(flagRespawn.bounds().center());
                 boolean frontLine = flag.isFrontLine(time);
 
                 if ((distance < minDistance && frontLine == respawn.frontLine) || (frontLine && !respawn.frontLine)) {
@@ -524,27 +521,20 @@ public class SiegeActive {
     }
 
     private void tick() {
-        ServerWorld world = this.gameSpace.getWorld();
-        long time = world.getTime();
+        long time = this.world.getTime();
 
         SiegeStageManager.TickResult result = this.stageManager.tick(time);
         if (result != SiegeStageManager.TickResult.CONTINUE_TICK) {
             switch (result) {
-                case ATTACKERS_WIN:
-                    this.broadcastWin(SiegeTeams.ATTACKERS);
-                    break;
-                case DEFENDERS_WIN:
-                    this.broadcastWin(SiegeTeams.DEFENDERS);
-                    break;
-                case GAME_CLOSED:
-                    this.gameSpace.close(GameCloseReason.FINISHED);
-                    break;
+                case ATTACKERS_WIN -> this.broadcastWin(SiegeTeams.ATTACKERS);
+                case DEFENDERS_WIN -> this.broadcastWin(SiegeTeams.DEFENDERS);
+                case GAME_CLOSED -> this.gameSpace.close(GameCloseReason.FINISHED);
             }
             return;
         }
 
         if (time % 20 == 0) {
-            this.captureLogic.tick(world, 20);
+            this.captureLogic.tick(this.world, 20);
             this.gateLogic.tick();
 
             this.sidebar.update(time);
@@ -555,7 +545,7 @@ public class SiegeActive {
             }
         }
 
-        this.tickDead(world, time);
+        this.tickDead(this.world, time);
     }
 
     @Nullable
@@ -565,10 +555,8 @@ public class SiegeActive {
     }
 
     private void tickWarpingPlayers() {
-        ServerWorld world = this.gameSpace.getWorld();
-
         this.warpingPlayers.removeIf(warpingPlayer -> {
-            ServerPlayerEntity player = warpingPlayer.player.getEntity(world);
+            ServerPlayerEntity player = warpingPlayer.player.getEntity(this.world);
 
             if (player == null) {
                 return true;
@@ -580,11 +568,11 @@ public class SiegeActive {
                 return true;
             }
 
-            if (world.getTime() - warpingPlayer.startTime > 20 * 3) {
+            if (this.world.getTime() - warpingPlayer.startTime > 20 * 3) {
                 SiegeSpawn respawn = warpingPlayer.destination.getRespawnFor(warpingPlayer.destination.team);
                 assert respawn != null; // TODO remove restriction
-                Vec3d pos = SiegeSpawnLogic.choosePos(player.getRandom(), respawn.bounds, 0.5f);
-                player.teleport(world, pos.x, pos.y, pos.z, respawn.yaw, 0.0F);
+                Vec3d pos = SiegeSpawnLogic.choosePos(player.getRandom(), respawn.bounds(), 0.5f);
+                player.teleport(this.world, pos.x, pos.y, pos.z, respawn.yaw(), 0.0F);
                 player.playSound(SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.NEUTRAL, 1.0F, 1.0F);
                 return true;
             }
@@ -652,7 +640,7 @@ public class SiegeActive {
                 .stream()
                 .max(Comparator.comparingDouble(e -> getter.applyAsDouble(e.getValue())))
                 .map(e -> {
-                    ServerPlayerEntity p = e.getKey().getEntity(this.gameSpace.getWorld());
+                    ServerPlayerEntity p = e.getKey().getEntity(this.world);
 
                     if (p == null) {
                         return null;
@@ -681,13 +669,13 @@ public class SiegeActive {
         }
 
         Text message = new LiteralText("The ")
-                .append(winningTeam.getDisplay())
+                .append(winningTeam.config().name())
                 .append(" have won the game!")
-                .formatted(winningTeam.getFormatting(), Formatting.BOLD);
+                .formatted(winningTeam.config().chatFormatting(), Formatting.BOLD);
 
         PlayerSet players = this.gameSpace.getPlayers();
         players.sendMessage(message);
-        players.sendSound(SoundEvents.ENTITY_VILLAGER_YES);
+        players.playSound(SoundEvents.ENTITY_VILLAGER_YES);
 
         Optional<BestPlayer> mostKills = this.getPlayerWithHighest(p -> p.kills);
         Optional<BestPlayer> highestKd = this.getPlayerWithHighest(p -> (double) p.kills / Math.max(1, p.deaths));
@@ -715,7 +703,7 @@ public class SiegeActive {
         int defender_deaths = 0; // separate because other deaths exist
 
         for (Map.Entry<PlayerRef, SiegePlayer> entry : this.participants.entrySet()) {
-            ServerPlayerEntity p = entry.getKey().getEntity(this.gameSpace.getWorld());
+            ServerPlayerEntity p = entry.getKey().getEntity(this.world);
 
             if (p != null) {
                 int kills = entry.getValue().kills;

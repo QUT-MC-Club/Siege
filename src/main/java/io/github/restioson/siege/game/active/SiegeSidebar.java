@@ -3,10 +3,11 @@ package io.github.restioson.siege.game.active;
 import io.github.restioson.siege.game.SiegeTeams;
 import io.github.restioson.siege.game.map.SiegeFlag;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import xyz.nucleoid.plasmid.game.player.GameTeam;
-import xyz.nucleoid.plasmid.widget.GlobalWidgets;
-import xyz.nucleoid.plasmid.widget.SidebarWidget;
+import xyz.nucleoid.plasmid.game.common.GlobalWidgets;
+import xyz.nucleoid.plasmid.game.common.team.GameTeam;
+import xyz.nucleoid.plasmid.game.common.widget.SidebarWidget;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -28,8 +29,8 @@ public final class SiegeSidebar {
     public void update(long time) {
         this.widget.set(content -> {
             long ticksUntilEnd = this.game.stageManager.finishTime - time;
-            content.writeLine(getTimeLeft(ticksUntilEnd));
-            content.writeLine("");
+            content.add(getTimeLeft(ticksUntilEnd));
+            content.add(LiteralText.EMPTY);
 
             List<SiegeFlag> flags = new ArrayList<>(this.game.map.flags);
             flags.sort(Comparator.comparingInt(SiegeSidebar::getSortIndex));
@@ -42,7 +43,7 @@ public final class SiegeSidebar {
                     continue;
                 }
 
-                Formatting color = flag.team.getFormatting();
+                Formatting color = flag.team.config().chatFormatting();
                 boolean capturing = false;
                 boolean italic = false;
 
@@ -51,39 +52,41 @@ public final class SiegeSidebar {
                         color = blink ? color : Formatting.GRAY;
                     } else {
                         GameTeam blinkTeam = blink ? SiegeTeams.ATTACKERS : SiegeTeams.DEFENDERS;
-                        color = blinkTeam.getFormatting();
+                        color = blinkTeam.config().chatFormatting();
                         italic = blinkTeam != flag.team;
                     }
                     capturing = true;
                 }
 
-                String line;
-                if (italic) {
-                    line = color + Formatting.ITALIC.toString() + flag.name;
-                } else {
-                    line = color + flag.name;
-                }
+                var flagName = new LiteralText(flag.name)
+                        .formatted(color);
+                if (italic) flagName = flagName.formatted(Formatting.ITALIC);
 
                 float ratio = (float) flag.captureProgressTicks / SiegeCaptureLogic.CAPTURE_TIME_TICKS;
                 int percent = (int) Math.floor(ratio * 100);
 
+                Text line;
                 if (capturing || percent > 0) {
-                    line = "(" + percent + "%) " + line;
+                    line = new LiteralText("(" + percent + "%) ").append(flagName);
                 } else if (flag.gate != null && time - flag.gate.timeOfLastBash < 5 * 20) {
-                    line = "(!) " + line;
+                    line = new LiteralText("(!) ").append(flagName);
+                } else {
+                    line = flagName;
                 }
 
-                content.writeLine(line);
+                content.add(line);
             }
         });
     }
 
-    private static String getTimeLeft(long ticksUntilEnd) {
+    private static Text getTimeLeft(long ticksUntilEnd) {
         long secondsUntilEnd = ticksUntilEnd / 20;
 
         long minutes = secondsUntilEnd / 60;
         long seconds = secondsUntilEnd % 60;
-        return String.format("%sTime Left: %s%02d:%02d", Formatting.GOLD, Formatting.AQUA, minutes, seconds);
+
+        return new LiteralText("Time Left: ").formatted(Formatting.GOLD)
+                .append(new LiteralText(String.format("%02d:%02d", minutes, seconds).formatted(Formatting.AQUA)));
     }
 
     private static int getSortIndex(SiegeFlag flag) {

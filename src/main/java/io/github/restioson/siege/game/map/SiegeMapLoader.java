@@ -8,8 +8,9 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import net.fabricmc.fabric.api.util.NbtType;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
@@ -17,13 +18,9 @@ import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.biome.BiomeKeys;
 import org.jetbrains.annotations.Nullable;
+import xyz.nucleoid.map_templates.*;
 import xyz.nucleoid.plasmid.game.GameOpenException;
-import xyz.nucleoid.plasmid.game.player.GameTeam;
-import xyz.nucleoid.plasmid.map.template.MapTemplate;
-import xyz.nucleoid.plasmid.map.template.MapTemplateMetadata;
-import xyz.nucleoid.plasmid.map.template.MapTemplateSerializer;
-import xyz.nucleoid.plasmid.map.template.TemplateRegion;
-import xyz.nucleoid.plasmid.util.BlockBounds;
+import xyz.nucleoid.plasmid.game.common.team.GameTeam;
 
 import java.io.IOException;
 import java.util.Comparator;
@@ -38,14 +35,14 @@ public class SiegeMapLoader {
         this.config = config;
     }
 
-    public SiegeMap create() throws GameOpenException {
+    public SiegeMap create(MinecraftServer server) throws GameOpenException {
         try {
-            MapTemplate template = MapTemplateSerializer.INSTANCE.loadFromResource(this.config.id);
+            MapTemplate template = MapTemplateSerializer.loadFromResource(server, this.config.templateId());
             MapTemplateMetadata metadata = template.getMetadata();
 
-            SiegeMap map = new SiegeMap(template, this.config.attackerSpawnAngle);
+            SiegeMap map = new SiegeMap(template, this.config.attackerSpawnAngle());
 
-            CompoundTag mapData = metadata.getData();
+            NbtCompound mapData = metadata.getData();
             String biomeId = mapData.getString("biome");
             if (!Strings.isNullOrEmpty(biomeId)) {
                 template.setBiome(RegistryKey.of(Registry.BIOME_KEY, new Identifier(biomeId)));
@@ -84,7 +81,7 @@ public class SiegeMapLoader {
         return template.getMetadata()
                 .getRegions("kit_stand")
                 .map(region -> {
-                    CompoundTag data = region.getData();
+                    NbtCompound data = region.getData();
                     GameTeam team = null;
                     if (data.contains("team")) {
                         team = this.parseTeam(data);
@@ -102,7 +99,7 @@ public class SiegeMapLoader {
 
                     SiegeKit type = this.parseKitStandType(data);
 
-                    return new SiegeKitStandLocation(team, flag, region.getBounds().getCenter(), type, data.getFloat("yaw"));
+                    return new SiegeKitStandLocation(team, flag, region.getBounds().center(), type, data.getFloat("yaw"));
                 })
                 .collect(Collectors.toList());
     }
@@ -112,7 +109,7 @@ public class SiegeMapLoader {
 
         metadata.getRegions("flag").forEach(region -> {
             BlockBounds bounds = region.getBounds();
-            CompoundTag data = region.getData();
+            NbtCompound data = region.getData();
             String id = data.getString("id");
             String name = data.getString("name");
             GameTeam team = this.parseTeam(data);
@@ -138,7 +135,7 @@ public class SiegeMapLoader {
         map.flags.sort(Comparator.comparing(flag -> flag.name));
 
         metadata.getRegions("flag").forEach(region -> {
-            CompoundTag data = region.getData();
+            NbtCompound data = region.getData();
             String flagId = data.getString("id");
 
             SiegeFlag flag = flags.get(flagId);
@@ -146,7 +143,7 @@ public class SiegeMapLoader {
                 return;
             }
 
-            ListTag prerequisiteFlagsList = data.getList("prerequisite_flags", NbtType.STRING);
+            NbtList prerequisiteFlagsList = data.getList("prerequisite_flags", NbtType.STRING);
             for (int i = 0; i < prerequisiteFlagsList.size(); i++) {
                 String prerequisiteId = prerequisiteFlagsList.getString(i);
 
@@ -159,7 +156,7 @@ public class SiegeMapLoader {
                 flag.prerequisiteFlags.add(prerequisite);
             }
 
-            ListTag recapturePrerequisites = data.getList("recapture_prerequisites", NbtType.STRING);
+            NbtList recapturePrerequisites = data.getList("recapture_prerequisites", NbtType.STRING);
             for (int i = 0; i < recapturePrerequisites.size(); i++) {
                 String prerequisiteId = recapturePrerequisites.getString(i);
 
@@ -179,7 +176,7 @@ public class SiegeMapLoader {
         });
 
         metadata.getRegions("respawn").forEach(region -> {
-            CompoundTag data = region.getData();
+            NbtCompound data = region.getData();
             String flagId = data.getString("id");
             SiegeFlag flag = flags.get(flagId);
             if (flag != null) {
@@ -211,7 +208,7 @@ public class SiegeMapLoader {
 
         map.gates = metadata.getRegions("gate_open")
                 .map(region -> {
-                    CompoundTag data = region.getData();
+                    NbtCompound data = region.getData();
 
                     String id = data.getString("id");
                     SiegeFlag flag = flags.get(id);
@@ -227,7 +224,7 @@ public class SiegeMapLoader {
                                 return new GameOpenException(new LiteralText("Gate missing portcullis!"));
                             });
 
-                    CompoundTag portcullisData = portcullisRegion.getData();
+                    NbtCompound portcullisData = portcullisRegion.getData();
                     int retractHeight = portcullisData.getInt("retract_height");
 
                     int repairHealthThreshold = 50;
@@ -263,7 +260,7 @@ public class SiegeMapLoader {
         }
     }
 
-    private GameTeam parseTeam(CompoundTag data) {
+    private GameTeam parseTeam(NbtCompound data) {
         String teamName = data.getString("team");
         GameTeam team = SiegeTeams.byKey(teamName);
         if (team == null) {
@@ -274,35 +271,23 @@ public class SiegeMapLoader {
     }
 
     @Nullable
-    private GameTeam parseOptionalTeam(CompoundTag data) {
+    private GameTeam parseOptionalTeam(NbtCompound data) {
         String teamName = data.getString("team");
         return SiegeTeams.byKey(teamName);
     }
 
-    private SiegeKit parseKitStandType(CompoundTag data) {
+    private SiegeKit parseKitStandType(NbtCompound data) {
         String kitName = data.getString("type");
-        SiegeKit type;
-        switch (kitName) {
-            case "bow":
-                type = SiegeKit.ARCHER;
-                break;
-            case "sword":
-                type = SiegeKit.SOLDIER;
-                break;
-            case "shield":
-                type = SiegeKit.SHIELD_BEARER;
-                break;
-            case "builder":
-                type = SiegeKit.CONSTRUCTOR;
-                break;
-            case "demolitioner":
-                type = SiegeKit.DEMOLITIONER;
-                break;
-            default:
+        return switch (kitName) {
+            case "bow" -> SiegeKit.ARCHER;
+            case "sword" -> SiegeKit.SOLDIER;
+            case "shield" -> SiegeKit.SHIELD_BEARER;
+            case "builder" -> SiegeKit.CONSTRUCTOR;
+            case "demolitioner" -> SiegeKit.DEMOLITIONER;
+            default -> {
                 Siege.LOGGER.error("Unknown kit \"" + kitName + "\"");
                 throw new GameOpenException(new LiteralText("unknown kit"));
-        }
-
-        return type;
+            }
+        };
     }
 }

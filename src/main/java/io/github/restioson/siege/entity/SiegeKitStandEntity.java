@@ -16,7 +16,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
-import xyz.nucleoid.plasmid.game.player.GameTeam;
+import xyz.nucleoid.plasmid.game.common.team.GameTeam;
 
 public final class SiegeKitStandEntity extends ArmorStandEntity {
     @Nullable
@@ -29,13 +29,13 @@ public final class SiegeKitStandEntity extends ArmorStandEntity {
 
     public SiegeKitStandEntity(World world, SiegeActive game, SiegeKitStandLocation stand) {
         super(EntityType.ARMOR_STAND, world);
-        this.type = stand.type;
-        this.team = stand.team;
-        this.controllingFlag = stand.controllingFlag;
+        this.type = stand.type();
+        this.team = stand.team();
+        this.controllingFlag = stand.flag();
         this.game = game;
         this.setPose(EntityPose.CROUCHING);
 
-        this.updatePositionAndAngles(stand.pos.x, stand.pos.y, stand.pos.z, stand.yaw, 0);
+        this.updatePositionAndAngles(stand.pos().x, stand.pos().y, stand.pos().z, stand.yaw(), 0);
 
         this.setCustomName(this.type.name);
         this.setInvulnerable(true);
@@ -68,7 +68,7 @@ public final class SiegeKitStandEntity extends ArmorStandEntity {
         }
 
         participant.kit = this.type;
-        this.type.equipPlayer((ServerPlayerEntity) player, participant, this.game.gameSpace.getWorld(), this.game.config);
+        this.type.equipPlayer((ServerPlayerEntity) player, participant, this.game.world, this.game.config);
         return ActionResult.SUCCESS;
     }
 
@@ -78,6 +78,7 @@ public final class SiegeKitStandEntity extends ArmorStandEntity {
     }
 
     @Override
-    public void takeKnockback(float f, double d, double e) {
+    public void takeKnockback(double strength, double x, double z) {
+        super.takeKnockback(strength, x, z);
     }
 }

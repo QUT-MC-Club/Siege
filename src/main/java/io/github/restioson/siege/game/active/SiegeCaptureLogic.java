@@ -20,9 +20,9 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
+import xyz.nucleoid.map_templates.BlockBounds;
 import xyz.nucleoid.plasmid.game.GameSpace;
-import xyz.nucleoid.plasmid.game.player.GameTeam;
-import xyz.nucleoid.plasmid.util.BlockBounds;
+import xyz.nucleoid.plasmid.game.common.team.GameTeam;
 import xyz.nucleoid.plasmid.util.PlayerRef;
 import xyz.nucleoid.plasmid.util.Scheduler;
 
@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class SiegeCaptureLogic {
     public static final int CAPTURE_TIME_TICKS = 20 * 40;
 
+    private final ServerWorld world;
     private final GameSpace gameSpace;
     private final SiegeActive game;
 
@@ -43,6 +44,7 @@ public final class SiegeCaptureLogic {
     private final Set<ServerPlayerEntity> playersPresent = new ReferenceOpenHashSet<>();
 
     SiegeCaptureLogic(SiegeActive game) {
+        this.world = game.world;
         this.gameSpace = game.gameSpace;
         this.game = game;
     }
@@ -89,7 +91,7 @@ public final class SiegeCaptureLogic {
         playersPresent.addAll(attackersPresent);
         playersPresent.addAll(defendersPresent);
 
-        boolean recapture = this.game.config.recapture;
+        boolean recapture = this.game.config.recapture();
         boolean defendersAtFlag = !defendersPresent.isEmpty();
         boolean defendersActuallyCapturing = defendersAtFlag && recapture;
         boolean attackersCapturing = !attackersPresent.isEmpty();
@@ -156,7 +158,7 @@ public final class SiegeCaptureLogic {
 
             this.broadcastCaptured(flag, captureTeam);
 
-            ServerWorld world = this.game.gameSpace.getWorld();
+            ServerWorld world = this.game.world;
 
             for (BlockBounds blockBounds : flag.flagIndicatorBlocks) {
                 for (BlockPos blockPos : blockBounds) {
@@ -245,12 +247,12 @@ public final class SiegeCaptureLogic {
                         .append(" ")
                         .append(flag.presentTobe())
                         .append(" being captured by the ")
-                        .append(new LiteralText(captureTeam.getDisplay()).formatted(captureTeam.getFormatting()))
+                        .append(captureTeam.config().name())
                         .append("...")
                         .formatted(Formatting.BOLD)
         );
 
-        this.gameSpace.getPlayers().sendSound(SoundEvents.BLOCK_BELL_USE);
+        this.gameSpace.getPlayers().playSound(SoundEvents.BLOCK_BELL_USE);
 
         for (Object2ObjectMap.Entry<PlayerRef, SiegePlayer> entry : Object2ObjectMaps.fastIterable(this.game.participants)) {
             if (entry.getValue().team == captureTeam) {
@@ -258,7 +260,7 @@ public final class SiegeCaptureLogic {
             }
 
             entry.getKey().ifOnline(
-                    this.gameSpace.getWorld(),
+                    this.world,
                     player -> {
                         AtomicInteger plays = new AtomicInteger();
                         Scheduler.INSTANCE.repeatWhile(
@@ -279,18 +281,16 @@ public final class SiegeCaptureLogic {
                         .append(" ")
                         .append(flag.pastToBe())
                         .append(" been captured by the ")
-                        .append(new LiteralText(captureTeam.getDisplay()).formatted(captureTeam.getFormatting()))
+                        .append(captureTeam.config().name())
                         .append("!")
                         .formatted(Formatting.BOLD)
         );
 
-        ServerWorld world = this.gameSpace.getWorld();
-
-        Vec3d pos = SiegeSpawnLogic.choosePos(world.getRandom(), flag.bounds, 0.0f);
-        LightningEntity lightningEntity = EntityType.LIGHTNING_BOLT.create(world);
+        Vec3d pos = SiegeSpawnLogic.choosePos(this.world.getRandom(), flag.bounds, 0.0f);
+        LightningEntity lightningEntity = EntityType.LIGHTNING_BOLT.create(this.world);
         Objects.requireNonNull(lightningEntity).refreshPositionAfterTeleport(pos);
         lightningEntity.setCosmetic(true);
-        world.spawnEntity(lightningEntity);
+        this.world.spawnEntity(lightningEntity);
     }
 
     private void broadcastSecured(SiegeFlag flag) {
@@ -300,7 +300,7 @@ public final class SiegeCaptureLogic {
                         .append(" ")
                         .append(flag.pastToBe())
                         .append(" been defended by the ")
-                        .append(new LiteralText(flag.team.getDisplay()).formatted(flag.team.getFormatting()))
+                        .append(flag.team.config().name())
                         .append("!")
                         .formatted(Formatting.BOLD)
         );

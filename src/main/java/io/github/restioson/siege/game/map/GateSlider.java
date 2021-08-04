@@ -5,7 +5,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
-import xyz.nucleoid.plasmid.util.BlockBounds;
+import xyz.nucleoid.map_templates.BlockBounds;
 
 import java.util.Arrays;
 
@@ -23,7 +23,7 @@ public final class GateSlider {
         this.bounds = bounds;
         this.maxOffset = maxOffset;
 
-        this.height = bounds.getMax().getY() - bounds.getMin().getY() + 1;
+        this.height = bounds.max().getY() - bounds.min().getY() + 1;
     }
 
     private Slice[] getSlices(ServerWorld world) {
@@ -31,8 +31,8 @@ public final class GateSlider {
             return this.slices;
         }
 
-        BlockPos min = this.bounds.getMin();
-        BlockPos max = this.bounds.getMax();
+        BlockPos min = this.bounds.min();
+        BlockPos max = this.bounds.max();
 
         int sizeX = max.getX() - min.getX() + 1;
         int sizeZ = max.getZ() - min.getZ() + 1;
@@ -76,7 +76,7 @@ public final class GateSlider {
 
         this.offset = offset;
 
-        BlockPos min = this.bounds.getMin();
+        BlockPos min = this.bounds.min();
 
         for (int y = 0; y < this.height; y++) {
             Slice slice = this.getSlice(world, y - offset);

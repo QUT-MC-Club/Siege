@@ -16,8 +16,8 @@ public class Siege implements ModInitializer {
     public void onInitialize() {
         GameType.register(
                 new Identifier(ID, "siege"),
-                SiegeWaiting::open,
-                SiegeConfig.CODEC
+                SiegeConfig.CODEC,
+                SiegeWaiting::open
         );
     }
 }

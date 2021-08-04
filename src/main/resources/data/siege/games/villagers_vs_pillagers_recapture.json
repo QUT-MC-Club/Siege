@@ -1,6 +1,8 @@
 {
   "type": "siege:siege",
-  "name": "Siege",
+  "icon": "minecraft:iron_sword",
+  "short_name": "gameType.siege.siege",
+  "description": ["game.siege.desc", "game.siege.recapture.desc"],
   "map": {
     "id": "siege:villagers_vs_pillagers",
     "attacker_spawn_angle": 180
@@ -10,6 +12,6 @@
     "max": 100,
     "threshold": 4
   },
-  "defender_ender_pearl": true,
+  "recapture": true,
   "time_limit_mins": 20
 }

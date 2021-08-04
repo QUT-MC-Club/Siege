@@ -1,6 +1,8 @@
 {
   "type": "siege:siege",
-  "name": "Siege",
+  "icon": "minecraft:iron_sword",
+  "short_name": "gameType.siege.siege",
+  "description": ["game.siege.desc", "game.siege.recapture.desc"],
   "map": {
     "id": "siege:jungle",
     "attacker_spawn_angle": 180

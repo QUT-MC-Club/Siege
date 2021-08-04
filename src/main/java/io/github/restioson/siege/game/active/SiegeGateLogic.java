@@ -19,31 +19,31 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.explosion.Explosion;
-import xyz.nucleoid.plasmid.game.player.GameTeam;
+import xyz.nucleoid.plasmid.game.common.team.GameTeam;
 import xyz.nucleoid.plasmid.util.PlayerRef;
 
 import java.util.Random;
 
 public class SiegeGateLogic {
-    private final SiegeActive active;
+    private final SiegeActive game;
 
-    public SiegeGateLogic(SiegeActive active) {
-        this.active = active;
+    public SiegeGateLogic(SiegeActive game) {
+        this.game = game;
     }
 
     public void tick() {
-        for (SiegeGate gate : this.active.map.gates) {
+        for (SiegeGate gate : this.game.map.gates) {
             this.tickGate(gate);
         }
     }
 
     public ActionResult maybeBraceGate(BlockPos pos, ServerPlayerEntity player, ItemUsageContext ctx) {
-        for (SiegeGate gate : this.active.map.gates) {
+        for (SiegeGate gate : this.game.map.gates) {
             if (gate.brace != null && gate.brace.contains(pos)) {
                 if (gate.health < gate.maxHealth) {
-                    ServerWorld world = this.active.gameSpace.getWorld();
+                    ServerWorld world = this.game.world;
                     gate.health += 1;
-                    gate.broadcastHealth(player, this.active, world);
+                    gate.broadcastHealth(player, this.game, world);
                     world.setBlockState(pos, Blocks.AIR.getDefaultState());
                     ctx.getStack().decrement(1);
                     return ActionResult.FAIL;
@@ -58,11 +58,11 @@ public class SiegeGateLogic {
     }
 
     public ActionResult maybeBash(BlockPos pos, ServerPlayerEntity player, SiegePlayer participant, long time) {
-        Item mainHandItem = player.inventory.getMainHandStack().getItem();
+        Item mainHandItem = player.getInventory().getMainHandStack().getItem();
         boolean holdingBashWeapon = mainHandItem == Items.IRON_SWORD || mainHandItem == Items.STONE_AXE;
         boolean rightKit = participant.kit == SiegeKit.SHIELD_BEARER || participant.kit == SiegeKit.SOLDIER;
 
-        for (SiegeGate gate : this.active.map.gates) {
+        for (SiegeGate gate : this.game.map.gates) {
             if (!gate.bashedOpen && gate.health > 0 && gate.portcullis.contains(pos)) {
                 if (participant.team == gate.flag.team) {
                     player.sendMessage(new LiteralText("You cannot bash your own gate!").formatted(Formatting.RED), true);
@@ -82,11 +82,11 @@ public class SiegeGateLogic {
 
                 player.getItemCooldownManager().set(Items.IRON_SWORD, 20);
                 player.getItemCooldownManager().set(Items.STONE_AXE, 20);
-                ServerWorld world = this.active.gameSpace.getWorld();
+                ServerWorld world = this.game.world;
                 world.createExplosion(null, pos.getX(), pos.getY(), pos.getZ(), 0.0f, Explosion.DestructionType.NONE);
                 gate.health -= 1;
                 gate.timeOfLastBash = time;
-                gate.broadcastHealth(player, this.active, world);
+                gate.broadcastHealth(player, this.game, world);
 
                 return ActionResult.FAIL;
             }
@@ -96,13 +96,13 @@ public class SiegeGateLogic {
     }
 
     public void tickGate(SiegeGate gate) {
-        ServerWorld world = this.active.gameSpace.getWorld();
+        ServerWorld world = this.game.world;
 
         if (gate.health <= 0 && !gate.bashedOpen) {
             gate.slider.setOpen(world);
 
-            BlockPos min = gate.portcullis.getMin();
-            BlockPos max = gate.portcullis.getMax();
+            BlockPos min = gate.portcullis.min();
+            BlockPos max = gate.portcullis.max();
             Random rand = world.getRandom();
 
             for (int i = 0; i < 10; i++) {
@@ -113,21 +113,15 @@ public class SiegeGateLogic {
                 world.createExplosion(null, x, y, z, 0.0f, Explosion.DestructionType.NONE);
             }
 
-            GameTeam bashTeam;
+            GameTeam bashTeam = gate.flag.team == SiegeTeams.ATTACKERS ? SiegeTeams.DEFENDERS : SiegeTeams.ATTACKERS;
 
-            if (gate.flag.team == SiegeTeams.ATTACKERS) {
-                bashTeam = SiegeTeams.DEFENDERS;
-            } else {
-                bashTeam = SiegeTeams.ATTACKERS;
-            }
-
-            this.active.gameSpace.getPlayers().sendMessage(
+            this.game.gameSpace.getPlayers().sendMessage(
                     new LiteralText("The ")
                             .append(new LiteralText(gate.flag.name).formatted(Formatting.YELLOW))
                             .append(" ")
                             .append(gate.flag.pastToBe())
                             .append(" been bashed open by the ")
-                            .append(new LiteralText(bashTeam.getDisplay()).formatted(bashTeam.getFormatting()))
+                            .append(bashTeam.config().name())
                             .append("!")
                             .formatted(Formatting.BOLD)
             );
@@ -135,18 +129,18 @@ public class SiegeGateLogic {
             gate.bashedOpen = true;
         } else if (gate.health >= gate.repairedHealthThreshold && gate.bashedOpen) {
             GameTeam team = gate.flag.team;
-            this.active.gameSpace.getPlayers().sendMessage(
+            this.game.gameSpace.getPlayers().sendMessage(
                     new LiteralText("The ")
                             .append(new LiteralText(gate.flag.name).formatted(Formatting.YELLOW))
                             .append(" ")
                             .append(gate.flag.pastToBe())
                             .append(" been repaired by the ")
-                            .append(new LiteralText(team.getDisplay()).formatted(team.getFormatting()))
+                            .append(team.config().name())
                             .append("!")
                             .formatted(Formatting.BOLD)
             );
 
-            BlockPos max = gate.portcullis.getMax();
+            BlockPos max = gate.portcullis.max();
             world.playSound(null, max.getX(), max.getY(), max.getZ(), SoundEvents.BLOCK_ANVIL_USE, SoundCategory.BLOCKS, 1.0f, world.random.nextFloat() * 0.25F + 0.6F);
 
             gate.slider.setClosed(world);
@@ -160,7 +154,7 @@ public class SiegeGateLogic {
         boolean ownerTeamPresent = false;
         boolean enemyTeamPresent = false;
 
-        for (Object2ObjectMap.Entry<PlayerRef, SiegePlayer> entry : Object2ObjectMaps.fastIterable(this.active.participants)) {
+        for (Object2ObjectMap.Entry<PlayerRef, SiegePlayer> entry : Object2ObjectMaps.fastIterable(this.game.participants)) {
             ServerPlayerEntity player = entry.getKey().getEntity(world);
             if (player == null || player.interactionManager.getGameMode() != GameMode.SURVIVAL) {
                 continue;
@@ -183,7 +177,7 @@ public class SiegeGateLogic {
             return;
         }
 
-        BlockPos pos = gate.portcullis.getMax();
+        BlockPos pos = gate.portcullis.max();
         double x = pos.getX();
         double y = pos.getY();
         double z = pos.getZ();
