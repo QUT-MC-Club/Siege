@@ -4,7 +4,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.scoreboard.AbstractTeam;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.util.DyeColor;
 import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.plasmid.game.GameActivity;
@@ -16,7 +16,7 @@ public final class SiegeTeams {
     public static final GameTeam ATTACKERS = new GameTeam(
             new GameTeamKey("attackers"),
             GameTeamConfig.builder()
-                    .setName(new LiteralText("Attackers"))
+                    .setName(Text.literal("Attackers"))
                     .setColors(GameTeamConfig.Colors.from(DyeColor.RED))
                     .setCollision(AbstractTeam.CollisionRule.NEVER)
                     .setFriendlyFire(false)
@@ -25,7 +25,7 @@ public final class SiegeTeams {
     public static final GameTeam DEFENDERS = new GameTeam(
             new GameTeamKey("defenders"),
             GameTeamConfig.builder()
-                    .setName(new LiteralText("Defenders"))
+                    .setName(Text.literal("Defenders"))
                     .setColors(GameTeamConfig.Colors.from(DyeColor.CYAN))
                     .setCollision(AbstractTeam.CollisionRule.NEVER)
                     .setFriendlyFire(false)

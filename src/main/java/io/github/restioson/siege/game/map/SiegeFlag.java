@@ -9,7 +9,7 @@ import net.minecraft.entity.boss.BossBar;
 import net.minecraft.entity.boss.ServerBossBar;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.map_templates.BlockBounds;
 import xyz.nucleoid.plasmid.game.common.team.GameTeam;
@@ -48,7 +48,7 @@ public final class SiegeFlag {
     public List<SiegeFlag> prerequisiteFlags = new ArrayList<>();
     public List<SiegeFlag> recapturePrerequisites = new ArrayList<>();
 
-    public final ServerBossBar captureBar = new ServerBossBar(new LiteralText("Capturing"), BossBar.Color.RED, BossBar.Style.NOTCHED_10);
+    public final ServerBossBar captureBar = new ServerBossBar(Text.literal("Capturing"), BossBar.Color.RED, BossBar.Style.NOTCHED_10);
     private final Set<ServerPlayerEntity> capturingPlayers = new ReferenceOpenHashSet<>();
 
     public SiegeFlag(String id, String name, GameTeam team, BlockBounds bounds) {

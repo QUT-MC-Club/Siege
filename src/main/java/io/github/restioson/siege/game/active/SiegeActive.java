@@ -25,7 +25,6 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
@@ -221,16 +220,16 @@ public class SiegeActive {
 
         for (Map.Entry<PlayerRef, SiegePlayer> entry : this.participants.entrySet()) {
             entry.getKey().ifOnline(this.world, p -> {
-                Text text = new LiteralText(help).formatted(Formatting.GOLD);
+                Text text = Text.literal(help).formatted(Formatting.GOLD);
                 p.sendMessage(text, false);
 
                 if (this.config.recapture()) {
-                    p.sendMessage(new LiteralText("Defenders may also capture attacker's flags.").formatted(Formatting.GOLD), false);
+                    p.sendMessage(Text.literal("Defenders may also capture attacker's flags.").formatted(Formatting.GOLD), false);
                 }
 
                 if (this.config.defenderEnderPearl() && entry.getValue().team == SiegeTeams.DEFENDERS) {
                     p.sendMessage(
-                            new LiteralText("You can use your ender pearl to warp to a flag that is under attack.")
+                            Text.literal("You can use your ender pearl to warp to a flag that is under attack.")
                                     .formatted(Formatting.GOLD),
                             false
                     );
@@ -330,9 +329,9 @@ public class SiegeActive {
                 String error = participant.kit.restock(player, participant, this.world, this.config);
 
                 if (error == null) {
-                    player.sendMessage(new LiteralText("Items restocked!").formatted(Formatting.DARK_GREEN, Formatting.BOLD), true);
+                    player.sendMessage(Text.literal("Items restocked!").formatted(Formatting.DARK_GREEN, Formatting.BOLD), true);
                 } else {
-                    player.sendMessage(new LiteralText(error).formatted(Formatting.RED, Formatting.BOLD), true);
+                    player.sendMessage(Text.literal(error).formatted(Formatting.RED, Formatting.BOLD), true);
                 }
                 return ActionResult.FAIL;
             } else if (state.getBlock() instanceof DoorBlock) {
@@ -370,7 +369,7 @@ public class SiegeActive {
                     cooldownManager.set(Items.ENDER_PEARL, 10 * 20);
 
                     this.warpingPlayers.add(new WarpingPlayer(player, selectedFlag, this.world.getTime()));
-                    player.sendMessage(new LiteralText(String.format("Warping to %s... hold still!", selectedFlag.name)).formatted(Formatting.GREEN), true);
+                    player.sendMessage(Text.literal(String.format("Warping to %s... hold still!", selectedFlag.name)).formatted(Formatting.GREEN), true);
                     player.playSound(SoundEvents.ENTITY_ENDER_PEARL_THROW, SoundCategory.NEUTRAL, 1.0F, 1.0F);
                 });
 
@@ -418,7 +417,7 @@ public class SiegeActive {
         var world = this.world;
         long time = world.getTime();
 
-        MutableText eliminationMessage = new LiteralText(" was killed by ");
+        MutableText eliminationMessage = Text.literal(" was killed by ");
         SiegePlayer attacker = null;
 
         if (source.getAttacker() != null) {
@@ -433,7 +432,7 @@ public class SiegeActive {
         } else if (source == DamageSource.DROWN) {
             eliminationMessage.append("forgetting to just keep swimming");
         } else {
-            eliminationMessage = new LiteralText(" died");
+            eliminationMessage = Text.literal(" died");
         }
 
         if (attacker != null) {
@@ -444,7 +443,7 @@ public class SiegeActive {
             participant.deaths += 1;
         }
 
-        return new LiteralText("").append(player.getDisplayName()).append(eliminationMessage);
+        return Text.empty().append(player.getDisplayName()).append(eliminationMessage);
     }
 
     private ActionResult onPlayerFireArrow(
@@ -563,7 +562,7 @@ public class SiegeActive {
             }
 
             if (player.getBlockPos() != warpingPlayer.pos) {
-                player.sendMessage(new LiteralText("Warp cancelled because you moved!").formatted(Formatting.RED), true);
+                player.sendMessage(Text.literal("Warp cancelled because you moved!").formatted(Formatting.RED), true);
                 player.playSound(SoundEvents.ENTITY_VILLAGER_NO, SoundCategory.NEUTRAL, 1.0F, 1.0F);
                 return true;
             }
@@ -600,7 +599,7 @@ public class SiegeActive {
                     int sec = 5 - (int) Math.floor((time - state.timeOfDeath) / 20.0f);
 
                     if (sec > 0 && (time - state.timeOfDeath) % 20 == 0) {
-                        Text text = new LiteralText(String.format("Respawning in %ds", sec)).formatted(Formatting.BOLD);
+                        Text text = Text.literal(String.format("Respawning in %ds", sec)).formatted(Formatting.BOLD);
                         p.sendMessage(text, true);
                     }
 
@@ -668,7 +667,7 @@ public class SiegeActive {
             });
         }
 
-        Text message = new LiteralText("The ")
+        Text message = Text.literal("The ")
                 .append(winningTeam.config().name())
                 .append(" have won the game!")
                 .formatted(winningTeam.config().chatFormatting(), Formatting.BOLD);
@@ -685,16 +684,16 @@ public class SiegeActive {
         Formatting colour = Formatting.GOLD;
 
         mostKills.ifPresent(p -> {
-            players.sendMessage(new LiteralText(String.format("Most kills - %s with %d", p.name, (int) p.score)).formatted(colour));
+            players.sendMessage(Text.literal(String.format("Most kills - %s with %d", p.name, (int) p.score)).formatted(colour));
         });
         highestKd.ifPresent(p -> {
-            players.sendMessage(new LiteralText(String.format("Highest KD - %s with %.2f", p.name, p.score)).formatted(colour));
+            players.sendMessage(Text.literal(String.format("Highest KD - %s with %.2f", p.name, p.score)).formatted(colour));
         });
         mostCaptures.ifPresent(p -> {
-            players.sendMessage(new LiteralText(String.format("Most captures - %s with %d", p.name, (int) p.score)).formatted(colour));
+            players.sendMessage(Text.literal(String.format("Most captures - %s with %d", p.name, (int) p.score)).formatted(colour));
         });
         mostSecures.ifPresent(p -> {
-            players.sendMessage(new LiteralText(String.format("Most secures - %s with %d", p.name, (int) p.score)).formatted(colour));
+            players.sendMessage(Text.literal(String.format("Most secures - %s with %d", p.name, (int) p.score)).formatted(colour));
         });
 
         int attacker_kills = 0;
@@ -710,7 +709,7 @@ public class SiegeActive {
                 int deaths = entry.getValue().deaths;
 
                 double kd = (double) kills / Math.max(1, deaths);
-                MutableText text = new LiteralText("\nYour statistics:\n")
+                MutableText text = Text.literal("\nYour statistics:\n")
                         .append(String.format("Kills - %d\n", kills))
                         .append(String.format("Deaths - %d\n", deaths))
                         .append(String.format("K/D - %.2f\n", kd));
@@ -738,12 +737,12 @@ public class SiegeActive {
 
         Formatting bold = Formatting.BOLD;
         // TODO cleanup
-        players.sendMessage(new LiteralText(String.format("Attacker kills - %d", attacker_kills)).formatted(colour).formatted(bold));
-        players.sendMessage(new LiteralText(String.format("Attacker deaths - %d", attacker_deaths)).formatted(colour).formatted(bold));
-        players.sendMessage(new LiteralText(String.format("Attacker K/D - %.2f", attacker_kd)).formatted(colour).formatted(bold));
-        players.sendMessage(new LiteralText(String.format("Defender kills - %d", defender_kills)).formatted(colour).formatted(bold));
-        players.sendMessage(new LiteralText(String.format("Defender deaths - %d", defender_deaths)).formatted(colour).formatted(bold));
-        players.sendMessage(new LiteralText(String.format("Defender K/D - %.2f", defender_kd)).formatted(colour).formatted(bold));
+        players.sendMessage(Text.literal(String.format("Attacker kills - %d", attacker_kills)).formatted(colour).formatted(bold));
+        players.sendMessage(Text.literal(String.format("Attacker deaths - %d", attacker_deaths)).formatted(colour).formatted(bold));
+        players.sendMessage(Text.literal(String.format("Attacker K/D - %.2f", attacker_kd)).formatted(colour).formatted(bold));
+        players.sendMessage(Text.literal(String.format("Defender kills - %d", defender_kills)).formatted(colour).formatted(bold));
+        players.sendMessage(Text.literal(String.format("Defender deaths - %d", defender_deaths)).formatted(colour).formatted(bold));
+        players.sendMessage(Text.literal(String.format("Defender K/D - %.2f", defender_kd)).formatted(colour).formatted(bold));
     }
 
     static class BestPlayer {

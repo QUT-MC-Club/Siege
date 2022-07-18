@@ -7,8 +7,8 @@ import io.github.restioson.siege.game.map.SiegeMap;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
 import xyz.nucleoid.plasmid.game.common.team.GameTeam;
 import xyz.nucleoid.plasmid.shop.ShopEntry;
 import xyz.nucleoid.plasmid.util.ColoredBlocks;
@@ -20,7 +20,7 @@ import java.util.function.Consumer;
 public final class WarpSelectionUi extends SimpleGui {
     private WarpSelectionUi(ServerPlayerEntity player, List<GuiElementInterface> selectors) {
         super(ScreenHandlerType.GENERIC_9X1, player, false);
-        this.setTitle(new LiteralText("Warp to a Point"));
+        this.setTitle(Text.literal("Warp to a Point"));
         selectors.forEach(this::addSlot);
     }
 
@@ -39,7 +39,7 @@ public final class WarpSelectionUi extends SimpleGui {
                 continue;
             }
 
-            MutableText name = new LiteralText(flag.name);
+            MutableText name = Text.literal(flag.name);
             name = name.formatted(team.config().chatFormatting());
 
             ItemStack icon = flag.icon;

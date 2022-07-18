@@ -14,18 +14,17 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.plasmid.game.common.team.GameTeam;
 import xyz.nucleoid.plasmid.util.ItemStackBuilder;
 
 public enum SiegeKit {
-    ARCHER(new LiteralText("Archer Kit")),
-    SOLDIER(new LiteralText("Soldier Kit")),
-    CONSTRUCTOR(new LiteralText("Constructor Kit")),
-    SHIELD_BEARER(new LiteralText("Shield Bearer Kit")),
-    DEMOLITIONER(new LiteralText("Demolitioner Kit"));
+    ARCHER(Text.literal("Archer Kit")),
+    SOLDIER(Text.literal("Soldier Kit")),
+    CONSTRUCTOR(Text.literal("Constructor Kit")),
+    SHIELD_BEARER(Text.literal("Shield Bearer Kit")),
+    DEMOLITIONER(Text.literal("Demolitioner Kit"));
 
     public static int ARROWS = 16;
     public static int PLANKS = 12;
@@ -67,10 +66,10 @@ public enum SiegeKit {
             player.getInventory().insertStack(
                     ItemStackBuilder.of(Items.ENDER_PEARL)
                             .setCount(1)
-                            .setName(new LiteralText("Warp to Front Lines"))
+                            .setName(Text.literal("Warp to Front Lines"))
                             .addEnchantment(Enchantments.LUCK_OF_THE_SEA, 1)
-                            .addLore(new LiteralText("This ender pearl will take you"))
-                            .addLore(new LiteralText("to a flag in need of assistance!"))
+                            .addLore(Text.literal("This ender pearl will take you"))
+                            .addLore(Text.literal("to a flag in need of assistance!"))
                             .build()
             );
         }
@@ -80,40 +79,34 @@ public enum SiegeKit {
         var inventory = player.getInventory();
 
         switch (participant.kit) {
-            case ARCHER:
+            case ARCHER -> {
                 int arrowsRequired = SiegeKit.ARROWS - inventory.count(Items.ARROW);
                 int arrowsToGive = participant.tryDecrementResource(SiegePersonalResource.WOOD, arrowsRequired);
                 inventory.offerOrDrop(ItemStackBuilder.of(Items.ARROW).setCount(arrowsToGive).build());
-
                 if (arrowsRequired != 0 && arrowsToGive == 0) {
                     return "You have no more arrows right now!";
                 }
-
-                break;
-            case CONSTRUCTOR:
+            }
+            case CONSTRUCTOR -> {
                 Item planks = SiegeTeams.planksForTeam(participant.team.key());
                 int planksRequired = SiegeKit.PLANKS - inventory.count(planks);
                 int planksToGive = participant.tryDecrementResource(SiegePersonalResource.WOOD, planksRequired);
-
                 if (planksRequired == SiegeKit.PLANKS) {
                     player.equipStack(EquipmentSlot.OFFHAND, ItemStackBuilder.of(planks).setCount(planksToGive).build());
                 } else {
                     inventory.offerOrDrop(ItemStackBuilder.of(planks).setCount(planksToGive).build());
                 }
-
-                break;
-            case DEMOLITIONER:
+            }
+            case DEMOLITIONER -> {
                 int tntRequired = SiegeKit.TNT - inventory.count(Items.TNT);
                 int tntToGive = participant.tryDecrementResource(SiegePersonalResource.TNT, tntRequired);
                 inventory.offerOrDrop(ItemStackBuilder.of(Items.TNT).setCount(tntToGive).build());
-
                 if (tntRequired != 0 && tntToGive == 0) {
                     return "You have no TNT right now!";
                 }
-
-                break;
-            default:
-                break;
+            }
+            default -> {
+            }
         }
 
         int steakRequired = SiegeKit.STEAK - inventory.count(Items.COOKED_BEEF);

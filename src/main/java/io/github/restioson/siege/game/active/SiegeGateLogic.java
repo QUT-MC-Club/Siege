@@ -13,16 +13,15 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.explosion.Explosion;
 import xyz.nucleoid.plasmid.game.common.team.GameTeam;
 import xyz.nucleoid.plasmid.util.PlayerRef;
-
-import java.util.Random;
 
 public class SiegeGateLogic {
     private final SiegeActive game;
@@ -48,7 +47,7 @@ public class SiegeGateLogic {
                     ctx.getStack().decrement(1);
                     return ActionResult.FAIL;
                 } else {
-                    player.sendMessage(new LiteralText("The gate is already at max health!").formatted(Formatting.DARK_GREEN), true);
+                    player.sendMessage(Text.literal("The gate is already at max health!").formatted(Formatting.DARK_GREEN), true);
                 }
                 return ActionResult.FAIL;
             }
@@ -65,16 +64,16 @@ public class SiegeGateLogic {
         for (SiegeGate gate : this.game.map.gates) {
             if (!gate.bashedOpen && gate.health > 0 && gate.portcullis.contains(pos)) {
                 if (participant.team == gate.flag.team) {
-                    player.sendMessage(new LiteralText("You cannot bash your own gate!").formatted(Formatting.RED), true);
+                    player.sendMessage(Text.literal("You cannot bash your own gate!").formatted(Formatting.RED), true);
                     return ActionResult.FAIL;
                 } else if (!rightKit) {
-                    player.sendMessage(new LiteralText("Only soldiers and shieldbearers can bash!").formatted(Formatting.RED), true);
+                    player.sendMessage(Text.literal("Only soldiers and shieldbearers can bash!").formatted(Formatting.RED), true);
                     return ActionResult.FAIL;
                 } else if (!holdingBashWeapon) {
-                    player.sendMessage(new LiteralText("You can only bash with a sword or axe!").formatted(Formatting.RED), true);
+                    player.sendMessage(Text.literal("You can only bash with a sword or axe!").formatted(Formatting.RED), true);
                     return ActionResult.FAIL;
                 } else if (!player.isSprinting()) {
-                    player.sendMessage(new LiteralText("You must be sprinting to bash!").formatted(Formatting.RED), true);
+                    player.sendMessage(Text.literal("You must be sprinting to bash!").formatted(Formatting.RED), true);
                     return ActionResult.FAIL;
                 } else if (player.getItemCooldownManager().isCoolingDown(mainHandItem)) {
                     return ActionResult.FAIL;
@@ -116,8 +115,8 @@ public class SiegeGateLogic {
             GameTeam bashTeam = gate.flag.team == SiegeTeams.ATTACKERS ? SiegeTeams.DEFENDERS : SiegeTeams.ATTACKERS;
 
             this.game.gameSpace.getPlayers().sendMessage(
-                    new LiteralText("The ")
-                            .append(new LiteralText(gate.flag.name).formatted(Formatting.YELLOW))
+                    Text.literal("The ")
+                            .append(Text.literal(gate.flag.name).formatted(Formatting.YELLOW))
                             .append(" ")
                             .append(gate.flag.pastToBe())
                             .append(" been bashed open by the ")
@@ -130,8 +129,8 @@ public class SiegeGateLogic {
         } else if (gate.health >= gate.repairedHealthThreshold && gate.bashedOpen) {
             GameTeam team = gate.flag.team;
             this.game.gameSpace.getPlayers().sendMessage(
-                    new LiteralText("The ")
-                            .append(new LiteralText(gate.flag.name).formatted(Formatting.YELLOW))
+                    Text.literal("The ")
+                            .append(Text.literal(gate.flag.name).formatted(Formatting.YELLOW))
                             .append(" ")
                             .append(gate.flag.pastToBe())
                             .append(" been repaired by the ")

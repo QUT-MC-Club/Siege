@@ -3,7 +3,6 @@ package io.github.restioson.siege.game.map;
 import io.github.restioson.siege.game.active.SiegeActive;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.Nullable;
@@ -44,7 +43,7 @@ public class SiegeGate {
     }
 
     public void broadcastHealth(ServerPlayerEntity initiator, SiegeActive active, ServerWorld world) {
-        Text text = new LiteralText("Gate health: ").append(Integer.toString(this.health)).formatted(Formatting.DARK_GREEN);
+        Text text = Text.literal("Gate health: ").append(Integer.toString(this.health)).formatted(Formatting.DARK_GREEN);
         initiator.sendMessage(text, true);
         for (PlayerRef ref : active.participants.keySet()) {
             ref.ifOnline(world, p -> {

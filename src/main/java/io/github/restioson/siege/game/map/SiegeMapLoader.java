@@ -11,7 +11,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.Registry;
@@ -56,7 +56,7 @@ public class SiegeMapLoader {
 
             TemplateRegion waitingSpawn = metadata.getFirstRegion("waiting_spawn");
             if (waitingSpawn == null) {
-                throw new GameOpenException(new LiteralText("waiting_spawn region required but not found"));
+                throw new GameOpenException(Text.literal("waiting_spawn region required but not found"));
             }
 
             map.setWaitingSpawn(new SiegeSpawn(waitingSpawn.getBounds(), waitingSpawn.getData().getFloat("yaw")));
@@ -73,7 +73,7 @@ public class SiegeMapLoader {
 
             return map;
         } catch (IOException e) {
-            throw new GameOpenException(new LiteralText("Failed to load map"), e);
+            throw new GameOpenException(Text.literal("Failed to load map"), e);
         }
     }
 
@@ -93,7 +93,7 @@ public class SiegeMapLoader {
 
                         if (flag == null) {
                             Siege.LOGGER.error("Unknown flag \"{}\"", data.getString("flag"));
-                            throw new GameOpenException(new LiteralText("unknown flag"));
+                            throw new GameOpenException(Text.literal("unknown flag"));
                         }
                     }
 
@@ -150,7 +150,7 @@ public class SiegeMapLoader {
                 SiegeFlag prerequisite = flags.get(prerequisiteId);
                 if (prerequisite == null) {
                     Siege.LOGGER.error("Unknown flag \"{}\"", prerequisiteId);
-                    throw new GameOpenException(new LiteralText("unknown flag"));
+                    throw new GameOpenException(Text.literal("unknown flag"));
                 }
 
                 flag.prerequisiteFlags.add(prerequisite);
@@ -163,7 +163,7 @@ public class SiegeMapLoader {
                 SiegeFlag prerequisite = flags.get(prerequisiteId);
                 if (prerequisite == null) {
                     Siege.LOGGER.error("Unknown flag \"{}\"", prerequisiteId);
-                    throw new GameOpenException(new LiteralText("unknown flag"));
+                    throw new GameOpenException(Text.literal("unknown flag"));
                 }
 
                 flag.recapturePrerequisites.add(prerequisite);
@@ -213,7 +213,7 @@ public class SiegeMapLoader {
                     String id = data.getString("id");
                     SiegeFlag flag = flags.get(id);
                     if (flag == null) {
-                        throw new GameOpenException(new LiteralText("Gate missing flag with id '" + id + "'!"));
+                        throw new GameOpenException(Text.literal("Gate missing flag with id '" + id + "'!"));
                     }
 
                     TemplateRegion portcullisRegion = metadata.getRegions("portcullis")
@@ -221,7 +221,7 @@ public class SiegeMapLoader {
                             .findFirst()
                             .orElseThrow(() -> {
                                 Siege.LOGGER.error("Gate \"{}\" missing portcullis!", id);
-                                return new GameOpenException(new LiteralText("Gate missing portcullis!"));
+                                return new GameOpenException(Text.literal("Gate missing portcullis!"));
                             });
 
                     NbtCompound portcullisData = portcullisRegion.getData();
@@ -255,7 +255,7 @@ public class SiegeMapLoader {
             // TODO: remove this restriction (it's for warp enderpearl)
             if (flag.team == SiegeTeams.DEFENDERS && flag.defenderRespawn == null) {
                 Siege.LOGGER.error("Flag \"{}\" missing respawn!", flag.name);
-                throw new GameOpenException(new LiteralText("Flag missing respawn!"));
+                throw new GameOpenException(Text.literal("Flag missing respawn!"));
             }
         }
     }
@@ -286,7 +286,7 @@ public class SiegeMapLoader {
             case "demolitioner" -> SiegeKit.DEMOLITIONER;
             default -> {
                 Siege.LOGGER.error("Unknown kit \"" + kitName + "\"");
-                throw new GameOpenException(new LiteralText("unknown kit"));
+                throw new GameOpenException(Text.literal("unknown kit"));
             }
         };
     }

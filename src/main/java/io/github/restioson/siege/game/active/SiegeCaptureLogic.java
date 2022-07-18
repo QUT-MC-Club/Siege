@@ -15,7 +15,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -242,8 +242,8 @@ public final class SiegeCaptureLogic {
 
     private void broadcastStartCapture(SiegeFlag flag, GameTeam captureTeam) {
         this.gameSpace.getPlayers().sendMessage(
-                new LiteralText("The ")
-                        .append(new LiteralText(flag.name).formatted(Formatting.YELLOW))
+                Text.literal("The ")
+                        .append(Text.literal(flag.name).formatted(Formatting.YELLOW))
                         .append(" ")
                         .append(flag.presentTobe())
                         .append(" being captured by the ")
@@ -276,8 +276,8 @@ public final class SiegeCaptureLogic {
 
     private void broadcastCaptured(SiegeFlag flag, GameTeam captureTeam) {
         this.gameSpace.getPlayers().sendMessage(
-                new LiteralText("The ")
-                        .append(new LiteralText(flag.name).formatted(Formatting.YELLOW))
+                Text.literal("The ")
+                        .append(Text.literal(flag.name).formatted(Formatting.YELLOW))
                         .append(" ")
                         .append(flag.pastToBe())
                         .append(" been captured by the ")
@@ -295,8 +295,8 @@ public final class SiegeCaptureLogic {
 
     private void broadcastSecured(SiegeFlag flag) {
         this.gameSpace.getPlayers().sendMessage(
-                new LiteralText("The ")
-                        .append(new LiteralText(flag.name).formatted(Formatting.YELLOW))
+                Text.literal("The ")
+                        .append(Text.literal(flag.name).formatted(Formatting.YELLOW))
                         .append(" ")
                         .append(flag.pastToBe())
                         .append(" been defended by the ")

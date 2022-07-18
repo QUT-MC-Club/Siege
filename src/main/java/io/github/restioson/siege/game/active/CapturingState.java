@@ -1,14 +1,13 @@
 package io.github.restioson.siege.game.active;
 
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 public enum CapturingState {
-    CAPTURING(new LiteralText("Capturing..").formatted(Formatting.GOLD)),
-    CONTESTED(new LiteralText("Contested!").formatted(Formatting.GRAY)),
-    SECURING(new LiteralText("Securing..").formatted(Formatting.AQUA)),
-    PREREQUISITE_REQUIRED(new LiteralText("Cannot capture yet!").formatted(Formatting.RED));
+    CAPTURING(Text.literal("Capturing..").formatted(Formatting.GOLD)),
+    CONTESTED(Text.literal("Contested!").formatted(Formatting.GRAY)),
+    SECURING(Text.literal("Securing..").formatted(Formatting.AQUA)),
+    PREREQUISITE_REQUIRED(Text.literal("Cannot capture yet!").formatted(Formatting.RED));
 
     private final Text name;
 

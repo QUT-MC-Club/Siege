@@ -2,7 +2,7 @@ package io.github.restioson.siege.game.active;
 
 import io.github.restioson.siege.game.SiegeTeams;
 import io.github.restioson.siege.game.map.SiegeFlag;
-import net.minecraft.text.LiteralText;
+import net.minecraft.screen.ScreenTexts;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import xyz.nucleoid.plasmid.game.common.GlobalWidgets;
@@ -23,14 +23,14 @@ public final class SiegeSidebar {
 
     SiegeSidebar(SiegeActive game, GlobalWidgets widgets) {
         this.game = game;
-        this.widget = widgets.addSidebar(new LiteralText("Siege").formatted(Formatting.BOLD, Formatting.GOLD));
+        this.widget = widgets.addSidebar(Text.literal("Siege").formatted(Formatting.BOLD, Formatting.GOLD));
     }
 
     public void update(long time) {
         this.widget.set(content -> {
             long ticksUntilEnd = this.game.stageManager.finishTime - time;
             content.add(getTimeLeft(ticksUntilEnd));
-            content.add(LiteralText.EMPTY);
+            content.add(ScreenTexts.EMPTY);
 
             List<SiegeFlag> flags = new ArrayList<>(this.game.map.flags);
             flags.sort(Comparator.comparingInt(SiegeSidebar::getSortIndex));
@@ -58,7 +58,7 @@ public final class SiegeSidebar {
                     capturing = true;
                 }
 
-                var flagName = new LiteralText(flag.name)
+                var flagName = Text.literal(flag.name)
                         .formatted(color);
                 if (italic) flagName = flagName.formatted(Formatting.ITALIC);
 
@@ -67,9 +67,9 @@ public final class SiegeSidebar {
 
                 Text line;
                 if (capturing || percent > 0) {
-                    line = new LiteralText("(" + percent + "%) ").append(flagName);
+                    line = Text.literal("(" + percent + "%) ").append(flagName);
                 } else if (flag.gate != null && time - flag.gate.timeOfLastBash < 5 * 20) {
-                    line = new LiteralText("(!) ").append(flagName);
+                    line = Text.literal("(!) ").append(flagName);
                 } else {
                     line = flagName;
                 }
@@ -85,8 +85,8 @@ public final class SiegeSidebar {
         long minutes = secondsUntilEnd / 60;
         long seconds = secondsUntilEnd % 60;
 
-        return new LiteralText("Time Left: ").formatted(Formatting.GOLD)
-                .append(new LiteralText(String.format("%02d:%02d", minutes, seconds).formatted(Formatting.AQUA)));
+        return Text.literal("Time Left: ").formatted(Formatting.GOLD)
+                .append(Text.literal(String.format("%02d:%02d", minutes, seconds).formatted(Formatting.AQUA)));
     }
 
     private static int getSortIndex(SiegeFlag flag) {

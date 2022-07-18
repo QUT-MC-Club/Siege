@@ -8,12 +8,11 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.GameMode;
 import xyz.nucleoid.map_templates.BlockBounds;
 import xyz.nucleoid.plasmid.game.player.PlayerOffer;
 import xyz.nucleoid.plasmid.game.player.PlayerOfferResult;
-
-import java.util.Random;
 
 public class SiegeSpawnLogic {
     public static PlayerOfferResult.Accept acceptPlayer(PlayerOffer offer, ServerWorld world, SiegeSpawn spawn, GameMode gameMode) {
