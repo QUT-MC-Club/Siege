@@ -10,12 +10,13 @@ import net.minecraft.block.BlockState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.biome.BiomeKeys;
 import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.map_templates.*;
@@ -45,7 +46,7 @@ public class SiegeMapLoader {
             NbtCompound mapData = metadata.getData();
             String biomeId = mapData.getString("biome");
             if (!Strings.isNullOrEmpty(biomeId)) {
-                template.setBiome(RegistryKey.of(Registry.BIOME_KEY, new Identifier(biomeId)));
+                template.setBiome(RegistryKey.of(RegistryKeys.BIOME, new Identifier(biomeId)));
             } else {
                 template.setBiome(BiomeKeys.PLAINS);
             }
@@ -125,7 +126,7 @@ public class SiegeMapLoader {
 
             if (data.contains("icon")) {
                 String icon = data.getString("icon");
-                flag.icon = new ItemStack(Registry.ITEM.get(new Identifier(icon)));
+                flag.icon = new ItemStack(Registries.ITEM.get(new Identifier(icon)));
             }
 
             flags.put(id, flag);

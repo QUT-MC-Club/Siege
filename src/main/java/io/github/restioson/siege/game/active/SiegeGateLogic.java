@@ -5,6 +5,7 @@ import io.github.restioson.siege.game.SiegeTeams;
 import io.github.restioson.siege.game.map.SiegeGate;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
+import net.minecraft.SharedConstants;
 import net.minecraft.block.Blocks;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemUsageContext;
@@ -19,7 +20,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.GameMode;
-import net.minecraft.world.explosion.Explosion;
+import net.minecraft.world.World;
 import xyz.nucleoid.plasmid.game.common.team.GameTeam;
 import xyz.nucleoid.plasmid.util.PlayerRef;
 
@@ -79,10 +80,10 @@ public class SiegeGateLogic {
                     return ActionResult.FAIL;
                 }
 
-                player.getItemCooldownManager().set(Items.IRON_SWORD, 20);
-                player.getItemCooldownManager().set(Items.STONE_AXE, 20);
+                player.getItemCooldownManager().set(Items.IRON_SWORD, SharedConstants.TICKS_PER_SECOND);
+                player.getItemCooldownManager().set(Items.STONE_AXE, SharedConstants.TICKS_PER_SECOND);
                 ServerWorld world = this.game.world;
-                world.createExplosion(null, pos.getX(), pos.getY(), pos.getZ(), 0.0f, Explosion.DestructionType.NONE);
+                world.createExplosion(null, pos.getX(), pos.getY(), pos.getZ(), 0.0f, World.ExplosionSourceType.NONE);
                 gate.health -= 1;
                 gate.timeOfLastBash = time;
                 gate.broadcastHealth(player, this.game, world);
@@ -109,7 +110,7 @@ public class SiegeGateLogic {
                 double y = min.getY() + rand.nextInt(max.getY() - min.getY() + 1);
                 double z = min.getZ() + rand.nextInt(max.getZ() - min.getZ() + 1);
 
-                world.createExplosion(null, x, y, z, 0.0f, Explosion.DestructionType.NONE);
+                world.createExplosion(null, x, y, z, 0.0f, World.ExplosionSourceType.NONE);
             }
 
             GameTeam bashTeam = gate.flag.team == SiegeTeams.ATTACKERS ? SiegeTeams.DEFENDERS : SiegeTeams.ATTACKERS;
