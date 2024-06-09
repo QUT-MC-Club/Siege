@@ -132,17 +132,17 @@ public enum SiegeKit {
         switch (this) {
             case ARCHER -> {
                 this.giveArcherKit(player, participant);
-                player.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, Integer.MAX_VALUE, 0, false, false, true));
+                player.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, -1, 0, false, false, true));
             }
             case SOLDIER -> this.giveSoldierKit(player, team);
             case CONSTRUCTOR -> this.giveConstructorKit(player, participant);
             case SHIELD_BEARER -> {
                 this.giveShieldKit(player, team);
-                player.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, Integer.MAX_VALUE, 0, false, false, true));
+                player.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, -1, 0, false, false, true));
             }
             case DEMOLITIONER -> {
                 this.giveDemolitionerKit(player, team);
-                player.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, Integer.MAX_VALUE, 0, false, false, true));
+                player.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, -1, 0, false, false, true));
             }
         }
 
