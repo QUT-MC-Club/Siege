@@ -646,7 +646,7 @@ public class SiegeActive {
                         return null;
                     }
 
-                    return new BestPlayer(p.getEntityName(), getter.applyAsDouble(e.getValue()));
+                    return new BestPlayer(p.getGameProfile().getName(), getter.applyAsDouble(e.getValue()));
                 });
     }
 
