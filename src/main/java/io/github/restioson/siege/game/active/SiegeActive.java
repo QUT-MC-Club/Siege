@@ -215,8 +215,8 @@ public class SiegeActive {
     private void onOpen() {
         String help = "Siege - capture all the flags to win! There are two teams - attackers and defenders. Defenders " +
                 "must defend blue flags and attackers must capture them. To capture a flag, stand near it. To defend " +
-                "it, kill the capturers, and stand near it to halt the capture progress. You can bash gates by" +
-                "sprinting and hitting them as a soldier or shieldbearer. They can be braced and repaired by placing" +
+                "it, kill the capturers, and stand near it to halt the capture progress. You can bash gates by " +
+                "sprinting and hitting them as a soldier or shieldbearer. They can be braced and repaired by placing " +
                 "wood near them as a constructor.";
 
         for (Map.Entry<PlayerRef, SiegePlayer> entry : this.participants.entrySet()) {
