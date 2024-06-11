@@ -211,18 +211,27 @@ public class SiegeMapLoader {
                 .map(region -> {
                     NbtCompound data = region.getData();
 
-                    String id = data.getString("id");
-                    SiegeFlag flag = flags.get(id);
+                    String gateId = data.getString("id");
+                    String flagIdRaw = data.getString("flag");
+                    final String flagId = flagIdRaw.isEmpty() ? gateId : flagIdRaw;
+
+                    SiegeFlag flag = flags.get(flagId);
                     if (flag == null) {
-                        throw new GameOpenException(Text.literal("Gate missing flag with id '" + id + "'!"));
+                        var text = Text.literal(String.format("Gate (id '%s') missing flag with id '%s'!", gateId, flagId));
+
+                        if (flagIdRaw.isEmpty()) {
+                            text = text.append(Text.literal("\nNote: flag id was implicitly defined as the gate id, as `flag` was missing in data."));
+                        }
+
+                        throw new GameOpenException(text);
                     }
 
                     TemplateRegion portcullisRegion = metadata.getRegions("portcullis")
-                            .filter(r -> id.equalsIgnoreCase(r.getData().getString("id")))
+                            .filter(r -> gateId.equalsIgnoreCase(r.getData().getString("id")))
                             .findFirst()
                             .orElseThrow(() -> {
-                                Siege.LOGGER.error("Gate \"{}\" missing portcullis!", id);
-                                return new GameOpenException(Text.literal("Gate missing portcullis!"));
+                                Siege.LOGGER.error("Gate \"{}\" missing portcullis!", gateId);
+                                return new GameOpenException(Text.literal(String.format("Gate (id '%s') missing portcullis!", gateId)));
                             });
 
                     NbtCompound portcullisData = portcullisRegion.getData();
@@ -241,13 +250,13 @@ public class SiegeMapLoader {
                     }
 
                     BlockBounds brace = metadata.getRegions("gate_brace")
-                            .filter(r -> id.equalsIgnoreCase(r.getData().getString("id")))
+                            .filter(r -> flagId.equalsIgnoreCase(r.getData().getString("id")))
                             .map(TemplateRegion::getBounds)
                             .findFirst()
                             .orElse(null);
 
                     SiegeGate gate = new SiegeGate(flag, region.getBounds(), portcullisRegion.getBounds(), brace, retractHeight, repairHealthThreshold, maxHealth);
-                    flag.gate = gate;
+                    flag.gates.add(gate);
                     return gate;
                 })
                 .collect(Collectors.toList());

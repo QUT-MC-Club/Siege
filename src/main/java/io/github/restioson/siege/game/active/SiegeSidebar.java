@@ -68,7 +68,7 @@ public final class SiegeSidebar {
                 Text line;
                 if (capturing || percent > 0) {
                     line = Text.literal("(" + percent + "%) ").append(flagName);
-                } else if (flag.gate != null && time - flag.gate.timeOfLastBash < 5 * 20) {
+                } else if (flag.gateUnderAttack(time)) {
                     line = Text.literal("(!) ").append(flagName);
                 } else {
                     line = flagName;

@@ -36,8 +36,7 @@ public final class SiegeFlag {
     @Nullable
     public SiegeSpawn defenderRespawn;
 
-    @Nullable
-    public SiegeGate gate;
+    public List<SiegeGate> gates;
 
     public GameTeam team;
 
@@ -172,6 +171,18 @@ public final class SiegeFlag {
     public boolean isFrontLine(long time) {
         CapturingState state = this.capturingState;
         return (state != null && state.hasAlert() && state != CapturingState.SECURING)
-                || (this.gate != null && time - this.gate.timeOfLastBash < 5 * 20);
+                || (this.gateUnderAttack(time));
+    }
+
+    public boolean gateUnderAttack(long time) {
+        long lastBash = this.gates
+                .stream()
+                .map(gate -> gate.timeOfLastBash)
+                .max(Long::compareTo)
+                .stream()
+                .findAny()
+                .orElse(0L);
+
+        return time - lastBash < 5 * 20;
     }
 }
