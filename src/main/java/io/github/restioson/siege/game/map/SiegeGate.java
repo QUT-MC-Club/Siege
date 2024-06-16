@@ -10,6 +10,7 @@ import xyz.nucleoid.map_templates.BlockBounds;
 import xyz.nucleoid.plasmid.util.PlayerRef;
 
 public class SiegeGate {
+    public final String id;
     public final SiegeFlag flag;
     public final BlockBounds gateOpen;
     public final BlockBounds portcullis;
@@ -20,13 +21,14 @@ public class SiegeGate {
     public int health;
     public int repairedHealthThreshold;
     public int maxHealth;
-    private int openSlide;
+    public int openSlide;
     public long timeOfLastBash;
 
     @Nullable
     public BlockBounds brace;
 
-    public SiegeGate(SiegeFlag flag, BlockBounds gateOpen, BlockBounds portcullis, @Nullable BlockBounds brace, int retractHeight, int repairedHealthThreshold, int maxHealth) {
+    public SiegeGate(String id, SiegeFlag flag, BlockBounds gateOpen, BlockBounds portcullis, @Nullable BlockBounds brace, int retractHeight, int repairedHealthThreshold, int maxHealth) {
+        this.id = id;
         this.flag = flag;
         this.gateOpen = gateOpen;
         this.portcullis = portcullis;

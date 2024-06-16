@@ -4,7 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.util.Identifier;
 
-public final record SiegeMapConfig(
+public record SiegeMapConfig(
         Identifier templateId,
         int attackerSpawnAngle
 ) {

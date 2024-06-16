@@ -14,5 +14,13 @@
   "game.siege.recapture.desc.3": "points.",
   "game.siege.enderpearl.desc.1": "In this mode, defenders have",
   "game.siege.enderpearl.desc.2": "ender pearls that allow them",
-  "game.siege.enderpearl.desc.3": "to teleport to points under siege."
+  "game.siege.enderpearl.desc.3": "to teleport to points under siege.",
+  "game.siege.kit.kits.archer": "Archer Kit",
+  "game.siege.kit.kits.soldier": "Soldier Kit",
+  "game.siege.kit.kits.shield_bearer": "Shieldbearer Kit",
+  "game.siege.kit.kits.constructor": "Constructor Kit",
+  "game.siege.kit.kits.demolitioner": "Demolitioner Kit",
+  "game.siege.kit.items.arrows": "arrows",
+  "game.siege.kit.items.tnt": "TNT",
+  "game.siege.kit.items.wood": "wood"
 }

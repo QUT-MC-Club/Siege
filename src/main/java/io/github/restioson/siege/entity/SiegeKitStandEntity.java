@@ -24,42 +24,40 @@ public final class SiegeKitStandEntity extends ArmorStandEntity {
     @Nullable
     private final GameTeam team;
 
-    private final SiegeKit type;
+    private final SiegeKit kit;
     private final SiegeActive game;
 
     public SiegeKitStandEntity(World world, SiegeActive game, SiegeKitStandLocation stand) {
         super(EntityType.ARMOR_STAND, world);
-        this.type = stand.type();
-        this.team = stand.team();
+        this.kit = stand.type();
         this.controllingFlag = stand.flag();
+        this.team = this.controllingFlag != null ? this.controllingFlag.team : stand.team();
         this.game = game;
         this.setPose(EntityPose.CROUCHING);
 
         this.updatePositionAndAngles(stand.pos().x, stand.pos().y, stand.pos().z, stand.yaw(), 0);
 
-        this.setCustomName(this.type.name);
+        this.setCustomName(this.kit.name());
         this.setInvulnerable(true);
         this.setCustomNameVisible(true);
         this.setShowArms(true);
-        this.type.equipArmourStand(this);
+        this.kit.equipArmourStand(this);
     }
 
     public GameTeam getTeam() {
-        if (this.controllingFlag != null) {
-            return this.controllingFlag.team;
-        } else {
-            return this.team;
-        }
+        return this.controllingFlag != null ? this.controllingFlag.team : this.team;
     }
 
     public void onControllingFlagCaptured() {
-        this.type.equipArmourStand(this);
+        this.kit.equipArmourStand(this);
     }
 
     @Override
-    public ActionResult interactAt(PlayerEntity player, Vec3d hitPos, Hand hand) {
-        SiegePlayer participant = this.game.participant((ServerPlayerEntity) player);
-        if (participant == null || ((ServerPlayerEntity) player).interactionManager.getGameMode() != GameMode.SURVIVAL) {
+    public ActionResult interactAt(PlayerEntity playerEntity, Vec3d hitPos, Hand hand) {
+        var player = (ServerPlayerEntity) playerEntity;
+        SiegePlayer participant = this.game.participant(player);
+
+        if (participant == null || player.interactionManager.getGameMode() != GameMode.SURVIVAL) {
             return ActionResult.FAIL;
         }
 
@@ -67,8 +65,9 @@ public final class SiegeKitStandEntity extends ArmorStandEntity {
             return ActionResult.FAIL;
         }
 
-        participant.kit = this.type;
-        this.type.equipPlayer((ServerPlayerEntity) player, participant, this.game.world, this.game.config);
+        participant.kit.returnResources(player, participant);
+        participant.kit = this.kit;
+        this.kit.equipPlayer(player, participant, this.game.config, player.getWorld().getTime());
         return ActionResult.SUCCESS;
     }
 
@@ -78,7 +77,7 @@ public final class SiegeKitStandEntity extends ArmorStandEntity {
     }
 
     @Override
-    public void takeKnockback(double strength, double x, double z) {
-        super.takeKnockback(strength, x, z);
+    public boolean isMarker() {
+        return true;
     }
 }

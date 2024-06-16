@@ -42,8 +42,7 @@ public class SiegeWaiting {
 
     public static GameOpenProcedure open(GameOpenContext<SiegeConfig> context) {
         var config = context.config();
-        SiegeMapLoader generator = new SiegeMapLoader(config.map());
-        SiegeMap map = generator.create(context.server());
+        SiegeMap map = SiegeMapLoader.load(context.server(), config.map());
 
         RuntimeWorldConfig worldConfig = new RuntimeWorldConfig()
                 .setGenerator(map.asGenerator(context.server()))

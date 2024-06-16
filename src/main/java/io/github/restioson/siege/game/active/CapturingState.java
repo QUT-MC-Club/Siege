@@ -5,6 +5,7 @@ import net.minecraft.util.Formatting;
 
 public enum CapturingState {
     CAPTURING(Text.literal("Capturing..").formatted(Formatting.GOLD)),
+    RECAPTURE_DISABLED(Text.literal("Recapture is disabled for this game!").formatted(Formatting.RED)),
     CONTESTED(Text.literal("Contested!").formatted(Formatting.GRAY)),
     SECURING(Text.literal("Securing..").formatted(Formatting.AQUA)),
     PREREQUISITE_REQUIRED(Text.literal("Cannot capture yet!").formatted(Formatting.RED));

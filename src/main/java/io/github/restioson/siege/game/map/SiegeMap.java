@@ -1,9 +1,14 @@
 package io.github.restioson.siege.game.map;
 
+import io.github.restioson.siege.Siege;
+import io.github.restioson.siege.entity.SiegeKitStandEntity;
+import io.github.restioson.siege.game.SiegeSpawnLogic;
 import io.github.restioson.siege.game.SiegeTeams;
+import io.github.restioson.siege.game.active.SiegeActive;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 import xyz.nucleoid.map_templates.BlockBounds;
@@ -15,11 +20,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SiegeMap {
+    private final SiegeMapConfig config;
     private final MapTemplate template;
     public final List<SiegeFlag> flags = new ArrayList<>();
     public final List<SiegeKitStandLocation> kitStands = new ArrayList<>();
-    public final int attackerSpawnAngle;
-    public final BlockBounds bounds;
     public SiegeSpawn waitingSpawn = null;
     public List<BlockBounds> noBuildRegions = new ArrayList<>();
     public List<SiegeGate> gates = new ArrayList<>();
@@ -29,10 +33,9 @@ public class SiegeMap {
 
     private final LongSet protectedBlocks = new LongOpenHashSet();
 
-    public SiegeMap(MapTemplate template, int attackerSpawnAngle) {
+    public SiegeMap(SiegeMapConfig config, MapTemplate template) {
+        this.config = config;
         this.template = template;
-        this.attackerSpawnAngle = attackerSpawnAngle;
-        this.bounds = template.getBounds();
         this.time = 1000;
     }
 
@@ -62,5 +65,16 @@ public class SiegeMap {
 
     public ChunkGenerator asGenerator(MinecraftServer server) {
         return new TemplateChunkGenerator(server, this.template);
+    }
+
+    public void spawnKitStands(SiegeActive active) {
+        for (SiegeKitStandLocation stand : this.kitStands) {
+            SiegeKitStandEntity standEntity = new SiegeKitStandEntity(active.world, active, stand);
+            active.world.spawnEntity(standEntity);
+
+            if (standEntity.controllingFlag != null) {
+                standEntity.controllingFlag.kitStands.add(standEntity);
+            }
+        }
     }
 }

@@ -5,10 +5,10 @@ import io.github.restioson.siege.Siege;
 import io.github.restioson.siege.game.SiegeKit;
 import io.github.restioson.siege.game.SiegeTeams;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import net.fabricmc.fabric.api.util.NbtType;
-import net.minecraft.block.BlockState;
+import net.minecraft.block.*;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKey;
@@ -18,6 +18,9 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.BiomeKeys;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.map_templates.*;
 import xyz.nucleoid.plasmid.game.GameOpenException;
@@ -30,62 +33,85 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class SiegeMapLoader {
-    private final SiegeMapConfig config;
+    @Nullable
+    static final CloseableHttpClient httpClient = loadRemote() ? HttpClients.createDefault() : null;
 
-    public SiegeMapLoader(SiegeMapConfig config) {
-        this.config = config;
+    public static boolean loadRemote() {
+        return System.getenv().getOrDefault("SIEGE_LOAD_MAPS_FROM_BUILD", "false").equals("true");
     }
 
-    public SiegeMap create(MinecraftServer server) throws GameOpenException {
+    public static SiegeMap load(MinecraftServer server, SiegeMapConfig config) throws GameOpenException {
+        MapTemplate template;
         try {
-            MapTemplate template = MapTemplateSerializer.loadFromResource(server, this.config.templateId());
-            MapTemplateMetadata metadata = template.getMetadata();
+            if (loadRemote()) {
+                Siege.LOGGER.info("Loading map from build server");
 
-            SiegeMap map = new SiegeMap(template, this.config.attackerSpawnAngle());
+                assert httpClient != null;
 
-            NbtCompound mapData = metadata.getData();
-            String biomeId = mapData.getString("biome");
-            if (!Strings.isNullOrEmpty(biomeId)) {
-                template.setBiome(RegistryKey.of(RegistryKeys.BIOME, new Identifier(biomeId)));
+                var id = config.templateId();
+                var uri = String.format(
+                        "https://build.nucleoid.xyz/nucleoid_creator_tools/export/%s/map_templates/%s.nbt",
+                        id.getNamespace(),
+                        id.getPath()
+                );
+
+                var response = httpClient.execute(new HttpGet(uri));
+                template = MapTemplateSerializer.loadFrom(response.getEntity().getContent());
             } else {
-                template.setBiome(BiomeKeys.PLAINS);
+                Siege.LOGGER.info("Loading map from resources");
+                template = MapTemplateSerializer.loadFromResource(server, config.templateId());
             }
-
-            if (mapData.contains("time")) {
-                map.time = mapData.getLong("time");
-            }
-
-            TemplateRegion waitingSpawn = metadata.getFirstRegion("waiting_spawn");
-            if (waitingSpawn == null) {
-                throw new GameOpenException(Text.literal("waiting_spawn region required but not found"));
-            }
-
-            map.setWaitingSpawn(new SiegeSpawn(waitingSpawn.getBounds(), waitingSpawn.getData().getFloat("yaw")));
-
-            this.addFlagsToMap(map, metadata);
-            map.kitStands.addAll(this.collectKitStands(map.flags, template));
-
-            for (BlockPos pos : template.getBounds()) {
-                BlockState state = template.getBlockState(pos);
-                if (!state.isAir()) {
-                    map.addProtectedBlock(pos.asLong());
-                }
-            }
-
-            return map;
         } catch (IOException e) {
-            throw new GameOpenException(Text.literal("Failed to load map"), e);
+            throw new GameOpenException(Text.literal(String.format("Failed to load map template %s", config.templateId())), e);
         }
+
+        MapTemplateMetadata metadata = template.getMetadata();
+
+        SiegeMap map = new SiegeMap(config, template);
+
+        NbtCompound mapData = metadata.getData();
+        String biomeId = mapData.getString("biome");
+        if (!Strings.isNullOrEmpty(biomeId)) {
+            template.setBiome(RegistryKey.of(RegistryKeys.BIOME, new Identifier(biomeId)));
+        } else {
+            template.setBiome(BiomeKeys.PLAINS);
+        }
+
+        if (mapData.contains("time")) {
+            map.time = mapData.getLong("time");
+        }
+
+        TemplateRegion waitingSpawn = metadata.getFirstRegion("waiting_spawn");
+        if (waitingSpawn == null) {
+            throw new GameOpenException(Text.literal("waiting_spawn region required but not found"));
+        }
+
+        map.setWaitingSpawn(new SiegeSpawn(waitingSpawn.getBounds(), waitingSpawn.getData().getFloat("yaw")));
+
+        addFlagsToMap(map, metadata);
+        map.kitStands.addAll(collectKitStands(map.flags, template));
+
+        for (BlockPos pos : template.getBounds()) {
+            BlockState state = template.getBlockState(pos);
+            Block block = state.getBlock();
+
+            boolean destructible = block instanceof PaneBlock || block instanceof VineBlock || block instanceof PlantBlock;
+            if (!state.isAir() && !destructible) {
+                map.addProtectedBlock(pos.asLong());
+            }
+        }
+
+        return map;
     }
 
-    private List<SiegeKitStandLocation> collectKitStands(List<SiegeFlag> flags, MapTemplate template) {
+    private static List<SiegeKitStandLocation> collectKitStands(List<SiegeFlag> flags, MapTemplate template) {
         return template.getMetadata()
                 .getRegions("kit_stand")
                 .map(region -> {
                     NbtCompound data = region.getData();
                     GameTeam team = null;
                     if (data.contains("team")) {
-                        team = this.parseTeam(data);
+                        team = parseTeam(data);
                     }
 
                     SiegeFlag flag = null;
@@ -98,14 +124,14 @@ public class SiegeMapLoader {
                         }
                     }
 
-                    SiegeKit type = this.parseKitStandType(data);
+                    SiegeKit type = parseKitStandType(data);
 
-                    return new SiegeKitStandLocation(team, flag, region.getBounds().center(), type, data.getFloat("yaw"));
+                    return new SiegeKitStandLocation(team, flag, region.getBounds().centerBottom(), type, data.getFloat("yaw"));
                 })
                 .collect(Collectors.toList());
     }
 
-    private void addFlagsToMap(SiegeMap map, MapTemplateMetadata metadata) {
+    private static void addFlagsToMap(SiegeMap map, MapTemplateMetadata metadata) {
         Map<String, SiegeFlag> flags = new Object2ObjectOpenHashMap<>();
 
         metadata.getRegions("flag").forEach(region -> {
@@ -113,7 +139,7 @@ public class SiegeMapLoader {
             NbtCompound data = region.getData();
             String id = data.getString("id");
             String name = data.getString("name");
-            GameTeam team = this.parseTeam(data);
+            GameTeam team = parseTeam(data);
 
             SiegeFlag flag = new SiegeFlag(id, name, team, bounds);
             if (data.contains("capturable") && !data.getBoolean("capturable")) {
@@ -144,7 +170,7 @@ public class SiegeMapLoader {
                 return;
             }
 
-            NbtList prerequisiteFlagsList = data.getList("prerequisite_flags", NbtType.STRING);
+            NbtList prerequisiteFlagsList = data.getList("prerequisite_flags", NbtElement.STRING_TYPE);
             for (int i = 0; i < prerequisiteFlagsList.size(); i++) {
                 String prerequisiteId = prerequisiteFlagsList.getString(i);
 
@@ -157,7 +183,7 @@ public class SiegeMapLoader {
                 flag.prerequisiteFlags.add(prerequisite);
             }
 
-            NbtList recapturePrerequisites = data.getList("recapture_prerequisites", NbtType.STRING);
+            NbtList recapturePrerequisites = data.getList("recapture_prerequisites", NbtElement.STRING_TYPE);
             for (int i = 0; i < recapturePrerequisites.size(); i++) {
                 String prerequisiteId = recapturePrerequisites.getString(i);
 
@@ -184,7 +210,7 @@ public class SiegeMapLoader {
                 float yaw = data.getFloat("yaw");
                 SiegeSpawn respawn = new SiegeSpawn(region.getBounds(), yaw);
 
-                GameTeam team = this.parseOptionalTeam(data);
+                GameTeam team = parseOptionalTeam(data);
                 if (team == SiegeTeams.DEFENDERS) {
                     flag.defenderRespawn = respawn;
                 } else if (team == SiegeTeams.ATTACKERS) {
@@ -201,7 +227,8 @@ public class SiegeMapLoader {
                     }
                 }
             } else {
-                Siege.LOGGER.warn("Respawn attached to missing flag: {}", flagId);
+                // TODO: i should fix this
+                Siege.LOGGER.warn("Skipping respawn as flag is missing: {}", flagId);
             }
         });
 
@@ -250,12 +277,12 @@ public class SiegeMapLoader {
                     }
 
                     BlockBounds brace = metadata.getRegions("gate_brace")
-                            .filter(r -> flagId.equalsIgnoreCase(r.getData().getString("id")))
+                            .filter(r -> gateId.equalsIgnoreCase(r.getData().getString("id")))
                             .map(TemplateRegion::getBounds)
                             .findFirst()
                             .orElse(null);
 
-                    SiegeGate gate = new SiegeGate(flag, region.getBounds(), portcullisRegion.getBounds(), brace, retractHeight, repairHealthThreshold, maxHealth);
+                    SiegeGate gate = new SiegeGate(gateId, flag, region.getBounds(), portcullisRegion.getBounds(), brace, retractHeight, repairHealthThreshold, maxHealth);
                     flag.gates.add(gate);
                     return gate;
                 })
@@ -270,8 +297,8 @@ public class SiegeMapLoader {
         }
     }
 
-    private GameTeam parseTeam(NbtCompound data) {
-        String teamName = data.getString("team");
+    private static GameTeam parseTeam(NbtCompound data) {
+        String teamName = data.getString("team").toLowerCase();
         GameTeam team = SiegeTeams.byKey(teamName);
         if (team == null) {
             Siege.LOGGER.error("Unknown team \"{}\"", teamName);
@@ -281,12 +308,12 @@ public class SiegeMapLoader {
     }
 
     @Nullable
-    private GameTeam parseOptionalTeam(NbtCompound data) {
+    private static GameTeam parseOptionalTeam(NbtCompound data) {
         String teamName = data.getString("team");
         return SiegeTeams.byKey(teamName);
     }
 
-    private SiegeKit parseKitStandType(NbtCompound data) {
+    private static SiegeKit parseKitStandType(NbtCompound data) {
         String kitName = data.getString("type");
         return switch (kitName) {
             case "bow" -> SiegeKit.ARCHER;

@@ -2,7 +2,6 @@ package io.github.restioson.siege.game.active;
 
 import com.google.common.collect.Multimap;
 import eu.pb4.sgui.api.gui.SimpleGui;
-import io.github.restioson.siege.entity.SiegeKitStandEntity;
 import io.github.restioson.siege.game.SiegeConfig;
 import io.github.restioson.siege.game.SiegeKit;
 import io.github.restioson.siege.game.SiegeSpawnLogic;
@@ -75,7 +74,7 @@ public class SiegeActive {
 
     public final ServerWorld world;
     public final GameSpace gameSpace;
-    final SiegeMap map;
+    private static final int RESPAWN_DELAY_TICKS = 5 * 20;
 
     final SiegeTeams teams;
 
@@ -87,8 +86,8 @@ public class SiegeActive {
 
     final SiegeCaptureLogic captureLogic;
     final SiegeGateLogic gateLogic;
-
-    public static int TNT_GATE_DAMAGE = 15;
+    public static int TNT_GATE_DAMAGE = 10;
+    public SiegeMap map;
 
     private SiegeActive(ServerWorld world, GameActivity activity, SiegeMap map, SiegeConfig config, GlobalWidgets widgets, Multimap<GameTeamKey, ServerPlayerEntity> players) {
         this.world = world;
@@ -151,14 +150,7 @@ public class SiegeActive {
             activity.listen(PlayerAttackEntityEvent.EVENT, active::onAttackEntity);
             activity.listen(ProjectileHitEvent.ENTITY, active::onProjectileHitEntity);
 
-            for (SiegeKitStandLocation stand : active.map.kitStands) {
-                SiegeKitStandEntity standEntity = new SiegeKitStandEntity(world, active, stand);
-                world.spawnEntity(standEntity);
-
-                if (standEntity.controllingFlag != null) {
-                    standEntity.controllingFlag.kitStands.add(standEntity);
-                }
-            }
+            active.map.spawnKitStands(active);
         });
     }
 
@@ -169,6 +161,11 @@ public class SiegeActive {
                 if (!gate.bashedOpen && gate.health > 0 && gate.portcullis.contains(pos)) {
                     gate.health = Math.max(0, gate.health - TNT_GATE_DAMAGE);
                     gate.timeOfLastBash = this.world.getTime();
+
+                    if (explosion.getCausingEntity() instanceof ServerPlayerEntity player) {
+                        gate.broadcastHealth(player, this, this.world);
+                    }
+
                     break gate;
                 }
             }
@@ -239,6 +236,12 @@ public class SiegeActive {
                 this.spawnParticipant(p, this.map.getFirstSpawn(entry.getValue().team));
             });
         }
+
+        if (SiegeMapLoader.loadRemote()) {
+            var hint = Text.literal("[Siege] Loaded map from build server").formatted(Formatting.AQUA);
+            this.gameSpace.getPlayers().sendMessage(hint);
+        }
+
 
         this.stageManager.onOpen(this.world.getTime(), this.config);
     }
@@ -327,25 +330,21 @@ public class SiegeActive {
             pos.offset(hitResult.getSide());
             BlockState state = this.world.getBlockState(pos);
             if (state.getBlock() instanceof EnderChestBlock) {
-                String error = participant.kit.restock(player, participant, this.world, this.config);
-
-                if (error == null) {
-                    player.sendMessage(Text.literal("Items restocked!").formatted(Formatting.DARK_GREEN, Formatting.BOLD), true);
-                } else {
-                    player.sendMessage(Text.literal(error).formatted(Formatting.RED, Formatting.BOLD), true);
-                }
+                MutableText result = participant.kit.restock(player, participant, this.config, this.world.getTime()).copy();
+                player.sendMessage(result.formatted(Formatting.BOLD), true);
                 return ActionResult.FAIL;
             } else if (state.getBlock() instanceof DoorBlock) {
                 return ActionResult.PASS;
             } else if (state.getBlock() instanceof BlockWithEntity) {
                 return ActionResult.FAIL;
-            } else if (inHand == Items.STONE_AXE || inHand == Items.IRON_SWORD) {
+            } else if (SiegeGateLogic.canUseToBash(inHand)) {
                 if (this.gateLogic.maybeBash(pos, player, participant, this.world.getTime()) == ActionResult.FAIL) {
                     return ActionResult.FAIL;
                 }
             }
 
-            if (inHand == Items.WOODEN_AXE || inHand == Items.STONE_AXE) {
+            // Disable log stripping
+            if (inHand instanceof AxeItem) {
                 return ActionResult.FAIL;
             }
 
@@ -387,7 +386,7 @@ public class SiegeActive {
         SiegePlayer participant = this.participant(player);
         long time = this.world.getTime();
 
-        if (participant != null && this.world.getTime() < participant.timeOfSpawn + 5 * 20 && !participant.attackedThisLife) {
+        if (participant != null && this.world.getTime() < participant.timeOfSpawn + RESPAWN_DELAY_TICKS && !participant.attackedThisLife) {
             return ActionResult.FAIL;
         }
 
@@ -491,8 +490,9 @@ public class SiegeActive {
         SiegePlayer participant = this.participant(player);
         assert participant != null; // spawnParticipant should only be spawned on a participant
 
-        participant.timeOfSpawn = this.world.getTime();
-        participant.kit.equipPlayer(player, participant, this.world, this.config);
+        var time = this.world.getTime();
+        participant.timeOfSpawn = time;
+        participant.kit.equipPlayer(player, participant, this.config, time);
     }
 
     private SiegeSpawnResult getSpawnFor(ServerPlayerEntity player, long time) {
@@ -539,10 +539,7 @@ public class SiegeActive {
 
             this.sidebar.update(time);
             this.tickWarpingPlayers();
-
-            if (time % (20 * 2) == 0) {
-                this.tickResources(time);
-            }
+            this.tickResources(time);
         }
 
         this.tickDead(this.world, time);
@@ -582,11 +579,11 @@ public class SiegeActive {
     }
 
     private void tickResources(long time) {
-        for (SiegePlayer player : this.participants.values()) {
-            player.incrementResource(SiegePersonalResource.WOOD, 1);
-
-            if (time % (60 * 20) == 0) {
-                player.incrementResource(SiegePersonalResource.TNT, 1);
+        for (SiegePersonalResource resource : SiegePersonalResource.values()) {
+            if (time % (resource.refreshSecs * 20L) == 0) {
+                for (SiegePlayer player : this.participants.values()) {
+                    player.incrementResource(resource, 1);
+                }
             }
         }
     }
@@ -604,7 +601,7 @@ public class SiegeActive {
                         p.sendMessage(text, true);
                     }
 
-                    if (time - state.timeOfDeath > 5 * 20) {
+                    if (time - state.timeOfDeath > RESPAWN_DELAY_TICKS) {
                         this.spawnParticipant(p, null);
                     }
                 }
@@ -684,18 +681,10 @@ public class SiegeActive {
 
         Formatting colour = Formatting.GOLD;
 
-        mostKills.ifPresent(p -> {
-            players.sendMessage(Text.literal(String.format("Most kills - %s with %d", p.name, (int) p.score)).formatted(colour));
-        });
-        highestKd.ifPresent(p -> {
-            players.sendMessage(Text.literal(String.format("Highest KD - %s with %.2f", p.name, p.score)).formatted(colour));
-        });
-        mostCaptures.ifPresent(p -> {
-            players.sendMessage(Text.literal(String.format("Most captures - %s with %d", p.name, (int) p.score)).formatted(colour));
-        });
-        mostSecures.ifPresent(p -> {
-            players.sendMessage(Text.literal(String.format("Most secures - %s with %d", p.name, (int) p.score)).formatted(colour));
-        });
+        mostKills.ifPresent(p -> players.sendMessage(Text.literal(String.format("Most kills - %s with %d", p.name, (int) p.score)).formatted(colour)));
+        highestKd.ifPresent(p -> players.sendMessage(Text.literal(String.format("Highest KD - %s with %.2f", p.name, p.score)).formatted(colour)));
+        mostCaptures.ifPresent(p -> players.sendMessage(Text.literal(String.format("Most captures - %s with %d", p.name, (int) p.score)).formatted(colour)));
+        mostSecures.ifPresent(p -> players.sendMessage(Text.literal(String.format("Most secures - %s with %d", p.name, (int) p.score)).formatted(colour)));
 
         int attacker_kills = 0;
         int defender_kills = 0;

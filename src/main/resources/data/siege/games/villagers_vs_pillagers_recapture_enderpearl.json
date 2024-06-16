@@ -1,7 +1,6 @@
 {
   "type": "siege:siege",
   "icon": "minecraft:iron_sword",
-  "icon": "minecraft:iron_sword",
   "short_name": {
     "translate": "gameType.siege.siege"
   },
