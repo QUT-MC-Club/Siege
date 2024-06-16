@@ -8,7 +8,6 @@ import io.github.restioson.siege.game.map.SiegeFlag;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
-import net.minecraft.block.*;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LightningEntity;
 import net.minecraft.screen.ScreenTexts;
@@ -18,10 +17,8 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
-import xyz.nucleoid.map_templates.BlockBounds;
 import xyz.nucleoid.plasmid.game.GameSpace;
 import xyz.nucleoid.plasmid.game.common.team.GameTeam;
 import xyz.nucleoid.plasmid.util.PlayerRef;
@@ -93,17 +90,19 @@ public final class SiegeCaptureLogic {
         playersPresent.addAll(defendersPresent);
 
         boolean recapture = this.game.config.recapture();
+
+        boolean attackersAtFlag = !attackersPresent.isEmpty();
         boolean defendersAtFlag = !defendersPresent.isEmpty();
-        boolean defendersActuallyCapturing = defendersAtFlag && recapture;
-        boolean attackersCapturing = !attackersPresent.isEmpty();
-        boolean contested = defendersAtFlag && attackersCapturing && !(flag.team == SiegeTeams.ATTACKERS && recapture);
-        boolean capturing = defendersActuallyCapturing || attackersCapturing;
+        boolean defendersCapturing = defendersAtFlag && recapture && flag.team != SiegeTeams.DEFENDERS;
+        boolean attackersCapturing = attackersAtFlag && flag.team != SiegeTeams.ATTACKERS;
+        boolean tryingToCapture = defendersCapturing || attackersCapturing;
+        boolean contested = tryingToCapture && defendersAtFlag && attackersAtFlag;
 
         CapturingState capturingState = null;
         GameTeam captureTeam = flag.team;
         List<ServerPlayerEntity> capturingPlayers = ImmutableList.of();
 
-        if (capturing) {
+        if (tryingToCapture) {
             if (!contested) {
                 if (defendersAtFlag) {
                     captureTeam = SiegeTeams.DEFENDERS;
@@ -113,7 +112,7 @@ public final class SiegeCaptureLogic {
                     capturingPlayers = attackersPresent;
                 }
 
-                capturingState = captureTeam != flag.team ? CapturingState.CAPTURING : null;
+                capturingState = CapturingState.CAPTURING;
             } else {
                 capturingState = CapturingState.CONTESTED;
             }
@@ -123,7 +122,9 @@ public final class SiegeCaptureLogic {
             }
         }
 
-        if (capturingState != null && !flag.isReadyForCapture()) {
+        if (defendersAtFlag && flag.team != SiegeTeams.DEFENDERS) {
+            capturingState = CapturingState.RECAPTURE_DISABLED;
+        } else if (capturingState != null && !flag.isReadyForCapture()) {
             capturingState = CapturingState.PREREQUISITE_REQUIRED;
         }
 
@@ -158,65 +159,7 @@ public final class SiegeCaptureLogic {
             }
 
             this.broadcastCaptured(flag, captureTeam);
-
-            ServerWorld world = this.game.world;
-
-            for (BlockBounds blockBounds : flag.flagIndicatorBlocks) {
-                for (BlockPos blockPos : blockBounds) {
-                    BlockState blockState = world.getBlockState(blockPos);
-                    Block block = blockState.getBlock();
-                    if (block == Blocks.BLUE_WOOL || block == Blocks.RED_WOOL) {
-                        Block wool;
-
-                        if (captureTeam == SiegeTeams.DEFENDERS) {
-                            wool = Blocks.BLUE_WOOL;
-                        } else {
-                            wool = Blocks.RED_WOOL;
-                        }
-
-                        world.setBlockState(blockPos, wool.getDefaultState());
-                    }
-
-                    if (block == Blocks.BLUE_WALL_BANNER || block == Blocks.RED_WALL_BANNER) {
-                        Block banner;
-
-                        if (captureTeam == SiegeTeams.DEFENDERS) {
-                            banner = Blocks.BLUE_WALL_BANNER;
-                        } else {
-                            banner = Blocks.RED_WALL_BANNER;
-                        }
-
-                        BlockState newBlockState = banner.getDefaultState().with(WallBannerBlock.FACING, blockState.get(WallBannerBlock.FACING));
-                        world.setBlockState(blockPos, newBlockState);
-                    }
-
-                    if (block == Blocks.BLUE_BANNER || block == Blocks.RED_BANNER) {
-                        Block banner;
-
-                        if (captureTeam == SiegeTeams.DEFENDERS) {
-                            banner = Blocks.BLUE_BANNER;
-                        } else {
-                            banner = Blocks.RED_BANNER;
-                        }
-
-                        BlockState newBlockState = banner.getDefaultState().with(BannerBlock.ROTATION, blockState.get(BannerBlock.ROTATION));
-                        world.setBlockState(blockPos, newBlockState);
-                    }
-
-                    if (block == Blocks.BLUE_CONCRETE || block == Blocks.RED_CONCRETE) {
-                        Block concrete;
-
-                        if (captureTeam == SiegeTeams.DEFENDERS) {
-                            concrete = Blocks.BLUE_CONCRETE;
-                        } else {
-                            concrete = Blocks.RED_CONCRETE;
-                        }
-
-                        BlockState newBlockState = concrete.getDefaultState();
-                        world.setBlockState(blockPos, newBlockState);
-                    }
-                }
-            }
+            flag.setTeamBlocks(this.game.world, captureTeam);
 
             for (ServerPlayerEntity player : capturingPlayers) {
                 player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.NEUTRAL, 1.0F, 1.0F);
@@ -242,12 +185,16 @@ public final class SiegeCaptureLogic {
     }
 
     private void broadcastStartCapture(SiegeFlag flag, GameTeam captureTeam) {
+        var capture = captureTeam == SiegeTeams.ATTACKERS ? "captured" : "recaptured";
+
         this.gameSpace.getPlayers().sendMessage(
                 Text.literal("The ")
                         .append(Text.literal(flag.name).formatted(Formatting.YELLOW))
                         .append(ScreenTexts.SPACE)
                         .append(flag.presentTobe())
-                        .append(" being captured by the ")
+                        .append(" being ")
+                        .append(capture)
+                        .append(" by the ")
                         .append(captureTeam.config().name())
                         .append("...")
                         .formatted(Formatting.BOLD)

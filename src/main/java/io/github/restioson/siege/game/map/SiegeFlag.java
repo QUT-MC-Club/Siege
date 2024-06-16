@@ -5,11 +5,14 @@ import io.github.restioson.siege.game.SiegeTeams;
 import io.github.restioson.siege.game.active.CapturingState;
 import io.github.restioson.siege.game.active.SiegeCaptureLogic;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
+import net.minecraft.block.*;
 import net.minecraft.entity.boss.BossBar;
 import net.minecraft.entity.boss.ServerBossBar;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.map_templates.BlockBounds;
 import xyz.nucleoid.plasmid.game.common.team.GameTeam;
@@ -36,8 +39,7 @@ public final class SiegeFlag {
     @Nullable
     public SiegeSpawn defenderRespawn;
 
-    @Nullable
-    public SiegeGate gate;
+    public List<SiegeGate> gates = new ArrayList<>();
 
     public GameTeam team;
 
@@ -172,6 +174,78 @@ public final class SiegeFlag {
     public boolean isFrontLine(long time) {
         CapturingState state = this.capturingState;
         return (state != null && state.hasAlert() && state != CapturingState.SECURING)
-                || (this.gate != null && time - this.gate.timeOfLastBash < 5 * 20);
+                || (this.gateUnderAttack(time));
+    }
+
+    public boolean gateUnderAttack(long time) {
+        long lastBash = this.gates
+                .stream()
+                .map(gate -> gate.timeOfLastBash)
+                .max(Long::compareTo)
+                .stream()
+                .findAny()
+                .orElse(0L);
+
+        return time - lastBash < 5 * 20;
+    }
+
+    public void setTeamBlocks(ServerWorld world, GameTeam captureTeam) {
+        for (BlockBounds blockBounds : this.flagIndicatorBlocks) {
+            for (BlockPos blockPos : blockBounds) {
+                BlockState blockState = world.getBlockState(blockPos);
+                Block block = blockState.getBlock();
+                if (block == Blocks.BLUE_WOOL || block == Blocks.RED_WOOL) {
+                    Block wool;
+
+                    if (captureTeam == SiegeTeams.DEFENDERS) {
+                        wool = Blocks.BLUE_WOOL;
+                    } else {
+                        wool = Blocks.RED_WOOL;
+                    }
+
+                    world.setBlockState(blockPos, wool.getDefaultState());
+                }
+
+                if (block == Blocks.BLUE_WALL_BANNER || block == Blocks.RED_WALL_BANNER) {
+                    Block banner;
+
+                    if (captureTeam == SiegeTeams.DEFENDERS) {
+                        banner = Blocks.BLUE_WALL_BANNER;
+                    } else {
+                        banner = Blocks.RED_WALL_BANNER;
+                    }
+
+                    BlockState newBlockState = banner.getDefaultState().with(WallBannerBlock.FACING, blockState.get(WallBannerBlock.FACING));
+                    world.setBlockState(blockPos, newBlockState);
+                }
+
+                if (block == Blocks.BLUE_BANNER || block == Blocks.RED_BANNER) {
+                    Block banner;
+
+                    if (captureTeam == SiegeTeams.DEFENDERS) {
+                        banner = Blocks.BLUE_BANNER;
+                    } else {
+                        banner = Blocks.RED_BANNER;
+                    }
+
+                    BlockState newBlockState = banner.getDefaultState().with(BannerBlock.ROTATION, blockState.get(BannerBlock.ROTATION));
+                    world.setBlockState(blockPos, newBlockState);
+                }
+
+                if (block == Blocks.BLUE_CONCRETE || block == Blocks.RED_CONCRETE) {
+                    Block concrete;
+
+                    if (captureTeam == SiegeTeams.DEFENDERS) {
+                        concrete = Blocks.BLUE_CONCRETE;
+                    } else {
+                        concrete = Blocks.RED_CONCRETE;
+                    }
+
+                    BlockState newBlockState = concrete.getDefaultState();
+                    world.setBlockState(blockPos, newBlockState);
+                }
+            }
+
+        }
     }
 }

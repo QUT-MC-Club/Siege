@@ -43,9 +43,13 @@ public class SiegePlayer {
 
     public void incrementResource(SiegePersonalResource resource, int amount) {
         int newAmount = this.resources.addTo(resource, amount);
-        if (newAmount > resource.max) {
+        if (newAmount >= resource.max) {
             this.resources.replace(resource, resource.max);
         }
+    }
+
+    public int getResourceAmount(SiegePersonalResource resource) {
+        return this.resources.getInt(resource);
     }
 
     // Try decrement an amount, returning how much was actually decremented

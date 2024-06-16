@@ -7,9 +7,10 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import net.minecraft.SharedConstants;
 import net.minecraft.block.Blocks;
+import net.minecraft.item.AxeItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemUsageContext;
-import net.minecraft.item.Items;
+import net.minecraft.item.SwordItem;
 import net.minecraft.screen.ScreenTexts;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -24,6 +25,8 @@ import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 import xyz.nucleoid.plasmid.game.common.team.GameTeam;
 import xyz.nucleoid.plasmid.util.PlayerRef;
+
+import java.util.List;
 
 public class SiegeGateLogic {
     private final SiegeActive game;
@@ -58,31 +61,44 @@ public class SiegeGateLogic {
         return ActionResult.PASS;
     }
 
+    public static boolean canUseToBash(Item item) {
+        return item instanceof SwordItem || item instanceof AxeItem;
+    }
+
     public ActionResult maybeBash(BlockPos pos, ServerPlayerEntity player, SiegePlayer participant, long time) {
         Item mainHandItem = player.getInventory().getMainHandStack().getItem();
-        boolean holdingBashWeapon = mainHandItem == Items.IRON_SWORD || mainHandItem == Items.STONE_AXE;
         boolean rightKit = participant.kit == SiegeKit.SHIELD_BEARER || participant.kit == SiegeKit.SOLDIER;
 
         for (SiegeGate gate : this.game.map.gates) {
             if (!gate.bashedOpen && gate.health > 0 && gate.portcullis.contains(pos)) {
+                var cooldownMgr = player.getItemCooldownManager();
+
                 if (participant.team == gate.flag.team) {
                     player.sendMessage(Text.literal("You cannot bash your own gate!").formatted(Formatting.RED), true);
                     return ActionResult.FAIL;
                 } else if (!rightKit) {
                     player.sendMessage(Text.literal("Only soldiers and shieldbearers can bash!").formatted(Formatting.RED), true);
                     return ActionResult.FAIL;
-                } else if (!holdingBashWeapon) {
+                } else if (!canUseToBash(mainHandItem)) {
                     player.sendMessage(Text.literal("You can only bash with a sword or axe!").formatted(Formatting.RED), true);
                     return ActionResult.FAIL;
                 } else if (!player.isSprinting()) {
                     player.sendMessage(Text.literal("You must be sprinting to bash!").formatted(Formatting.RED), true);
                     return ActionResult.FAIL;
-                } else if (player.getItemCooldownManager().isCoolingDown(mainHandItem)) {
+                } else if (cooldownMgr.isCoolingDown(mainHandItem)) {
                     return ActionResult.FAIL;
                 }
 
-                player.getItemCooldownManager().set(Items.IRON_SWORD, SharedConstants.TICKS_PER_SECOND);
-                player.getItemCooldownManager().set(Items.STONE_AXE, SharedConstants.TICKS_PER_SECOND);
+                var inventory = player.getInventory();
+                for (var invList : List.of(inventory.main, inventory.offHand)) {
+                    for (var stack : invList) {
+                        var item = stack.getItem();
+                        if (canUseToBash(item)) {
+                            cooldownMgr.set(item, SharedConstants.TICKS_PER_SECOND);
+                        }
+                    }
+                }
+
                 ServerWorld world = this.game.world;
                 world.createExplosion(null, pos.getX(), pos.getY(), pos.getZ(), 0.0f, World.ExplosionSourceType.NONE);
                 gate.health -= 1;

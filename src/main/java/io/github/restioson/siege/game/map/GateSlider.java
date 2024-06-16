@@ -2,6 +2,8 @@ package io.github.restioson.siege.game.map;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.FenceBlock;
+import net.minecraft.block.HorizontalConnectingBlock;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -81,6 +83,24 @@ public final class GateSlider {
         for (int y = 0; y < this.height; y++) {
             Slice slice = this.getSlice(world, y - offset);
             slice.applyAt(world, min, y);
+        }
+
+        for (BlockPos pos : this.bounds) {
+            var state = world.getBlockState(pos);
+            if (state.getBlock() instanceof FenceBlock fence) {
+                for (var entry : HorizontalConnectingBlock.FACING_PROPERTIES.entrySet()) {
+                    var dir = entry.getKey();
+                    var prop = entry.getValue();
+                    var neighbourPos = pos.offset(dir, 1);
+                    var neighbourBlock = world.getBlockState(neighbourPos);
+
+                    boolean neighbourSideConnectable = neighbourBlock.isSideSolidFullSquare(world, neighbourPos, dir.getOpposite());
+                    boolean connects = fence.canConnect(neighbourBlock, neighbourSideConnectable, dir.getOpposite());
+
+                    state = state.with(prop, connects);
+                    world.setBlockState(pos, state);
+                }
+            }
         }
     }
 
