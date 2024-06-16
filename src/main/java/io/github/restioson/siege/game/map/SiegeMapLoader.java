@@ -86,7 +86,7 @@ public class SiegeMapLoader {
             BlockState state = template.getBlockState(pos);
             Block block = state.getBlock();
 
-            boolean destructible = block instanceof PaneBlock || block instanceof VineBlock || block instanceof PlantBlock;
+            boolean destructible = block instanceof PaneBlock || block instanceof VineBlock || block instanceof PlantBlock || block instanceof FluidBlock;
             if (!state.isAir() && !destructible) {
                 map.addProtectedBlock(pos.asLong());
             }
@@ -218,8 +218,7 @@ public class SiegeMapLoader {
                     }
                 }
             } else {
-                // TODO: i should fix this
-                Siege.LOGGER.warn("Skipping respawn as flag is missing: {}", flagId);
+                Siege.LOGGER.warn("Skipping respawn at {} as flag '{}' is missing", region.getBounds().center(), flagId);
             }
         });
 
@@ -273,7 +272,15 @@ public class SiegeMapLoader {
                             .findFirst()
                             .orElse(null);
 
-                    SiegeGate gate = new SiegeGate(gateId, flag, region.getBounds(), portcullisRegion.getBounds(), brace, retractHeight, repairHealthThreshold, maxHealth);
+                    var name = data.getString("name");
+                    var plural = data.getBoolean("plural");
+
+                    if (name.isEmpty()) {
+                        name = flag.name;
+                        plural = flag.pluralName;
+                    }
+
+                    SiegeGate gate = new SiegeGate(gateId, flag, region.getBounds(), portcullisRegion.getBounds(), brace, retractHeight, repairHealthThreshold, maxHealth, name, plural);
                     flag.gates.add(gate);
                     return gate;
                 })

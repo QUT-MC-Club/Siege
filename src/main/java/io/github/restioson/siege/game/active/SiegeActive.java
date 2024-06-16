@@ -303,6 +303,10 @@ public class SiegeActive {
                 }
             }
 
+            if (this.map.isProtectedBlock(blockPos.asLong())) {
+                return ActionResult.FAIL;
+            }
+
             return this.gateLogic.maybeBraceGate(blockPos, player, ctx);
         } else if (participant.kit == SiegeKit.DEMOLITIONER && block == Blocks.TNT) {
             return ActionResult.PASS;

@@ -134,9 +134,9 @@ public class SiegeGateLogic {
 
             this.game.gameSpace.getPlayers().sendMessage(
                     Text.literal("The ")
-                            .append(Text.literal(gate.flag.name).formatted(Formatting.YELLOW))
+                            .append(Text.literal(gate.name).formatted(Formatting.YELLOW))
                             .append(ScreenTexts.SPACE)
-                            .append(gate.flag.pastToBe())
+                            .append(gate.pastToBe())
                             .append(" been bashed open by the ")
                             .append(bashTeam.config().name())
                             .append("!")

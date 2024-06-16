@@ -23,11 +23,15 @@ public class SiegeGate {
     public int maxHealth;
     public int openSlide;
     public long timeOfLastBash;
+    public final String name;
+    private final boolean pluralName;
 
     @Nullable
     public BlockBounds brace;
 
-    public SiegeGate(String id, SiegeFlag flag, BlockBounds gateOpen, BlockBounds portcullis, @Nullable BlockBounds brace, int retractHeight, int repairedHealthThreshold, int maxHealth) {
+    public SiegeGate(String id, SiegeFlag flag, BlockBounds gateOpen, BlockBounds portcullis,
+                     @Nullable BlockBounds brace, int retractHeight, int repairedHealthThreshold, int maxHealth,
+                     String name, boolean pluralName) {
         this.id = id;
         this.flag = flag;
         this.gateOpen = gateOpen;
@@ -41,7 +45,18 @@ public class SiegeGate {
 
         this.slider = new GateSlider(portcullis, retractHeight);
 
+        this.name = name;
+        this.pluralName = pluralName;
+
         this.brace = brace;
+    }
+
+    public String pastToBe() {
+        if (this.pluralName) {
+            return "have";
+        } else {
+            return "has";
+        }
     }
 
     public void broadcastHealth(ServerPlayerEntity initiator, SiegeActive active, ServerWorld world) {
