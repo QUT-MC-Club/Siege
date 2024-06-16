@@ -18,24 +18,19 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.BiomeKeys;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.map_templates.*;
 import xyz.nucleoid.plasmid.game.GameOpenException;
 import xyz.nucleoid.plasmid.game.common.team.GameTeam;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class SiegeMapLoader {
-    @Nullable
-    static final CloseableHttpClient httpClient = loadRemote() ? HttpClients.createDefault() : null;
-
     public static boolean loadRemote() {
         return System.getenv().getOrDefault("SIEGE_LOAD_MAPS_FROM_BUILD", "false").equals("true");
     }
@@ -46,17 +41,13 @@ public class SiegeMapLoader {
             if (loadRemote()) {
                 Siege.LOGGER.info("Loading map from build server");
 
-                assert httpClient != null;
-
                 var id = config.templateId();
                 var uri = String.format(
                         "https://build.nucleoid.xyz/nucleoid_creator_tools/export/%s/map_templates/%s.nbt",
                         id.getNamespace(),
                         id.getPath()
                 );
-
-                var response = httpClient.execute(new HttpGet(uri));
-                template = MapTemplateSerializer.loadFrom(response.getEntity().getContent());
+                template = MapTemplateSerializer.loadFrom(new URL(uri).openStream());
             } else {
                 Siege.LOGGER.info("Loading map from resources");
                 template = MapTemplateSerializer.loadFromResource(server, config.templateId());
