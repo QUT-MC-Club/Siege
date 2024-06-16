@@ -53,10 +53,7 @@ import xyz.nucleoid.plasmid.game.player.PlayerOfferResult;
 import xyz.nucleoid.plasmid.game.player.PlayerSet;
 import xyz.nucleoid.plasmid.game.rule.GameRuleType;
 import xyz.nucleoid.plasmid.util.PlayerRef;
-import xyz.nucleoid.stimuli.event.block.BlockBreakEvent;
-import xyz.nucleoid.stimuli.event.block.BlockPlaceEvent;
-import xyz.nucleoid.stimuli.event.block.BlockPunchEvent;
-import xyz.nucleoid.stimuli.event.block.BlockUseEvent;
+import xyz.nucleoid.stimuli.event.block.*;
 import xyz.nucleoid.stimuli.event.item.ItemThrowEvent;
 import xyz.nucleoid.stimuli.event.item.ItemUseEvent;
 import xyz.nucleoid.stimuli.event.player.PlayerAttackEntityEvent;
@@ -88,6 +85,11 @@ public class SiegeActive {
     final SiegeGateLogic gateLogic;
     public static int TNT_GATE_DAMAGE = 10;
     public SiegeMap map;
+
+    private final static List<Item> PLANKS = List.of(
+            SiegeKit.KitResource.PLANKS.attackerItem(),
+            SiegeKit.KitResource.PLANKS.defenderItem()
+    );
 
     private SiegeActive(ServerWorld world, GameActivity activity, SiegeMap map, SiegeConfig config, GlobalWidgets widgets, Multimap<GameTeamKey, ServerPlayerEntity> players) {
         this.world = world;
@@ -128,6 +130,7 @@ public class SiegeActive {
             activity.allow(GameRuleType.FALL_DAMAGE);
             activity.allow(GameRuleType.PLACE_BLOCKS);
             activity.allow(GameRuleType.UNSTABLE_TNT);
+            activity.listen(BlockDropItemsEvent.EVENT, active::onBlockDrop);
 
             activity.listen(GameActivityEvents.ENABLE, active::onOpen);
             activity.listen(GameActivityEvents.DISABLE, active::onClose);
@@ -152,6 +155,11 @@ public class SiegeActive {
 
             active.map.spawnKitStands(active);
         });
+    }
+
+    private TypedActionResult<List<ItemStack>> onBlockDrop(Entity entity, ServerWorld world, BlockPos blockPos, BlockState blockState, List<ItemStack> itemStacks) {
+        itemStacks.removeIf(stack -> !PLANKS.contains(stack.getItem()));
+        return TypedActionResult.success(itemStacks);
     }
 
     private void onExplosion(Explosion explosion, boolean particles) {
@@ -421,8 +429,16 @@ public class SiegeActive {
         var world = this.world;
         long time = world.getTime();
 
-        MutableText eliminationMessage = Text.literal(" was killed by ");
+        MutableText eliminationMessage = Text.literal(" was ");
         SiegePlayer attacker = null;
+
+        if (source.isIn(DamageTypeTags.IS_EXPLOSION)) {
+            eliminationMessage.append("blown up");
+        } else {
+            eliminationMessage.append("killed");
+        }
+
+        eliminationMessage.append(" by ");
 
         if (source.getAttacker() != null) {
             eliminationMessage.append(source.getAttacker().getDisplayName());
@@ -569,7 +585,7 @@ public class SiegeActive {
                 return true;
             }
 
-            if (this.world.getTime() - warpingPlayer.startTime > 20 * 3) {
+            if (this.world.getTime() - warpingPlayer.startTime > 20 * 2) {
                 SiegeSpawn respawn = warpingPlayer.destination.getRespawnFor(warpingPlayer.destination.team);
                 assert respawn != null; // TODO remove restriction
                 Vec3d pos = SiegeSpawnLogic.choosePos(player.getRandom(), respawn.bounds(), 0.5f);

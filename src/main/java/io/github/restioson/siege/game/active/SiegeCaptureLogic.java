@@ -122,10 +122,12 @@ public final class SiegeCaptureLogic {
             }
         }
 
-        if (defendersAtFlag && flag.team != SiegeTeams.DEFENDERS) {
-            capturingState = CapturingState.RECAPTURE_DISABLED;
-        } else if (capturingState != null && !flag.isReadyForCapture()) {
-            capturingState = CapturingState.PREREQUISITE_REQUIRED;
+        if (capturingState != null) {
+            if (defendersAtFlag && flag.team != SiegeTeams.DEFENDERS) {
+                capturingState = CapturingState.RECAPTURE_DISABLED;
+            } else if (!flag.isReadyForCapture()) {
+                capturingState = CapturingState.PREREQUISITE_REQUIRED;
+            }
         }
 
         flag.capturingState = capturingState;

@@ -19,7 +19,7 @@ import java.util.function.Consumer;
 
 public final class WarpSelectionUi extends SimpleGui {
     private WarpSelectionUi(ServerPlayerEntity player, List<GuiElementInterface> selectors) {
-        super(ScreenHandlerType.GENERIC_9X1, player, false);
+        super(ScreenHandlerType.GENERIC_9X3, player, false);
         this.setTitle(Text.literal("Warp to a Point"));
         selectors.forEach(this::addSlot);
     }

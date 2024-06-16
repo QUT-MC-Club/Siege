@@ -85,16 +85,7 @@ public record SiegeKit(Text name, List<KitEquipment> equipment, List<KitResource
                     new KitEquipment(Items.WOODEN_AXE, EquipmentSlot.MAINHAND),
                     new KitEquipment(Items.WOODEN_SWORD)
             ),
-            List.of(
-                    new KitResource(
-                            Text.translatable("game.siege.kit.items.wood"),
-                            Items.CHERRY_PLANKS,
-                            Items.BIRCH_PLANKS,
-                            SiegePersonalResource.WOOD,
-                            EquipmentSlot.OFFHAND,
-                            12
-                    )
-            ),
+            List.of(KitResource.PLANKS),
             List.of()
     );
     public static final SiegeKit DEMOLITIONER = new SiegeKit(
@@ -298,6 +289,14 @@ public record SiegeKit(Text name, List<KitEquipment> equipment, List<KitResource
     public record KitResource(Text name, Item attackerItem, Item defenderItem, @Nullable SiegePersonalResource resource,
                               @Nullable EquipmentSlot equipmentSlot, int max) {
         public static final KitResource STEAK = new KitResource(Items.COOKED_BEEF.getName(), Items.COOKED_BEEF, null, null, 10);
+        public static final KitResource PLANKS = new KitResource(
+                Text.translatable("game.siege.kit.items.wood"),
+                Items.CHERRY_PLANKS,
+                Items.BIRCH_PLANKS,
+                SiegePersonalResource.WOOD,
+                EquipmentSlot.OFFHAND,
+                12
+        );
 
         public KitResource(Text name, Item item, @Nullable SiegePersonalResource resource, EquipmentSlot equipmentSlot, int max) {
             this(name, item, item, resource, equipmentSlot, max);
@@ -308,10 +307,7 @@ public record SiegeKit(Text name, List<KitEquipment> equipment, List<KitResource
         }
 
         public ItemStackBuilder itemStackBuilder(GameTeam team) {
-            return ItemStackBuilder
-                    .of(this.itemForTeam(team))
-                    .setUnbreakable()
-                    .setDyeColor(team.config().dyeColor().getRgb());
+            return ItemStackBuilder.of(this.itemForTeam(team));
         }
 
         public Item itemForTeam(GameTeam team) {

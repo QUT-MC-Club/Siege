@@ -9,7 +9,13 @@
       "translate": "game.siege.siege.desc"
     },
     {
-      "translate": "game.siege.recapture.desc"
+      "translate": "game.siege.recapture.desc.1"
+    },
+    {
+      "translate": "game.siege.recapture.desc.2"
+    },
+    {
+      "translate": "game.siege.recapture.desc.3"
     }
   ],
   "map": {
