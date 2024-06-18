@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public record SiegeKit(Text name, List<KitEquipable> equipment, List<AbstractKitResource> resources,
-                       List<StatusEffectInstance> statusEffects) {
+                       List<StatusEffectInstance> statusEffects, int captureProgressModifier) {
     public static final SiegeKit SOLDIER = new SiegeKit(
             Text.translatable("game.siege.kit.kits.soldier"),
             List.of(
@@ -120,7 +120,7 @@ public record SiegeKit(Text name, List<KitEquipable> equipment, List<AbstractKit
                     ),
                     new KitEquipment(Items.GOLDEN_CHESTPLATE),
                     new KitEquipment(Items.LEATHER_LEGGINGS),
-                    new KitEquipment(Items.GOLDEN_CHESTPLATE),
+                    new KitEquipment(Items.GOLDEN_BOOTS),
                     new KitEquipment(Items.WOODEN_SWORD, EquipmentSlot.MAINHAND),
                     new KitEquipable() {
                         @Override
@@ -152,14 +152,20 @@ public record SiegeKit(Text name, List<KitEquipable> equipment, List<AbstractKit
                     }
             ),
             List.of(),
-            List.of()
+            List.of(),
+            2
     );
 
     public SiegeKit(Text name, List<KitEquipable> equipment, List<AbstractKitResource> resources, List<StatusEffectInstance> statusEffects) {
+        this(name, equipment, resources, statusEffects, 1);
+    }
+
+    public SiegeKit(Text name, List<KitEquipable> equipment, List<AbstractKitResource> resources, List<StatusEffectInstance> statusEffects, int captureProgressModifier) {
         this.name = name;
         this.equipment = equipment;
         this.resources = Stream.concat(resources.stream(), Stream.of(KitResource.STEAK, KitResource.FIREWORK)).toList();
         this.statusEffects = statusEffects;
+        this.captureProgressModifier = captureProgressModifier;
     }
 
     private static StatusEffectInstance kitEffect(StatusEffect effect) {

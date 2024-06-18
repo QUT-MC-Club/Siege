@@ -148,7 +148,14 @@ public final class SiegeCaptureLogic {
             this.broadcastStartCapture(flag, captureTeam);
         }
 
-        if (flag.incrementCapture(captureTeam, interval * capturingPlayers.size())) {
+        int amount = capturingPlayers.stream()
+                .map(p -> {
+                    var participant = this.game.participant(p);
+                    return participant != null ? participant.kit.captureProgressModifier() : 0;
+                })
+                .reduce(0, Integer::sum);
+
+        if (flag.incrementCapture(captureTeam, interval * amount)) {
             for (SiegeKitStandEntity kitStand : flag.kitStands) {
                 kitStand.onControllingFlagCaptured();
             }
