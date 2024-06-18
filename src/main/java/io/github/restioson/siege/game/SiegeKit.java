@@ -27,7 +27,7 @@ public record SiegeKit(Text name, List<KitEquipable> equipment, List<AbstractKit
             Text.translatable("game.siege.kit.kits.soldier"),
             List.of(
                     new KitEquipment(Items.LEATHER_HELMET),
-                    new KitEquipment(Items.DIAMOND_CHESTPLATE),
+                    new KitEquipment(Items.NETHERITE_CHESTPLATE),
                     new KitEquipment(Items.LEATHER_LEGGINGS),
                     new KitEquipment(Items.IRON_BOOTS),
                     new KitEquipment(Items.IRON_SWORD, EquipmentSlot.MAINHAND),
@@ -83,7 +83,7 @@ public record SiegeKit(Text name, List<KitEquipable> equipment, List<AbstractKit
                     new KitEquipment(Items.LEATHER_LEGGINGS),
                     new KitEquipment(Items.LEATHER_BOOTS),
                     new KitEquipment(Items.WOODEN_AXE, EquipmentSlot.MAINHAND),
-                    new KitEquipment(Items.WOODEN_SWORD)
+                    new KitEquipment(Items.STONE_SWORD)
             ),
             List.of(KitResource.PLANKS),
             List.of()
@@ -458,7 +458,7 @@ public record SiegeKit(Text name, List<KitEquipable> equipment, List<AbstractKit
                 Items.BIRCH_PLANKS,
                 SiegePersonalResource.WOOD,
                 EquipmentSlot.OFFHAND,
-                12
+                16
         );
 
         public KitResource(Text name, Item item, @Nullable SiegePersonalResource resource, EquipmentSlot equipmentSlot, int max) {
