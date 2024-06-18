@@ -188,7 +188,7 @@ public final class SiegeCaptureLogic {
                 })
                 .reduce(0, Integer::sum);
 
-        if (flag.decrementCapture(interval * Math.max(amount, 1))) {
+        if (flag.decrementCapture(interval * (amount + 1))) {
             this.broadcastSecured(flag);
 
             for (ServerPlayerEntity player : securingPlayers) {
