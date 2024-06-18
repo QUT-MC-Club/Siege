@@ -1,6 +1,5 @@
 package io.github.restioson.siege.game.active;
 
-import com.google.common.collect.ImmutableList;
 import io.github.restioson.siege.entity.SiegeKitStandEntity;
 import io.github.restioson.siege.game.SiegeSpawnLogic;
 import io.github.restioson.siege.game.SiegeTeams;
@@ -99,19 +98,19 @@ public final class SiegeCaptureLogic {
         boolean contested = tryingToCapture && defendersAtFlag && attackersAtFlag;
 
         CapturingState capturingState = null;
-        GameTeam captureTeam = flag.team;
-        List<ServerPlayerEntity> capturingPlayers = ImmutableList.of();
+        GameTeam captureTeam;
+        List<ServerPlayerEntity> capturingPlayers;
+
+        if (defendersAtFlag) {
+            captureTeam = SiegeTeams.DEFENDERS;
+            capturingPlayers = defendersPresent;
+        } else {
+            captureTeam = SiegeTeams.ATTACKERS;
+            capturingPlayers = attackersPresent;
+        }
 
         if (tryingToCapture) {
             if (!contested) {
-                if (defendersAtFlag) {
-                    captureTeam = SiegeTeams.DEFENDERS;
-                    capturingPlayers = defendersPresent;
-                } else {
-                    captureTeam = SiegeTeams.ATTACKERS;
-                    capturingPlayers = attackersPresent;
-                }
-
                 capturingState = CapturingState.CAPTURING;
             } else {
                 capturingState = CapturingState.CONTESTED;

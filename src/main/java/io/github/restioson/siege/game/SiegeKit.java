@@ -287,7 +287,6 @@ public record SiegeKit(Text name, List<KitEquipable> equipment, List<AbstractKit
         }
     }
 
-    // TODO teleporting GUI does not work
     private void maybeGiveEnderPearl(ServerPlayerEntity player, SiegePlayer participant, SiegeConfig config) {
         if (config.defenderEnderPearl() && participant.team == SiegeTeams.DEFENDERS && player.getInventory().count(Items.ENDER_PEARL) == 0) {
             player.getInventory().insertStack(

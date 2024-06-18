@@ -398,7 +398,7 @@ public class SiegeActive {
 
                 return new TypedActionResult<>(ActionResult.FAIL, stack);
             } else if (item == SiegeItems.HORN) {
-                SiegeHorn.onUse(this, player, participant, stack);
+                return SiegeHorn.onUse(this, player, participant, stack, hand);
             }
         }
 
