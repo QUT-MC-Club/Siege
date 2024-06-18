@@ -181,7 +181,14 @@ public final class SiegeCaptureLogic {
     }
 
     private void tickSecuring(SiegeFlag flag, int interval, List<ServerPlayerEntity> securingPlayers) {
-        if (flag.decrementCapture(interval)) {
+        int amount = securingPlayers.stream()
+                .map(p -> {
+                    var participant = this.game.participant(p);
+                    return participant != null ? participant.kit.captureProgressModifier() : 0;
+                })
+                .reduce(0, Integer::sum);
+
+        if (flag.decrementCapture(interval * Math.max(amount, 1))) {
             this.broadcastSecured(flag);
 
             for (ServerPlayerEntity player : securingPlayers) {
