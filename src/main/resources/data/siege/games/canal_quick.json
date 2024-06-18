@@ -9,17 +9,14 @@
       "translate": "game.siege.siege.desc"
     },
     {
-      "translate": "game.siege.enderpearl.desc.1"
+      "translate": "game.siege.siege.desc"
     },
     {
-      "translate": "game.siege.enderpearl.desc.2"
-    },
-    {
-      "translate": "game.siege.enderpearl.desc.3"
+      "translate": "game.siege.quick.desc.1"
     }
   ],
   "map": {
-    "id": "siege:jungle",
+    "id": "siege:canal",
     "attacker_spawn_angle": 180
   },
   "players": {
@@ -27,6 +24,6 @@
     "max": 100,
     "threshold": 4
   },
-  "defender_ender_pearl": true,
-  "time_limit_mins": 20
+  "capturing_give_time_secs": 120,
+  "time_limit_mins": 5
 }

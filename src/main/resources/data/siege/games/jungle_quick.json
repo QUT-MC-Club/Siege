@@ -9,6 +9,12 @@
       "translate": "game.siege.siege.desc"
     },
     {
+      "translate": "game.siege.quick.desc.1"
+    },
+    {
+      "translate": "game.siege.quick.desc.2"
+    },
+    {
       "translate": "game.siege.enderpearl.desc.1"
     },
     {
@@ -28,5 +34,6 @@
     "threshold": 4
   },
   "defender_ender_pearl": true,
-  "time_limit_mins": 20
+  "capturing_give_time_secs": 120,
+  "time_limit_mins": 5
 }

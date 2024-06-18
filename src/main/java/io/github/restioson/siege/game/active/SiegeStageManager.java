@@ -1,6 +1,5 @@
 package io.github.restioson.siege.game.active;
 
-import io.github.restioson.siege.game.SiegeConfig;
 import io.github.restioson.siege.game.SiegeTeams;
 import io.github.restioson.siege.game.map.SiegeFlag;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -12,15 +11,19 @@ public class SiegeStageManager {
     private final boolean singlePlayer;
 
     private long closeTime = -1;
-    public long finishTime = -1;
+    public long startTime = -1;
 
     SiegeStageManager(SiegeActive game) {
         this.game = game;
         this.singlePlayer = game.gameSpace.getPlayers().size() <= 1;
     }
 
-    public void onOpen(long time, SiegeConfig config) {
-        this.finishTime = time + (config.timeLimitMins() * 20 * 60);
+    public void onOpen(long time) {
+        this.startTime = time;
+    }
+
+    public long finishTime() {
+        return this.startTime + (this.game.timeLimitSecs() * 20);
     }
 
     public TickResult tick(long time) {
@@ -72,7 +75,7 @@ public class SiegeStageManager {
     }
 
     private boolean testDefendersWin(long time) {
-        return time >= this.finishTime;
+        return time >= this.finishTime();
     }
 
     private boolean testAttackersWin() {

@@ -79,6 +79,8 @@ public class SiegeActive {
 
     public final Object2ObjectMap<PlayerRef, SiegePlayer> participants;
     public final List<WarpingPlayer> warpingPlayers;
+
+    private long timeLimitSecs;
     final SiegeStageManager stageManager;
 
     final SiegeSidebar sidebar;
@@ -110,6 +112,7 @@ public class SiegeActive {
             }
         }
 
+        this.timeLimitSecs = config.timeLimitMins() * 60L;
         this.stageManager = new SiegeStageManager(this);
 
         this.sidebar = new SiegeSidebar(this, widgets);
@@ -253,7 +256,7 @@ public class SiegeActive {
         }
 
 
-        this.stageManager.onOpen(this.world.getTime(), this.config);
+        this.stageManager.onOpen(this.world.getTime());
     }
 
     private void onClose() {
@@ -635,6 +638,14 @@ public class SiegeActive {
                 }
             });
         }
+    }
+
+    public void addTime(long time) {
+        this.timeLimitSecs += time;
+    }
+
+    public long timeLimitSecs() {
+        return this.timeLimitSecs;
     }
 
     static class SiegeSpawnResult {

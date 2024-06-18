@@ -28,7 +28,7 @@ public final class SiegeSidebar {
 
     public void update(long time) {
         this.widget.set(content -> {
-            long ticksUntilEnd = this.game.stageManager.finishTime - time;
+            long ticksUntilEnd = this.game.stageManager.finishTime() - time;
             content.add(getTimeLeft(ticksUntilEnd));
             content.add(ScreenTexts.EMPTY);
 
