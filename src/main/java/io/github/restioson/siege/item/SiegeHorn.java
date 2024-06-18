@@ -33,7 +33,7 @@ import java.util.stream.Stream;
 public class SiegeHorn extends GoatHornItem implements PolymerItem {
     private static final int COOLDOWN_TICKS = 30 * 20;
     private static final int SOUND_RADIUS = 64;
-    private static final int EFFECT_RADIUS = 10;
+    private static final int EFFECT_RADIUS = 20;
     private static final String HORN_DATA_KEY = "siege_horn_data";
     private static final Codec<StatusEffectInstance> HORN_DATA_CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.INT.fieldOf("duration").forGetter(StatusEffectInstance::getDuration),

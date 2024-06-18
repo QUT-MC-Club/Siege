@@ -27,7 +27,7 @@ public record SiegeKit(Text name, List<KitEquipable> equipment, List<AbstractKit
             Text.translatable("game.siege.kit.kits.soldier"),
             List.of(
                     new KitEquipment(Items.LEATHER_HELMET),
-                    new KitEquipment(Items.NETHERITE_CHESTPLATE),
+                    new KitEquipment(Items.DIAMOND_CHESTPLATE),
                     new KitEquipment(Items.LEATHER_LEGGINGS),
                     new KitEquipment(Items.IRON_BOOTS),
                     new KitEquipment(Items.IRON_SWORD, EquipmentSlot.MAINHAND),
@@ -60,7 +60,10 @@ public record SiegeKit(Text name, List<KitEquipable> equipment, List<AbstractKit
                     new KitEquipment(
                             Items.BOW,
                             Items.BOW,
-                            List.of(new EnchantmentLevelEntry(Enchantments.PUNCH, 1)),
+                            List.of(
+                                    new EnchantmentLevelEntry(Enchantments.PUNCH, 1),
+                                    new EnchantmentLevelEntry(Enchantments.POWER, 1)
+                            ),
                             EquipmentSlot.MAINHAND,
                             null
                     )
@@ -69,8 +72,8 @@ public record SiegeKit(Text name, List<KitEquipable> equipment, List<AbstractKit
                     new KitResource(
                             Text.translatable("game.siege.kit.items.arrows"),
                             Items.ARROW,
-                            SiegePersonalResource.WOOD,
-                            16
+                            SiegePersonalResource.ARROWS,
+                            64
                     )
             ),
             List.of(kitEffect(StatusEffects.SPEED))
@@ -121,7 +124,7 @@ public record SiegeKit(Text name, List<KitEquipable> equipment, List<AbstractKit
                     new KitEquipment(Items.GOLDEN_CHESTPLATE),
                     new KitEquipment(Items.LEATHER_LEGGINGS),
                     new KitEquipment(Items.GOLDEN_BOOTS),
-                    new KitEquipment(Items.WOODEN_SWORD, EquipmentSlot.MAINHAND),
+                    new KitEquipment(Items.STONE_SWORD, EquipmentSlot.MAINHAND),
                     new KitEquipable() {
                         @Override
                         public EquipmentSlot getArmorStandSlot() {
@@ -169,7 +172,7 @@ public record SiegeKit(Text name, List<KitEquipable> equipment, List<AbstractKit
     }
 
     private static StatusEffectInstance kitEffect(StatusEffect effect) {
-        return new StatusEffectInstance(effect, 1);
+        return new StatusEffectInstance(effect, -1);
     }
 
     private static Text restockMessage(List<RestockResult> restockResults, long time, boolean isEquip) {
