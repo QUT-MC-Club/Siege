@@ -1,5 +1,6 @@
 {
   "gameType.siege.siege": "Siege",
+  "item.siege.captains_horn": "Captain's Horn",
   "game.siege.canal": "Siege: Canal",
   "game.siege.canal_recapture": "Siege: Canal (with Recapture)",
   "game.siege.jungle": "Siege: Jungle",
@@ -20,7 +21,9 @@
   "game.siege.kit.kits.shield_bearer": "Shieldbearer Kit",
   "game.siege.kit.kits.constructor": "Constructor Kit",
   "game.siege.kit.kits.demolitioner": "Demolitioner Kit",
+  "game.siege.kit.kits.captain": "Captain Kit",
   "game.siege.kit.items.arrows": "arrows",
   "game.siege.kit.items.tnt": "TNT",
-  "game.siege.kit.items.wood": "wood"
+  "game.siege.kit.items.wood": "wood",
+  "game.siege.kit.items.flare": "signal flare"
 }

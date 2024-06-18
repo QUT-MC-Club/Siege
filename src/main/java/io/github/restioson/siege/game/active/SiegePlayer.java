@@ -28,8 +28,12 @@ public class SiegePlayer {
     public SiegePlayer(GameTeam team) {
         this.team = team;
         this.kit = SiegeKit.SOLDIER;
-        this.resources.put(SiegePersonalResource.WOOD, SiegePersonalResource.WOOD.max);
-        this.resources.put(SiegePersonalResource.TNT, SiegePersonalResource.TNT.max);
+
+        for (var resource : SiegePersonalResource.values()) {
+            this.resources.put(resource, resource.max);
+        }
+
+        // For hot reload
         this.resources.defaultReturnValue(0);
     }
 

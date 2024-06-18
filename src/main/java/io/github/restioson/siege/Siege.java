@@ -2,6 +2,7 @@ package io.github.restioson.siege;
 
 import io.github.restioson.siege.game.SiegeConfig;
 import io.github.restioson.siege.game.SiegeWaiting;
+import io.github.restioson.siege.item.SiegeItems;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.util.Identifier;
 import org.apache.logging.log4j.LogManager;
@@ -14,6 +15,8 @@ public class Siege implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        SiegeItems.register();
+
         GameType.register(
                 new Identifier(ID, "siege"),
                 SiegeConfig.CODEC,

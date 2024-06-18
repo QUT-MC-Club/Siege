@@ -319,6 +319,7 @@ public class SiegeMapLoader {
             case "shield" -> SiegeKit.SHIELD_BEARER;
             case "builder" -> SiegeKit.CONSTRUCTOR;
             case "demolitioner" -> SiegeKit.DEMOLITIONER;
+            case "captain" -> SiegeKit.CAPTAIN;
             default -> {
                 Siege.LOGGER.error("Unknown kit \"" + kitName + "\"");
                 throw new GameOpenException(Text.literal("unknown kit"));

@@ -3,16 +3,14 @@ package io.github.restioson.siege.game;
 import io.github.restioson.siege.entity.SiegeKitStandEntity;
 import io.github.restioson.siege.game.active.SiegePersonalResource;
 import io.github.restioson.siege.game.active.SiegePlayer;
+import io.github.restioson.siege.item.SiegeHorn;
 import net.minecraft.enchantment.EnchantmentLevelEntry;
 import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.item.Equipment;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+import net.minecraft.item.*;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -23,8 +21,8 @@ import xyz.nucleoid.plasmid.util.ItemStackBuilder;
 import java.util.List;
 import java.util.stream.Stream;
 
-public record SiegeKit(Text name, List<KitEquipment> equipment, List<KitResource> resources,
-                       List<KitStatusEffect> statusEffects) {
+public record SiegeKit(Text name, List<KitEquipable> equipment, List<AbstractKitResource> resources,
+                       List<StatusEffectInstance> statusEffects) {
     public static final SiegeKit SOLDIER = new SiegeKit(
             Text.translatable("game.siege.kit.kits.soldier"),
             List.of(
@@ -49,7 +47,7 @@ public record SiegeKit(Text name, List<KitEquipment> equipment, List<KitResource
                     new KitEquipment(Items.SHIELD, EquipmentSlot.OFFHAND)
             ),
             List.of(),
-            List.of(new KitStatusEffect(StatusEffects.RESISTANCE))
+            List.of(kitEffect(StatusEffects.RESISTANCE))
     );
     public static final SiegeKit ARCHER = new SiegeKit(
             Text.translatable("game.siege.kit.kits.archer"),
@@ -61,8 +59,10 @@ public record SiegeKit(Text name, List<KitEquipment> equipment, List<KitResource
                     new KitEquipment(Items.WOODEN_SWORD, EquipmentSlot.OFFHAND),
                     new KitEquipment(
                             Items.BOW,
+                            Items.BOW,
                             List.of(new EnchantmentLevelEntry(Enchantments.PUNCH, 1)),
-                            EquipmentSlot.MAINHAND
+                            EquipmentSlot.MAINHAND,
+                            null
                     )
             ),
             List.of(
@@ -73,7 +73,7 @@ public record SiegeKit(Text name, List<KitEquipment> equipment, List<KitResource
                             16
                     )
             ),
-            List.of(new KitStatusEffect(StatusEffects.SPEED))
+            List.of(kitEffect(StatusEffects.SPEED))
     );
     public static final SiegeKit CONSTRUCTOR = new SiegeKit(
             Text.translatable("game.siege.kit.kits.constructor"),
@@ -106,14 +106,64 @@ public record SiegeKit(Text name, List<KitEquipment> equipment, List<KitResource
                             2
                     )
             ),
-            List.of(new KitStatusEffect(StatusEffects.GLOWING))
+            List.of(kitEffect(StatusEffects.GLOWING))
     );
 
-    public SiegeKit(Text name, List<KitEquipment> equipment, List<KitResource> resources, List<KitStatusEffect> statusEffects) {
+    public static final SiegeKit CAPTAIN = new SiegeKit(
+            Text.translatable("game.siege.kit.kits.captain"),
+            List.of(
+                    new KitEquipment(
+                            Items.RED_BANNER,
+                            Items.BLUE_BANNER,
+                            EquipmentSlot.HEAD,
+                            EquipmentSlot.HEAD
+                    ),
+                    new KitEquipment(Items.GOLDEN_CHESTPLATE),
+                    new KitEquipment(Items.LEATHER_LEGGINGS),
+                    new KitEquipment(Items.GOLDEN_CHESTPLATE),
+                    new KitEquipment(Items.WOODEN_SWORD, EquipmentSlot.MAINHAND),
+                    new KitEquipable() {
+                        @Override
+                        public EquipmentSlot getArmorStandSlot() {
+                            return EquipmentSlot.OFFHAND;
+                        }
+
+                        @Override
+                        public EquipmentSlot getPlayerSlot() {
+                            return EquipmentSlot.OFFHAND;
+                        }
+
+                        @Override
+                        public ItemStack buildItemStack(GameTeam team) {
+                            return SiegeHorn.getStack(
+                                    team == SiegeTeams.DEFENDERS ? Instruments.PONDER_GOAT_HORN : Instruments.CALL_GOAT_HORN,
+                                    Stream.of(
+                                            new StatusEffectInstance(
+                                                    StatusEffects.STRENGTH,
+                                                    10 * 20
+                                            ),
+                                            new StatusEffectInstance(
+                                                    StatusEffects.SPEED,
+                                                    10 * 20
+                                            )
+                                    )
+                            );
+                        }
+                    }
+            ),
+            List.of(),
+            List.of()
+    );
+
+    public SiegeKit(Text name, List<KitEquipable> equipment, List<AbstractKitResource> resources, List<StatusEffectInstance> statusEffects) {
         this.name = name;
         this.equipment = equipment;
-        this.resources = Stream.concat(resources.stream(), Stream.of(KitResource.STEAK)).toList();
+        this.resources = Stream.concat(resources.stream(), Stream.of(KitResource.STEAK, KitResource.FIREWORK)).toList();
         this.statusEffects = statusEffects;
+    }
+
+    private static StatusEffectInstance kitEffect(StatusEffect effect) {
+        return new StatusEffectInstance(effect, 1);
     }
 
     private static Text restockMessage(List<RestockResult> restockResults, long time, boolean isEquip) {
@@ -164,10 +214,11 @@ public record SiegeKit(Text name, List<KitEquipment> equipment, List<KitResource
         var team = stand.getTeam();
 
         for (var item : this.equipment) {
+            ItemStack stack = item.buildItemStack(team);
             EquipmentSlot slot;
-            if (item.armourStandSlot != null) {
-                slot = item.armourStandSlot;
-            } else if (item.item instanceof Equipment equipmentItem) {
+            if (item.getArmorStandSlot() != null) {
+                slot = item.getArmorStandSlot();
+            } else if (stack.getItem() instanceof Equipment equipmentItem) {
                 slot = equipmentItem.getSlotType();
             } else {
                 continue;
@@ -177,8 +228,8 @@ public record SiegeKit(Text name, List<KitEquipment> equipment, List<KitResource
         }
 
         for (var item : this.resources) {
-            if (item.equipmentSlot != null) {
-                stand.equipStack(item.equipmentSlot, item.itemStackBuilder(team).build());
+            if (item.equipmentSlot() != null) {
+                stand.equipStack(item.equipmentSlot(), item.itemStackBuilder(team).build());
             }
         }
     }
@@ -189,12 +240,12 @@ public record SiegeKit(Text name, List<KitEquipment> equipment, List<KitResource
         for (var invList : List.of(inventory.main, inventory.offHand)) {
             for (var stack : invList) {
                 for (var resource : this.resources) {
-                    if (resource.resource == null) {
+                    if (resource.resource() == null) {
                         continue;
                     }
 
                     if (resource.itemForTeam(participant.team) == stack.getItem()) {
-                        participant.incrementResource(resource.resource, stack.getCount());
+                        participant.incrementResource(resource.resource(), stack.getCount());
                         break;
                     }
                 }
@@ -210,7 +261,9 @@ public record SiegeKit(Text name, List<KitEquipment> equipment, List<KitResource
 
         for (var item : this.equipment) {
             var stack = item.buildItemStack(team);
-            if (item.item instanceof Equipment equipmentItem) {
+            if (item.getPlayerSlot() != null) {
+                player.equipStack(item.getPlayerSlot(), stack);
+            } else if (stack.getItem() instanceof Equipment equipmentItem) {
                 player.equipStack(equipmentItem.getSlotType(), stack);
             } else {
                 inventory.offerOrDrop(stack);
@@ -224,7 +277,7 @@ public record SiegeKit(Text name, List<KitEquipment> equipment, List<KitResource
 
         player.clearStatusEffects();
         for (var statusEffect : this.statusEffects) {
-            player.addStatusEffect(statusEffect.instance());
+            player.addStatusEffect(new StatusEffectInstance(statusEffect)); // Copy
         }
     }
 
@@ -258,19 +311,89 @@ public record SiegeKit(Text name, List<KitEquipment> equipment, List<KitResource
         return restockMessage(results, time, isEquip);
     }
 
-    public record KitEquipment(Item item, List<EnchantmentLevelEntry> enchantments,
-                               @Nullable EquipmentSlot armourStandSlot) {
+    public interface KitEquipable {
+        @Nullable
+        EquipmentSlot getArmorStandSlot();
+
+        @Nullable
+        EquipmentSlot getPlayerSlot();
+
+        ItemStack buildItemStack(GameTeam team);
+    }
+
+    public interface AbstractKitResource {
+        default RestockResult restock(ServerPlayerEntity player, SiegePlayer participant) {
+            var inventory = player.getInventory();
+            var team = participant.team;
+            var item = this.itemForTeam(team);
+            var resource = this.resource();
+
+            int required = this.max() - inventory.count(item);
+            int toGive = resource != null ? participant.tryDecrementResource(resource, required) : required;
+
+            var stack = this.itemStackBuilder(team).setCount(toGive).build();
+
+            if (this.equipmentSlot() != null && required == this.max()) {
+                player.equipStack(this.equipmentSlot(), stack);
+            } else {
+                inventory.offerOrDrop(stack);
+            }
+
+            if (resource != null) {
+                return new RestockResult(participant.getResourceAmount(resource), resource.max, required == 0 || toGive > 0, resource, this.name());
+            } else {
+                return new RestockResult(0, 0, true, null, this.name());
+            }
+        }
+
+        Text name();
+
+        int max();
+
+        Item itemForTeam(GameTeam team);
+
+        ItemStackBuilder itemStackBuilder(GameTeam team);
+
+        @Nullable
+        SiegePersonalResource resource();
+
+        default @Nullable EquipmentSlot equipmentSlot() {
+            return null;
+        }
+    }
+
+    private record KitEquipment(Item attackerItem, Item defenderItem, List<EnchantmentLevelEntry> enchantments,
+                                @Nullable EquipmentSlot armourStandSlot,
+                                @Nullable EquipmentSlot playerSlot) implements KitEquipable {
         public KitEquipment(Item item) {
-            this(item, List.of(), null);
+            this(item, item, List.of(), null, null);
         }
 
         public KitEquipment(Item item, EquipmentSlot armourStandSlot) {
-            this(item, List.of(), armourStandSlot);
+            this(item, item, List.of(), armourStandSlot, null);
+        }
+
+        public KitEquipment(Item attackerItem, Item defenderItem, EquipmentSlot armourStandSlot, EquipmentSlot playerSlot) {
+            this(attackerItem, defenderItem, List.of(), armourStandSlot, playerSlot);
+        }
+
+        public Item itemForTeam(GameTeam team) {
+            return team == SiegeTeams.DEFENDERS ? this.defenderItem : this.attackerItem;
+        }
+
+        @Override
+        public EquipmentSlot getArmorStandSlot() {
+            return this.armourStandSlot;
+        }
+
+        @Override
+        public EquipmentSlot getPlayerSlot() {
+            return this.playerSlot;
         }
 
         public ItemStack buildItemStack(GameTeam team) {
             var builder = ItemStackBuilder
-                    .of(this.item)
+                    .of(this.itemForTeam(team))
                     .setCount(1)
                     .setUnbreakable()
                     .setDyeColor(team.config().dyeColor().getRgb());
@@ -283,12 +406,46 @@ public record SiegeKit(Text name, List<KitEquipment> equipment, List<KitResource
         }
     }
 
+    private static final class Firework implements AbstractKitResource {
+        @Override
+        public Text name() {
+            return Text.translatable("game.siege.kit.items.flare");
+        }
+
+        @Override
+        public int max() {
+            return 5;
+        }
+
+        @Override
+        public Item itemForTeam(GameTeam team) {
+            return Items.FIREWORK_ROCKET; // All fireworks are the same Item
+        }
+
+        @Override
+        public ItemStackBuilder itemStackBuilder(GameTeam team) {
+            return ItemStackBuilder.firework(
+                    team.config().fireworkColor().getRgb(),
+                    2,
+                    FireworkRocketItem.Type.SMALL_BALL
+            );
+        }
+
+        @Override
+        public SiegePersonalResource resource() {
+            return SiegePersonalResource.FLARES;
+        }
+    }
+
     /**
      * A restockable item in a kit (e.g. arrows)
      */
-    public record KitResource(Text name, Item attackerItem, Item defenderItem, @Nullable SiegePersonalResource resource,
-                              @Nullable EquipmentSlot equipmentSlot, int max) {
+    public record KitResource(@Override Text name, Item attackerItem, Item defenderItem,
+                              @Override @Nullable SiegePersonalResource resource,
+                              @Override @Nullable EquipmentSlot equipmentSlot,
+                              @Override int max) implements AbstractKitResource {
         public static final KitResource STEAK = new KitResource(Items.COOKED_BEEF.getName(), Items.COOKED_BEEF, null, null, 10);
+        public static final AbstractKitResource FIREWORK = new Firework();
         public static final KitResource PLANKS = new KitResource(
                 Text.translatable("game.siege.kit.items.wood"),
                 Items.CHERRY_PLANKS,
@@ -310,31 +467,9 @@ public record SiegeKit(Text name, List<KitEquipment> equipment, List<KitResource
             return ItemStackBuilder.of(this.itemForTeam(team));
         }
 
+        @Override
         public Item itemForTeam(GameTeam team) {
             return team == SiegeTeams.DEFENDERS ? this.defenderItem : this.attackerItem;
-        }
-
-        RestockResult restock(ServerPlayerEntity player, SiegePlayer participant) {
-            var inventory = player.getInventory();
-            var team = participant.team;
-            var item = this.itemForTeam(team);
-
-            int required = this.max - inventory.count(item);
-            int toGive = this.resource != null ? participant.tryDecrementResource(this.resource, required) : required;
-
-            var stack = this.itemStackBuilder(team).setCount(toGive).build();
-
-            if (this.equipmentSlot != null && required == this.max) {
-                player.equipStack(this.equipmentSlot, stack);
-            } else {
-                inventory.offerOrDrop(stack);
-            }
-
-            if (this.resource != null) {
-                return new RestockResult(participant.getResourceAmount(this.resource), this.resource.max, required == 0 || toGive > 0, this.resource, this.name);
-            } else {
-                return new RestockResult(0, 0, true, null, this.name);
-            }
         }
     }
 
@@ -349,17 +484,6 @@ public record SiegeKit(Text name, List<KitEquipment> equipment, List<KitResource
      *                 {@link SiegePersonalResource}'s name, because arrows and wood both restock from the same pool, for
      *                 example.
      */
-    private record RestockResult(int current, int max, boolean success, SiegePersonalResource resource, Text name) {
+    public record RestockResult(int current, int max, boolean success, SiegePersonalResource resource, Text name) {
     }
-
-    public record KitStatusEffect(StatusEffect statusEffect, int amplifier) {
-        public KitStatusEffect(StatusEffect statusEffect) {
-            this(statusEffect, 0);
-        }
-
-        public StatusEffectInstance instance() {
-            return new StatusEffectInstance(this.statusEffect, -1, this.amplifier, false, false, true);
-        }
-    }
-
 }

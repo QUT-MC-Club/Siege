@@ -7,6 +7,8 @@ import io.github.restioson.siege.game.SiegeKit;
 import io.github.restioson.siege.game.SiegeSpawnLogic;
 import io.github.restioson.siege.game.SiegeTeams;
 import io.github.restioson.siege.game.map.*;
+import io.github.restioson.siege.item.SiegeHorn;
+import io.github.restioson.siege.item.SiegeItems;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
@@ -373,7 +375,11 @@ public class SiegeActive {
         if (participant != null) {
             ItemCooldownManager cooldownManager = player.getItemCooldownManager();
 
-            if (item == Items.ENDER_PEARL && !cooldownManager.isCoolingDown(Items.ENDER_PEARL)) {
+            if (cooldownManager.isCoolingDown(item)) {
+                return new TypedActionResult<>(ActionResult.FAIL, stack);
+            }
+
+            if (item == Items.ENDER_PEARL) {
                 SimpleGui ui = WarpSelectionUi.create(player, this.map, participant.team, selectedFlag -> {
                     if (cooldownManager.isCoolingDown(Items.ENDER_PEARL)) {
                         return;
@@ -388,6 +394,8 @@ public class SiegeActive {
                 ui.open();
 
                 return new TypedActionResult<>(ActionResult.FAIL, stack);
+            } else if (item == SiegeItems.HORN) {
+                SiegeHorn.onUse(this, player, participant, stack);
             }
         }
 
@@ -508,7 +516,7 @@ public class SiegeActive {
         player.getInventory().clear();
         player.getEnderChestInventory().clear();
         SiegePlayer participant = this.participant(player);
-        assert participant != null; // spawnParticipant should only be spawned on a participant
+        assert participant != null; // spawnParticipant should only be called on a participant
 
         var time = this.world.getTime();
         participant.timeOfSpawn = time;
