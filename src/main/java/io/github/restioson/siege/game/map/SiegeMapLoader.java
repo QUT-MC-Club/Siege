@@ -58,7 +58,7 @@ public class SiegeMapLoader {
 
         MapTemplateMetadata metadata = template.getMetadata();
 
-        SiegeMap map = new SiegeMap(config, template);
+        SiegeMap map = new SiegeMap(template);
 
         NbtCompound mapData = metadata.getData();
         String biomeId = mapData.getString("biome");

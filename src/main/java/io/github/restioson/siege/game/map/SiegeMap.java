@@ -1,11 +1,14 @@
 package io.github.restioson.siege.game.map;
 
+import io.github.restioson.siege.duck.SiegeVehicleExt;
 import io.github.restioson.siege.entity.SiegeKitStandEntity;
 import io.github.restioson.siege.game.SiegeTeams;
 import io.github.restioson.siege.game.active.SiegeActive;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
+import net.minecraft.entity.vehicle.BoatEntity;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.TypeFilter;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 import xyz.nucleoid.map_templates.BlockBounds;
@@ -17,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SiegeMap {
-    private final SiegeMapConfig config;
     private final MapTemplate template;
     public final List<SiegeFlag> flags = new ArrayList<>();
     public final List<SiegeKitStandData> kitStands = new ArrayList<>();
@@ -30,8 +32,7 @@ public class SiegeMap {
 
     private final LongSet protectedBlocks = new LongOpenHashSet();
 
-    public SiegeMap(SiegeMapConfig config, MapTemplate template) {
-        this.config = config;
+    public SiegeMap(MapTemplate template) {
         this.template = template;
         this.time = 1000;
     }
@@ -64,7 +65,7 @@ public class SiegeMap {
         return new TemplateChunkGenerator(server, this.template);
     }
 
-    public void spawnKitStands(SiegeActive active) {
+    public void startGame(SiegeActive active) {
         for (SiegeKitStandData stand : this.kitStands) {
             SiegeKitStandEntity standEntity = new SiegeKitStandEntity(active, stand);
             active.world.spawnEntity(standEntity);
@@ -72,6 +73,11 @@ public class SiegeMap {
             if (standEntity.controllingFlag != null) {
                 standEntity.controllingFlag.kitStands.add(standEntity);
             }
+        }
+
+        var vehicles = active.world.getEntitiesByType(TypeFilter.instanceOf(BoatEntity.class), e -> true);
+        for (var vehicle : vehicles) {
+            ((SiegeVehicleExt) vehicle).siege$setInSiegeGame();
         }
     }
 }

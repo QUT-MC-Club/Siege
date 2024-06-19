@@ -7,6 +7,9 @@
   "authors": [
     "Restioson"
   ],
+  "mixins": [
+    "siege.mixins.json"
+  ],
   "accessWidener": "siege.accesswidener",
   "license": "LGPLv3",
   "environment": "*",

@@ -394,8 +394,8 @@ public final class SiegeKit {
                         .setCount(1)
                         .setName(Text.literal("Kit Select").setStyle(NON_ITALIC_STYLE))
                         .addEnchantment(null, 1)
-                        .addLore(Text.literal("This compass allows you to change"))
-                        .addLore(Text.literal("your kit!"))
+                        .addLore(Text.literal("This compass allows you"))
+                        .addLore(Text.literal("to change your kit!"))
                         .build();
             }
         };

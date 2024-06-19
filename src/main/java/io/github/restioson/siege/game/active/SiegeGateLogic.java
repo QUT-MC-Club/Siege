@@ -146,7 +146,6 @@ public class SiegeGateLogic {
                 world.createExplosion(null, x, y, z, 0.0f, World.ExplosionSourceType.NONE);
             }
 
-            GameTeam bashTeam = gate.flag.team == SiegeTeams.ATTACKERS ? SiegeTeams.DEFENDERS : SiegeTeams.ATTACKERS;
 
             this.game.gameSpace.getPlayers().sendMessage(
                     Text.literal("The ")
@@ -154,7 +153,7 @@ public class SiegeGateLogic {
                             .append(ScreenTexts.SPACE)
                             .append(gate.pastToBe())
                             .append(" been bashed open by the ")
-                            .append(bashTeam.config().name())
+                            .append(SiegeTeams.opposite(gate.flag.team).config().name())
                             .append("!")
                             .formatted(Formatting.BOLD)
             );

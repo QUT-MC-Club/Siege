@@ -251,6 +251,10 @@ public final class SiegeFlag {
     public void spawnParticles(ServerWorld world, ParticleEffect effect) {
         for (int i = 0; i < 10; i++) {
             var pos = this.bounds.sampleBlock(world.random);
+            if (!world.isAir(pos)) {
+                continue;
+            }
+
             world.spawnParticles(effect, pos.getX(), pos.getY(), pos.getZ(), 1, 0.0D, 0.0D, 0.0D, 0);
         }
     }

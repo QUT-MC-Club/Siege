@@ -165,7 +165,7 @@ public class SiegeActive {
             activity.listen(PlayerAttackEntityEvent.EVENT, active::onAttackEntity);
             activity.listen(ProjectileHitEvent.ENTITY, active::onProjectileHitEntity);
 
-            active.map.spawnKitStands(active);
+            active.map.startGame(active);
         });
     }
 
@@ -179,20 +179,35 @@ public class SiegeActive {
     }
 
     private void onExplosion(Explosion explosion, boolean particles) {
+        if (!(explosion.getCausingEntity() instanceof ServerPlayerEntity player)) {
+            return;
+        }
+
+        var participant = this.participant(player);
+
+        if (participant == null) {
+            return;
+        }
+
         gate:
         for (SiegeGate gate : this.map.gates) {
+            if (participant.team == gate.flag.team) {
+                continue;
+            }
+
             for (BlockPos pos : explosion.getAffectedBlocks()) {
                 if (!gate.bashedOpen && gate.health > 0 && gate.portcullis.contains(pos)) {
                     gate.health = Math.max(0, gate.health - TNT_GATE_DAMAGE);
                     gate.timeOfLastBash = this.world.getTime();
-
-                    if (explosion.getCausingEntity() instanceof ServerPlayerEntity player) {
-                        gate.broadcastHealth(player, this, this.world);
-                    }
-
+                    gate.broadcastHealth(player, this, this.world);
                     break gate;
                 }
             }
+        }
+
+        var dmg = explosion.behavior.calculateDamage(explosion, player);
+        if (dmg > 0) {
+            player.damage(Explosion.createDamageSource(this.world, null), dmg);
         }
 
         explosion.getAffectedBlocks().removeIf(this.map::isProtectedBlock);

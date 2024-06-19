@@ -36,6 +36,7 @@ public final class SiegeTeams {
 
     public SiegeTeams(GameActivity activity) {
         this.teams = TeamManager.addTo(activity);
+        TeamChat.addTo(activity, this.teams);
         this.teams.addTeams(TEAMS);
     }
 

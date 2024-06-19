@@ -99,7 +99,7 @@ public final class SiegeCaptureLogic {
             state = CapturingState.RECAPTURE_DISABLED;
         } else if (defendersAtFlag && attackersAtFlag) {
             // Both teams present - contested
-            state = CapturingState.CONTESTED;
+            state = flag.isReadyForCapture() ? CapturingState.CONTESTED : CapturingState.PREREQUISITE_REQUIRED;
         } else if ((attackersAtFlag && flag.team != SiegeTeams.ATTACKERS) ||
                 (defendersAtFlag && flag.team != SiegeTeams.DEFENDERS)) {
             // Only one team present - capturing if prerequisites met
