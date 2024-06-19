@@ -1,14 +1,11 @@
 package io.github.restioson.siege.game.map;
 
-import io.github.restioson.siege.Siege;
 import io.github.restioson.siege.entity.SiegeKitStandEntity;
-import io.github.restioson.siege.game.SiegeSpawnLogic;
 import io.github.restioson.siege.game.SiegeTeams;
 import io.github.restioson.siege.game.active.SiegeActive;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 import xyz.nucleoid.map_templates.BlockBounds;
@@ -23,7 +20,7 @@ public class SiegeMap {
     private final SiegeMapConfig config;
     private final MapTemplate template;
     public final List<SiegeFlag> flags = new ArrayList<>();
-    public final List<SiegeKitStandLocation> kitStands = new ArrayList<>();
+    public final List<SiegeKitStandData> kitStands = new ArrayList<>();
     public SiegeSpawn waitingSpawn = null;
     public List<BlockBounds> noBuildRegions = new ArrayList<>();
     public List<SiegeGate> gates = new ArrayList<>();
@@ -68,8 +65,8 @@ public class SiegeMap {
     }
 
     public void spawnKitStands(SiegeActive active) {
-        for (SiegeKitStandLocation stand : this.kitStands) {
-            SiegeKitStandEntity standEntity = new SiegeKitStandEntity(active.world, active, stand);
+        for (SiegeKitStandData stand : this.kitStands) {
+            SiegeKitStandEntity standEntity = new SiegeKitStandEntity(active, stand);
             active.world.spawnEntity(standEntity);
 
             if (standEntity.controllingFlag != null) {

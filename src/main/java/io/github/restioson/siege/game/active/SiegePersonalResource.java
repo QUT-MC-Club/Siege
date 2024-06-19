@@ -2,7 +2,7 @@ package io.github.restioson.siege.game.active;
 
 public enum SiegePersonalResource {
     WOOD(64, 2),
-    ARROWS(128, 1),
+    ARROWS(64, 2),
     TNT(4, 30),
     FLARES(16, 4);
 

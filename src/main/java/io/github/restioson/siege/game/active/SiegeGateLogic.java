@@ -49,6 +49,16 @@ public class SiegeGateLogic {
                     gate.health += 1;
                     gate.broadcastHealth(player, this.game, world);
                     world.setBlockState(pos, Blocks.AIR.getDefaultState());
+                    world.playSound(
+                            player,
+                            pos.getX(),
+                            pos.getY(),
+                            pos.getZ(),
+                            SoundEvents.ENTITY_IRON_GOLEM_REPAIR,
+                            SoundCategory.BLOCKS,
+                            1.0F,
+                            1.0F + gate.repairFraction()
+                    );
                     ctx.getStack().decrement(1);
                     return ActionResult.FAIL;
                 } else {
@@ -114,6 +124,12 @@ public class SiegeGateLogic {
 
     public void tickGate(SiegeGate gate) {
         ServerWorld world = this.game.world;
+
+        if (gate.underAttack(world.getTime())) {
+            this.game.team(gate.flag.team)
+                    .sendActionBar(Text.translatable("game.siege.gate.under_attack", gate.name)
+                            .formatted(Formatting.RED));
+        }
 
         if (gate.health <= 0 && !gate.bashedOpen) {
             gate.slider.setOpen(world);

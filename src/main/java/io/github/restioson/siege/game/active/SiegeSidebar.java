@@ -62,8 +62,7 @@ public final class SiegeSidebar {
                         .formatted(color);
                 if (italic) flagName = flagName.formatted(Formatting.ITALIC);
 
-                float ratio = (float) flag.captureProgressTicks / SiegeCaptureLogic.CAPTURE_TIME_TICKS;
-                int percent = (int) Math.floor(ratio * 100);
+                int percent = (int) Math.floor(flag.captureFraction() * 100);
 
                 Text line;
                 if (capturing || percent > 0) {

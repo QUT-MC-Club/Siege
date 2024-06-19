@@ -9,6 +9,7 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LightningEntity;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.screen.ScreenTexts;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -89,72 +90,48 @@ public final class SiegeCaptureLogic {
         playersPresent.addAll(defendersPresent);
 
         boolean recapture = this.game.config.recapture();
-
         boolean attackersAtFlag = !attackersPresent.isEmpty();
         boolean defendersAtFlag = !defendersPresent.isEmpty();
-        boolean defendersCapturing = defendersAtFlag && recapture && flag.team != SiegeTeams.DEFENDERS;
-        boolean attackersCapturing = attackersAtFlag && flag.team != SiegeTeams.ATTACKERS;
-        boolean tryingToCapture = defendersCapturing || attackersCapturing;
-        boolean contested = tryingToCapture && defendersAtFlag && attackersAtFlag;
+        CapturingState state;
 
-        CapturingState capturingState = null;
-        GameTeam captureTeam;
-        List<ServerPlayerEntity> capturingPlayers;
-
-        if (defendersAtFlag) {
-            captureTeam = SiegeTeams.DEFENDERS;
-            capturingPlayers = defendersPresent;
+        if (defendersAtFlag && flag.team != SiegeTeams.DEFENDERS && !recapture) {
+            // Defenders _would_ capture/contest, but it's disabled
+            state = CapturingState.RECAPTURE_DISABLED;
+        } else if (defendersAtFlag && attackersAtFlag) {
+            // Both teams present - contested
+            state = CapturingState.CONTESTED;
+        } else if ((attackersAtFlag && flag.team != SiegeTeams.ATTACKERS) ||
+                (defendersAtFlag && flag.team != SiegeTeams.DEFENDERS)) {
+            // Only one team present - capturing if prerequisites met
+            state = flag.isReadyForCapture() ? CapturingState.CAPTURING : CapturingState.PREREQUISITE_REQUIRED;
         } else {
-            captureTeam = SiegeTeams.ATTACKERS;
-            capturingPlayers = attackersPresent;
+            // Only owner team (or no players) present
+            state = flag.captureProgressTicks > 0 ? CapturingState.SECURING : null;
         }
 
-        if (tryingToCapture) {
-            if (!contested) {
-                capturingState = CapturingState.CAPTURING;
-            } else {
-                capturingState = CapturingState.CONTESTED;
-            }
-        } else {
-            if (flag.captureProgressTicks > 0) {
-                capturingState = CapturingState.SECURING;
-            }
-        }
+        flag.capturingState = state;
 
-        if (capturingState != null) {
-            if (defendersAtFlag && flag.team != SiegeTeams.DEFENDERS) {
-                capturingState = CapturingState.RECAPTURE_DISABLED;
-            } else if (!flag.isReadyForCapture()) {
-                capturingState = CapturingState.PREREQUISITE_REQUIRED;
-            }
-        }
-
-        flag.capturingState = capturingState;
-
-        if (capturingState == CapturingState.CAPTURING) {
-            this.tickCapturing(flag, interval, captureTeam, capturingPlayers);
-        } else if (capturingState == CapturingState.SECURING) {
-            this.tickSecuring(flag, interval, capturingPlayers);
+        if (state == CapturingState.CAPTURING) {
+            var team = attackersAtFlag ? SiegeTeams.ATTACKERS : SiegeTeams.DEFENDERS;
+            this.tickCapturing(flag, interval, team, playersPresent);
+        } else if (state == CapturingState.SECURING) {
+            this.tickSecuring(flag, interval, playersPresent);
+        } else if (state == CapturingState.CONTESTED) {
+            this.tickContested(flag);
         }
 
         flag.updateCaptureBar();
         flag.updateCapturingPlayers(playersPresent);
     }
 
-    private void tickCapturing(SiegeFlag flag, int interval, GameTeam captureTeam, List<ServerPlayerEntity> capturingPlayers) {
+    private void tickCapturing(SiegeFlag flag, int interval, GameTeam captureTeam,
+                               Set<ServerPlayerEntity> capturingPlayers) {
         // Just began capturing
         if (flag.captureProgressTicks == 0) {
             this.broadcastStartCapture(flag, captureTeam);
         }
 
-        int amount = capturingPlayers.stream()
-                .map(p -> {
-                    var participant = this.game.participant(p);
-                    return participant != null ? participant.kit.captureProgressModifier() : 0;
-                })
-                .reduce(0, Integer::sum);
-
-        if (flag.incrementCapture(captureTeam, interval * amount)) {
+        if (flag.incrementCapture(captureTeam, interval * capturingPlayers.size())) {
             for (SiegeKitStandEntity kitStand : flag.kitStands) {
                 kitStand.onControllingFlagCaptured();
             }
@@ -171,24 +148,38 @@ public final class SiegeCaptureLogic {
             this.game.addTime(this.game.config.capturingGiveTimeSecs());
 
             for (ServerPlayerEntity player : capturingPlayers) {
-                player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.NEUTRAL, 1.0F, 1.0F);
+                player.playSound(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.NEUTRAL, 1.0F, 1.0F);
             }
+
+            var giveTime = this.game.config.capturingGiveTimeSecs();
+            var sub = giveTime > 0 ? Text.translatable("game.siege.flag.captured.extra_time", giveTime) : null;
+
+            this.game.showTitle(
+                    captureTeam,
+                    Text.translatable("game.siege.flag.captured.won", flag.name).formatted(Formatting.GREEN),
+                    sub
+            );
+
+            this.game.showTitle(
+                    SiegeTeams.opposite(captureTeam),
+                    Text.translatable("game.siege.flag.captured.lost", flag.name).formatted(Formatting.RED),
+                    sub
+            );
         } else {
-            for (ServerPlayerEntity player : capturingPlayers) {
-                player.playSound(SoundEvents.BLOCK_STONE_PLACE,  SoundCategory.NEUTRAL, 1.0F, 1.0F);
-            }
+            flag.playSound(this.world, SoundEvents.BLOCK_NOTE_BLOCK_BASS.value(), 1.0F + flag.captureFraction());
         }
+
+        var particles = captureTeam == SiegeTeams.ATTACKERS ? ParticleTypes.FLAME : ParticleTypes.SOUL_FIRE_FLAME;
+        flag.spawnParticles(this.world, particles);
     }
 
-    private void tickSecuring(SiegeFlag flag, int interval, List<ServerPlayerEntity> securingPlayers) {
-        int amount = securingPlayers.stream()
-                .map(p -> {
-                    var participant = this.game.participant(p);
-                    return participant != null ? participant.kit.captureProgressModifier() : 0;
-                })
-                .reduce(0, Integer::sum);
+    private void tickContested(SiegeFlag flag) {
+        flag.playSound(this.world, SoundEvents.BLOCK_NOTE_BLOCK_DIDGERIDOO.value(), 1.0F);
+        flag.spawnParticles(this.world, ParticleTypes.ANGRY_VILLAGER);
+    }
 
-        if (flag.decrementCapture(interval * (amount + 1))) {
+    private void tickSecuring(SiegeFlag flag, int interval, Set<ServerPlayerEntity> securingPlayers) {
+        if (flag.decrementCapture(interval * (securingPlayers.size() + 1))) {
             this.broadcastSecured(flag);
 
             for (ServerPlayerEntity player : securingPlayers) {
@@ -198,6 +189,9 @@ public final class SiegeCaptureLogic {
                 }
             }
         }
+
+        flag.playSound(this.world, SoundEvents.BLOCK_NOTE_BLOCK_CHIME.value(), 1.0F + flag.captureFraction());
+        flag.spawnParticles(this.world, ParticleTypes.COMPOSTER);
     }
 
     private void broadcastStartCapture(SiegeFlag flag, GameTeam captureTeam) {

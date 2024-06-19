@@ -23,7 +23,6 @@ public enum CapturingState {
         this.hasAlert = hasAlert;
     }
 
-
     public Text getName() {
         return this.name;
     }

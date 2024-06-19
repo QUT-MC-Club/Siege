@@ -60,7 +60,11 @@ public class SiegeGate {
     }
 
     public void broadcastHealth(ServerPlayerEntity initiator, SiegeActive active, ServerWorld world) {
-        Text text = Text.literal("Gate health: ").append(Integer.toString(this.health)).formatted(Formatting.DARK_GREEN);
+        String msg = this.bashedOpen ?
+                String.format("%s more blocks to repair gate", this.repairedHealthThreshold - this.health) :
+                String.format("Gate health: %s", this.health);
+
+        Text text = Text.literal(msg).formatted(Formatting.DARK_GREEN);
         initiator.sendMessage(text, true);
         for (PlayerRef ref : active.participants.keySet()) {
             ref.ifOnline(world, p -> {
@@ -85,5 +89,13 @@ public class SiegeGate {
         }
         this.slider.set(world, --this.openSlide);
         return true;
+    }
+
+    public float repairFraction() {
+        return (float) this.health / this.repairedHealthThreshold;
+    }
+
+    public boolean underAttack(long time) {
+        return time - this.timeOfLastBash < 5 * 20;
     }
 }

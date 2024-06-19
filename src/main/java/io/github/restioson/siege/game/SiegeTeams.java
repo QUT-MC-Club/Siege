@@ -1,7 +1,5 @@
 package io.github.restioson.siege.game;
 
-import net.minecraft.item.Item;
-import net.minecraft.item.Items;
 import net.minecraft.scoreboard.AbstractTeam;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
@@ -26,7 +24,7 @@ public final class SiegeTeams {
             new GameTeamKey("defenders"),
             GameTeamConfig.builder()
                     .setName(Text.literal("Defenders"))
-                    .setColors(GameTeamConfig.Colors.from(DyeColor.CYAN))
+                    .setColors(GameTeamConfig.Colors.from(DyeColor.BLUE))
                     .setCollision(AbstractTeam.CollisionRule.NEVER)
                     .setFriendlyFire(false)
                     .build()
@@ -41,16 +39,12 @@ public final class SiegeTeams {
         this.teams.addTeams(TEAMS);
     }
 
-    public static GameTeam byKey(GameTeamKey team) {
-        return team == ATTACKERS.key() ? ATTACKERS : DEFENDERS;
+    public static GameTeam opposite(GameTeam team) {
+        return team == ATTACKERS ? DEFENDERS : ATTACKERS;
     }
 
-    public static Item planksForTeam(GameTeamKey team) {
-        if (team == SiegeTeams.ATTACKERS.key()) {
-            return Items.ACACIA_PLANKS;
-        } else {
-            return Items.BIRCH_PLANKS;
-        }
+    public static GameTeam byKey(GameTeamKey team) {
+        return team == ATTACKERS.key() ? ATTACKERS : DEFENDERS;
     }
 
     @Nullable

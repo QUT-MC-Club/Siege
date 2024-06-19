@@ -7,6 +7,7 @@ import io.github.restioson.siege.Siege;
 import io.github.restioson.siege.game.active.SiegeActive;
 import io.github.restioson.siege.game.active.SiegePlayer;
 import net.minecraft.client.item.TooltipContext;
+import net.minecraft.entity.AreaEffectCloudEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
@@ -21,6 +22,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.stat.Stats;
+import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
@@ -30,10 +32,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import static eu.pb4.polymer.core.api.item.PolymerItemUtils.NON_ITALIC_STYLE;
+
 public class SiegeHorn extends GoatHornItem implements PolymerItem {
     private static final int COOLDOWN_TICKS = 30 * 20;
     private static final int SOUND_RADIUS = 64;
-    private static final int EFFECT_RADIUS = 20;
+    private static final int EFFECT_RADIUS = 15;
     private static final String HORN_DATA_KEY = "siege_horn_data";
     private static final Codec<StatusEffectInstance> HORN_DATA_CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.INT.fieldOf("duration").forGetter(StatusEffectInstance::getDuration),
@@ -77,6 +81,17 @@ public class SiegeHorn extends GoatHornItem implements PolymerItem {
             }
         }
 
+        AreaEffectCloudEntity aoeCloud = new AreaEffectCloudEntity(
+                active.world,
+                userPlayer.getX(),
+                userPlayer.getY(),
+                userPlayer.getZ()
+        );
+        aoeCloud.setColor(user.team.config().fireworkColor().getRgb());
+        aoeCloud.setRadius(EFFECT_RADIUS);
+        aoeCloud.setDuration(1);
+        active.world.spawnEntity(aoeCloud);
+
         var cooldownMgr = userPlayer.getItemCooldownManager();
         cooldownMgr.set(SiegeItems.HORN, COOLDOWN_TICKS);
         cooldownMgr.set(((SiegeHorn) stack.getItem()).getPolymerItem(stack, userPlayer), COOLDOWN_TICKS);
@@ -110,11 +125,17 @@ public class SiegeHorn extends GoatHornItem implements PolymerItem {
 
     @Override
     public ItemStack getPolymerItemStack(ItemStack itemStack, TooltipContext context, @Nullable ServerPlayerEntity player) {
-        return GoatHornItem.getStackForInstrument(
-                Items.GOAT_HORN,
-                // This cast is fine since SiegeHorn is a subclass of GoatHornItem
-                ((GoatHornItem) itemStack.getItem()).getInstrument(itemStack).orElseThrow()
-        );
+        var name = Text.translatable("item.siege.captains_horn").setStyle(NON_ITALIC_STYLE);
+
+        var stack = GoatHornItem
+                .getStackForInstrument(
+                        Items.GOAT_HORN,
+                        // This cast is fine since SiegeHorn is a subclass of GoatHornItem
+                        ((GoatHornItem) itemStack.getItem()).getInstrument(itemStack).orElseThrow()
+                )
+                .setCustomName(name);
+        stack.addEnchantment(null, 1);
+        return stack;
     }
 
     @Override

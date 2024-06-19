@@ -5,7 +5,7 @@ import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.plasmid.game.common.team.GameTeam;
 
-public record SiegeKitStandLocation(
+public record SiegeKitStandData(
         @Nullable GameTeam team,
         @Nullable SiegeFlag flag,
         Vec3d pos,

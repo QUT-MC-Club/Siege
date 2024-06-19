@@ -2,6 +2,7 @@ package io.github.restioson.siege.game.active;
 
 import eu.pb4.sgui.api.elements.GuiElementInterface;
 import eu.pb4.sgui.api.gui.SimpleGui;
+import io.github.restioson.siege.game.SiegeKit;
 import io.github.restioson.siege.game.map.SiegeFlag;
 import io.github.restioson.siege.game.map.SiegeMap;
 import net.minecraft.item.ItemStack;
@@ -18,18 +19,54 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public final class WarpSelectionUi extends SimpleGui {
-    private WarpSelectionUi(ServerPlayerEntity player, List<GuiElementInterface> selectors) {
+    private WarpSelectionUi(ServerPlayerEntity player, List<GuiElementInterface> selectors, Text title) {
         super(ScreenHandlerType.GENERIC_9X3, player, false);
-        this.setTitle(Text.literal("Warp to a Point"));
+        this.setTitle(title);
         selectors.forEach(this::addSlot);
     }
 
-    public static WarpSelectionUi create(ServerPlayerEntity player, SiegeMap map, GameTeam team, Consumer<SiegeFlag> select) {
-        var selectors = selectors(player, map, team, select);
-        return new WarpSelectionUi(player, selectors);
+    public static WarpSelectionUi createFlagWarp(ServerPlayerEntity player, SiegeMap map, GameTeam team,
+                                                 Consumer<SiegeFlag> select) {
+        var selectors = flagSelectors(player, map, team, select);
+        return new WarpSelectionUi(player, selectors, Text.translatable("game.siege.warp.flag"));
     }
 
-    private static List<GuiElementInterface> selectors(ServerPlayerEntity player, SiegeMap map, GameTeam team, Consumer<SiegeFlag> select) {
+    public static WarpSelectionUi createKitWarp(ServerPlayerEntity player, SiegePlayer participant,
+                                                Consumer<SiegeKit> select) {
+        var selectors = kitSelectors(participant, select);
+        return new WarpSelectionUi(player, selectors, Text.translatable("game.siege.warp.kit"));
+    }
+
+    private static List<GuiElementInterface> kitSelectors(SiegePlayer participant, Consumer<SiegeKit> select) {
+        List<GuiElementInterface> selectors = new ArrayList<>();
+
+        for (SiegeKit kit : SiegeKit.KITS) {
+            ItemStack icon = kit.icon.getDefaultStack();
+
+            if (participant.kit == kit) {
+                icon.addEnchantment(null, 0);
+            }
+
+            var entry = ShopEntry.ofIcon(icon)
+                    .withName(kit.getName())
+                    .noCost()
+                    .onBuy(p -> {
+                        select.accept(kit);
+                        p.closeHandledScreen();
+                    });
+
+            for (var desc : kit.getDescription()) {
+                entry.addLore(desc);
+            }
+
+            selectors.add(entry);
+        }
+
+        return selectors;
+    }
+
+    private static List<GuiElementInterface> flagSelectors(ServerPlayerEntity player, SiegeMap map, GameTeam team,
+                                                           Consumer<SiegeFlag> select) {
         List<GuiElementInterface> selectors = new ArrayList<>();
 
         long time = player.getWorld().getTime();

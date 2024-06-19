@@ -9,8 +9,11 @@ import net.minecraft.block.*;
 import net.minecraft.entity.boss.BossBar;
 import net.minecraft.entity.boss.ServerBossBar;
 import net.minecraft.item.ItemStack;
+import net.minecraft.particle.ParticleEffect;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.Nullable;
@@ -147,11 +150,15 @@ public final class SiegeFlag {
         });
     }
 
+    public float captureFraction() {
+        return (float) this.captureProgressTicks / SiegeCaptureLogic.CAPTURE_TIME_TICKS;
+    }
+
     public void updateCaptureBar() {
         if (this.capturingState != null) {
             this.captureBar.setVisible(true);
             this.captureBar.setName(this.capturingState.getName());
-            this.captureBar.setPercent((float) this.captureProgressTicks / SiegeCaptureLogic.CAPTURE_TIME_TICKS);
+            this.captureBar.setPercent(this.captureFraction());
 
             BossBar.Color color;
             if (this.capturingState != CapturingState.CONTESTED) {
@@ -178,15 +185,7 @@ public final class SiegeFlag {
     }
 
     public boolean gateUnderAttack(long time) {
-        long lastBash = this.gates
-                .stream()
-                .map(gate -> gate.timeOfLastBash)
-                .max(Long::compareTo)
-                .stream()
-                .findAny()
-                .orElse(0L);
-
-        return time - lastBash < 5 * 20;
+        return this.gates.stream().anyMatch(gate -> gate.underAttack(time));
     }
 
     public void setTeamBlocks(ServerWorld world, GameTeam captureTeam) {
@@ -247,5 +246,17 @@ public final class SiegeFlag {
             }
 
         }
+    }
+
+    public void spawnParticles(ServerWorld world, ParticleEffect effect) {
+        for (int i = 0; i < 10; i++) {
+            var pos = this.bounds.sampleBlock(world.random);
+            world.spawnParticles(effect, pos.getX(), pos.getY(), pos.getZ(), 1, 0.0D, 0.0D, 0.0D, 0);
+        }
+    }
+
+    public void playSound(ServerWorld world, SoundEvent event, float pitch) {
+        var centre = this.bounds.center();
+        world.playSound(null, centre.x, centre.y, centre.z, event, SoundCategory.NEUTRAL, 2.0f, pitch);
     }
 }

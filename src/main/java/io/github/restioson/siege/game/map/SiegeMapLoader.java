@@ -95,7 +95,7 @@ public class SiegeMapLoader {
         return map;
     }
 
-    private static List<SiegeKitStandLocation> collectKitStands(List<SiegeFlag> flags, MapTemplate template) {
+    private static List<SiegeKitStandData> collectKitStands(List<SiegeFlag> flags, MapTemplate template) {
         return template.getMetadata()
                 .getRegions("kit_stand")
                 .map(region -> {
@@ -117,7 +117,13 @@ public class SiegeMapLoader {
 
                     SiegeKit type = parseKitStandType(data);
 
-                    return new SiegeKitStandLocation(team, flag, region.getBounds().centerBottom(), type, data.getFloat("yaw"));
+                    return new SiegeKitStandData(
+                            team,
+                            flag,
+                            region.getBounds().centerBottom(),
+                            type,
+                            data.getFloat("yaw")
+                    );
                 })
                 .collect(Collectors.toList());
     }
