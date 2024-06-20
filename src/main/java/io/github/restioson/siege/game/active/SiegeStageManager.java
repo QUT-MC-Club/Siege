@@ -56,6 +56,11 @@ public class SiegeStageManager {
             }
         }
 
+        var timeToFinish = this.finishTime() - time;
+        if (timeToFinish == 20 * 60) {
+            SiegeDialogueLogic.broadcastTimeRunningOut(this.game);
+        }
+
         return TickResult.CONTINUE_TICK;
     }
 
@@ -71,7 +76,7 @@ public class SiegeStageManager {
             player.changeGameMode(GameMode.SPECTATOR);
         }
 
-        this.closeTime = time + (5 * 20);
+        this.closeTime = time + (15 * 20);
     }
 
     private boolean testDefendersWin(long time) {

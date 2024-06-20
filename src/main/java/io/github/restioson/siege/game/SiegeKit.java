@@ -11,6 +11,7 @@ import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.*;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -50,7 +51,23 @@ public final class SiegeKit {
                     new KitEquipment(Items.IRON_LEGGINGS),
                     new KitEquipment(Items.LEATHER_BOOTS),
                     new KitEquipment(Items.STONE_SWORD, EquipmentSlot.MAINHAND),
-                    new KitEquipment(Items.SHIELD, EquipmentSlot.OFFHAND)
+                    new KitEquipable() {
+                        @Override
+                        public EquipmentSlot getArmorStandSlot() {
+                            return EquipmentSlot.OFFHAND;
+                        }
+
+                        @Override
+                        public ItemStack buildItemStack(GameTeam team) {
+                            var stack = ItemStackBuilder.of(Items.SHIELD)
+                                    .setUnbreakable()
+                                    .build();
+                            var tag = new NbtCompound();
+                            tag.putInt("Base", team.config().colors().blockDyeColor().getId());
+                            stack.getOrCreateNbt().put("BlockEntityTag", tag);
+                            return stack;
+                        }
+                    }
             ),
             List.of(),
             List.of(kitEffect(StatusEffects.RESISTANCE))

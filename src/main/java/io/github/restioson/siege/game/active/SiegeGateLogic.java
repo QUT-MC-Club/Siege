@@ -12,6 +12,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemUsageContext;
 import net.minecraft.item.SwordItem;
 import net.minecraft.screen.ScreenTexts;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -24,9 +25,12 @@ import net.minecraft.util.math.random.Random;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 import xyz.nucleoid.plasmid.game.common.team.GameTeam;
+import xyz.nucleoid.plasmid.game.player.MutablePlayerSet;
 import xyz.nucleoid.plasmid.util.PlayerRef;
+import xyz.nucleoid.plasmid.util.Scheduler;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 public class SiegeGateLogic {
     private final SiegeActive game;
@@ -41,7 +45,8 @@ public class SiegeGateLogic {
         }
     }
 
-    public ActionResult maybeBraceGate(BlockPos pos, ServerPlayerEntity player, ItemUsageContext ctx) {
+    public ActionResult maybeBraceGate(BlockPos pos, SiegePlayer participant, ServerPlayerEntity player,
+                                       ItemUsageContext ctx, long time) {
         for (SiegeGate gate : this.game.map.gates) {
             if (gate.brace != null && gate.brace.contains(pos)) {
                 if (gate.health < gate.maxHealth) {
@@ -60,6 +65,7 @@ public class SiegeGateLogic {
                             1.0F + gate.repairFraction()
                     );
                     ctx.getStack().decrement(1);
+                    participant.timeOfLastBrace = time;
                     return ActionResult.FAIL;
                 } else {
                     player.sendMessage(Text.literal("The gate is already at max health!").formatted(Formatting.DARK_GREEN), true);
@@ -125,7 +131,9 @@ public class SiegeGateLogic {
     public void tickGate(SiegeGate gate) {
         ServerWorld world = this.game.world;
 
-        if (gate.underAttack(world.getTime())) {
+        long time = world.getTime();
+
+        if (gate.underAttack(time)) {
             this.game.team(gate.flag.team)
                     .sendActionBar(Text.translatable("game.siege.gate.under_attack", gate.name)
                             .formatted(Formatting.RED));
@@ -146,6 +154,7 @@ public class SiegeGateLogic {
                 world.createExplosion(null, x, y, z, 0.0f, World.ExplosionSourceType.NONE);
             }
 
+            var bashTeam = SiegeTeams.opposite(gate.flag.team);
 
             this.game.gameSpace.getPlayers().sendMessage(
                     Text.literal("The ")
@@ -153,10 +162,19 @@ public class SiegeGateLogic {
                             .append(ScreenTexts.SPACE)
                             .append(gate.pastToBe())
                             .append(" been bashed open by the ")
-                            .append(SiegeTeams.opposite(gate.flag.team).config().name())
+                            .append(bashTeam.config().name())
                             .append("!")
                             .formatted(Formatting.BOLD)
             );
+
+            if (bashTeam == SiegeTeams.ATTACKERS) {
+                var msg = "game.siege.dialogue.gate_bashed";
+                Scheduler.INSTANCE
+                        .submit(
+                                (Consumer<MinecraftServer>) (s) -> SiegeDialogueLogic.leadersToTeams(this.game, msg),
+                                40
+                        );
+            }
 
             gate.bashedOpen = true;
         } else if (gate.health >= gate.repairedHealthThreshold && gate.bashedOpen) {
@@ -179,12 +197,8 @@ public class SiegeGateLogic {
             gate.bashedOpen = false;
         }
 
-        if (gate.bashedOpen) {
-            return;
-        }
-
-        boolean ownerTeamPresent = false;
-        boolean enemyTeamPresent = false;
+        var ownerTeamPresent = new MutablePlayerSet(world.getServer());
+        var enemyTeamPresent = new MutablePlayerSet(world.getServer());
 
         for (Object2ObjectMap.Entry<PlayerRef, SiegePlayer> entry : Object2ObjectMaps.fastIterable(this.game.participants)) {
             ServerPlayerEntity player = entry.getKey().getEntity(world);
@@ -195,14 +209,53 @@ public class SiegeGateLogic {
             if (gate.gateOpen.contains(player.getBlockPos())) {
                 SiegePlayer participant = entry.getValue();
                 if (participant.team == gate.flag.team) {
-                    ownerTeamPresent = true;
+                    ownerTeamPresent.add(player);
+
+                    if (participant.kit == SiegeKit.CONSTRUCTOR) {
+                        ownerTeamPresent.add(player);
+                    }
+
                 } else {
-                    enemyTeamPresent = true;
+                    enemyTeamPresent.add(player);
                 }
             }
         }
 
-        boolean shouldOpen = ownerTeamPresent && !enemyTeamPresent;
+        for (var player : ownerTeamPresent) {
+            var participant = this.game.participant(player);
+            if (participant == null) {
+                continue;
+            }
+
+            if (gate.underAttack(time) || gate.health != gate.maxHealth) {
+                if (time - participant.timeOfLastBrace > 5 * 20) {
+                    var kit = participant.kit == SiegeKit.CONSTRUCTOR ? "constructor" : "general";
+                    if (gate.bashedOpen) {
+                        var key = String.format("game.siege.gate.repair_hint.%s", kit);
+                        player.sendMessage(
+                                Text.translatable(key, gate.blocksToRepair()).formatted(Formatting.GOLD),
+                                true
+                        );
+                    } else {
+                        var key = String.format("game.siege.gate.brace_hint.%s", kit);
+                        player.sendMessage(Text.translatable(key, gate.health, gate.maxHealth)
+                                .formatted(Formatting.GOLD), true);
+                    }
+                }
+            } else if (!enemyTeamPresent.isEmpty() && !ownerTeamPresent.isEmpty()) {
+                player.sendMessage(Text.translatable("game.siege.gate.contested").formatted(Formatting.RED), true);
+            }
+        }
+
+        if (!gate.underAttack(time)) {
+            enemyTeamPresent.sendActionBar(Text.translatable("game.siege.gate.bash_hint").formatted(Formatting.GOLD));
+        }
+
+        if (gate.bashedOpen) {
+            return;
+        }
+
+        boolean shouldOpen = !ownerTeamPresent.isEmpty() && enemyTeamPresent.isEmpty();
 
         boolean moved = shouldOpen ? gate.tickOpen(world) : gate.tickClose(world);
         if (!moved) {

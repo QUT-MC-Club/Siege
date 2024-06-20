@@ -15,6 +15,7 @@ public class SiegePlayer {
     public AttackRecord lastTimeWasAttacked;
     public long timeOfDeath;
     public long timeOfSpawn;
+    public long timeOfLastBrace;
 
     // If they have attacked this life, then their respawn invulnerability is removed
     public boolean attackedThisLife;

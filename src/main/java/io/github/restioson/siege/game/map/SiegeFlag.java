@@ -2,8 +2,8 @@ package io.github.restioson.siege.game.map;
 
 import io.github.restioson.siege.entity.SiegeKitStandEntity;
 import io.github.restioson.siege.game.SiegeTeams;
-import io.github.restioson.siege.game.active.CapturingState;
 import io.github.restioson.siege.game.active.SiegeCaptureLogic;
+import io.github.restioson.siege.game.active.capturing.CapturingState;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import net.minecraft.block.*;
 import net.minecraft.entity.boss.BossBar;
@@ -29,6 +29,7 @@ public final class SiegeFlag {
     public final String id;
     public final String name;
     public final BlockBounds bounds;
+    // Whether the flag could _ever_ be captured during a gate
     public boolean capturable = true;
     public boolean pluralName = false;
     public List<BlockBounds> flagIndicatorBlocks;
@@ -89,22 +90,26 @@ public final class SiegeFlag {
         }
     }
 
-    public boolean isReadyForCapture() {
-        if (this.team == SiegeTeams.ATTACKERS) {
+    public List<SiegeFlag> getUnmetPrerequisites() {
+        var unmet = new ArrayList<SiegeFlag>();
+
+        var captureTeam = SiegeTeams.opposite(this.team);
+
+        if (captureTeam == SiegeTeams.ATTACKERS) {
+            for (SiegeFlag flag : this.prerequisiteFlags) {
+                if (flag.team != captureTeam) {
+                    unmet.add(flag);
+                }
+            }
+        } else {
             for (SiegeFlag flag : this.recapturePrerequisites) {
-                if (flag.team == this.team) {
-                    return false;
+                if (flag.team != captureTeam) {
+                    unmet.add(flag);
                 }
             }
         }
 
-        for (SiegeFlag flag : this.prerequisiteFlags) {
-            if (flag.team == this.team) {
-                return false;
-            }
-        }
-
-        return true;
+        return unmet;
     }
 
     public boolean incrementCapture(GameTeam team, int amount) {
@@ -157,17 +162,9 @@ public final class SiegeFlag {
     public void updateCaptureBar() {
         if (this.capturingState != null) {
             this.captureBar.setVisible(true);
-            this.captureBar.setName(this.capturingState.getName());
+            this.captureBar.setName(this.capturingState.getTitle());
             this.captureBar.setPercent(this.captureFraction());
-
-            BossBar.Color color;
-            if (this.capturingState != CapturingState.CONTESTED) {
-                color = this.team == SiegeTeams.ATTACKERS ? BossBar.Color.RED : BossBar.Color.BLUE;
-            } else {
-                color = BossBar.Color.WHITE;
-            }
-
-            this.captureBar.setColor(color);
+            this.captureBar.setColor(this.capturingState.getCaptureBarColorForTeam(this.team));
         } else {
             this.captureBar.setVisible(false);
         }
@@ -180,8 +177,7 @@ public final class SiegeFlag {
 
     public boolean isFrontLine(long time) {
         CapturingState state = this.capturingState;
-        return (state != null && state.hasAlert() && state != CapturingState.SECURING)
-                || (this.gateUnderAttack(time));
+        return (state != null && state.isUnderAttack()) || (this.gateUnderAttack(time));
     }
 
     public boolean gateUnderAttack(long time) {
@@ -249,7 +245,7 @@ public final class SiegeFlag {
     }
 
     public void spawnParticles(ServerWorld world, ParticleEffect effect) {
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 24; i++) {
             var pos = this.bounds.sampleBlock(world.random);
             if (!world.isAir(pos)) {
                 continue;

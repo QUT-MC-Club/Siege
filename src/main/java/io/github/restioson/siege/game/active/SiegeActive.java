@@ -270,29 +270,28 @@ public class SiegeActive {
         }
     }
 
-    private void onOpen() {
-        String help = "Siege - capture all the flags to win! There are two teams - attackers and defenders. Defenders " +
-                "must defend blue flags and attackers must capture them. To capture a flag, stand near it. To defend " +
-                "it, kill the capturers, and stand near it to halt the capture progress. You can bash gates by " +
-                "sprinting and hitting them as a soldier or shieldbearer. They can be braced and repaired by placing " +
-                "wood near them as a constructor.";
+    private static void sendDescription(ServerPlayerEntity player, String base, int n) {
+        var msg = Text.empty();
+        for (int i = 1; i <= n; i++) {
+            msg.append(Text.translatable(String.format("%s.desc.%s", base, i)).append(" "));
+        }
+        player.sendMessage(msg.formatted(Formatting.GOLD), false);
+    }
 
+    private void onOpen() {
         for (Map.Entry<PlayerRef, SiegePlayer> entry : this.participants.entrySet()) {
             entry.getKey().ifOnline(this.world, p -> {
                 var participant = entry.getValue();
-                Text text = Text.literal(help).formatted(Formatting.GOLD);
-                p.sendMessage(text, false);
-
                 if (this.config.recapture()) {
-                    p.sendMessage(Text.literal("Defenders may also capture attacker's flags.").formatted(Formatting.GOLD), false);
+                    sendDescription(p, "game.siege.recapture", 3);
                 }
 
                 if (this.config.hasEnderPearl(participant.team)) {
-                    p.sendMessage(
-                            Text.literal("You can use your ender pearl to warp to a flag in need.")
-                                    .formatted(Formatting.GOLD),
-                            false
-                    );
+                    sendDescription(p, "game.siege.enderpearl", 2);
+                }
+
+                if (this.config.capturingGiveTimeSecs() > 0) {
+                    sendDescription(p, "game.siege.quick", 2);
                 }
 
                 this.spawnParticipant(p, this.map.getFirstSpawn(participant.team));
@@ -383,7 +382,7 @@ public class SiegeActive {
                 return ActionResult.FAIL;
             }
 
-            return this.gateLogic.maybeBraceGate(blockPos, player, ctx);
+            return this.gateLogic.maybeBraceGate(blockPos, participant, player, ctx, this.world.getTime());
         } else if (participant.kit == SiegeKit.DEMOLITIONER && block == Blocks.TNT) {
             return ActionResult.PASS;
         } else {
@@ -640,8 +639,9 @@ public class SiegeActive {
                 double distance = player.squaredDistanceTo(flagRespawn.bounds().center());
                 boolean frontLine = flag.isFrontLine(time);
 
-                if ((distance < minDistance && frontLine == respawn.frontLine) || (frontLine && !respawn.frontLine)) {
-                    respawn.setFlag(flag, flagRespawn, frontLine);
+                if ((distance < minDistance && frontLine == respawn.isFrontLine(time)) ||
+                        (frontLine && !respawn.isFrontLine(time))) {
+                    respawn.setFlag(flag, flagRespawn);
                     minDistance = distance;
                 }
             }
@@ -757,44 +757,6 @@ public class SiegeActive {
         return this.timeLimitSecs;
     }
 
-    static class SiegeSpawnResult {
-        @Nullable
-        SiegeFlag flag;
-        boolean frontLine;
-        SiegeSpawn spawn;
-
-        public SiegeSpawnResult(@Nullable SiegeFlag flag, SiegeSpawn spawn) {
-            this.flag = flag;
-
-            if (flag != null) {
-                this.frontLine = flag.capturingState == CapturingState.CAPTURING || flag.capturingState == CapturingState.CONTESTED;
-            }
-
-            this.spawn = spawn;
-        }
-
-        public void setFlag(SiegeFlag flag, SiegeSpawn spawn, boolean frontLine) {
-            this.flag = flag;
-            this.frontLine = frontLine;
-            this.spawn = spawn;
-        }
-    }
-
-    private Optional<BestPlayer> getPlayerWithHighest(ToDoubleFunction<SiegePlayer> getter) {
-        return this.participants.entrySet()
-                .stream()
-                .max(Comparator.comparingDouble(e -> getter.applyAsDouble(e.getValue())))
-                .map(e -> {
-                    ServerPlayerEntity p = e.getKey().getEntity(this.world);
-
-                    if (p == null) {
-                        return null;
-                    }
-
-                    return new BestPlayer(p.getGameProfile().getName(), getter.applyAsDouble(e.getValue()));
-                });
-    }
-
     private void broadcastWin(GameTeam winningTeam) {
         for (Map.Entry<PlayerRef, SiegePlayer> entry : this.participants.entrySet()) {
             entry.getKey().ifOnline(this.gameSpace.getServer(), player -> {
@@ -802,25 +764,11 @@ public class SiegeActive {
                     player.playSound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundCategory.MASTER, 1.0F, 1.0F);
                     player.addStatusEffect(new StatusEffectInstance(StatusEffects.HERO_OF_THE_VILLAGE, 10, 0, false, false, true));
                 }
-
-                if (winningTeam == SiegeTeams.ATTACKERS) {
-                    player.playSound(SoundEvents.ENTITY_RAVAGER_CELEBRATE, SoundCategory.MASTER, 1.0F, 1.0F);
-                }
-
-                if (winningTeam == SiegeTeams.DEFENDERS) {
-                    player.playSound(SoundEvents.ENTITY_VILLAGER_CELEBRATE, SoundCategory.MASTER, 1.0F, 1.0F);
-                }
             });
         }
 
-        Text message = Text.literal("The ")
-                .append(winningTeam.config().name())
-                .append(" have won the game!")
-                .formatted(winningTeam.config().chatFormatting(), Formatting.BOLD);
-
         PlayerSet players = this.gameSpace.getPlayers();
-        players.sendMessage(message);
-        players.playSound(SoundEvents.ENTITY_VILLAGER_YES);
+        SiegeDialogueLogic.broadcastWin(this, winningTeam);
 
         Optional<BestPlayer> mostKills = this.getPlayerWithHighest(p -> p.kills);
         Optional<BestPlayer> highestKd = this.getPlayerWithHighest(p -> (double) p.kills / Math.max(1, p.deaths));
@@ -880,6 +828,41 @@ public class SiegeActive {
         players.sendMessage(Text.literal(String.format("Defender kills - %d", defender_kills)).formatted(colour).formatted(bold));
         players.sendMessage(Text.literal(String.format("Defender deaths - %d", defender_deaths)).formatted(colour).formatted(bold));
         players.sendMessage(Text.literal(String.format("Defender K/D - %.2f", defender_kd)).formatted(colour).formatted(bold));
+    }
+
+    private Optional<BestPlayer> getPlayerWithHighest(ToDoubleFunction<SiegePlayer> getter) {
+        return this.participants.entrySet()
+                .stream()
+                .max(Comparator.comparingDouble(e -> getter.applyAsDouble(e.getValue())))
+                .map(e -> {
+                    ServerPlayerEntity p = e.getKey().getEntity(this.world);
+
+                    if (p == null) {
+                        return null;
+                    }
+
+                    return new BestPlayer(p.getGameProfile().getName(), getter.applyAsDouble(e.getValue()));
+                });
+    }
+
+    static class SiegeSpawnResult {
+        @Nullable
+        SiegeFlag flag;
+        SiegeSpawn spawn;
+
+        public SiegeSpawnResult(@Nullable SiegeFlag flag, SiegeSpawn spawn) {
+            this.flag = flag;
+            this.spawn = spawn;
+        }
+
+        public void setFlag(SiegeFlag flag, SiegeSpawn spawn) {
+            this.flag = flag;
+            this.spawn = spawn;
+        }
+
+        public boolean isFrontLine(long time) {
+            return this.flag != null && this.flag.isFrontLine(time);
+        }
     }
 
     static class BestPlayer {

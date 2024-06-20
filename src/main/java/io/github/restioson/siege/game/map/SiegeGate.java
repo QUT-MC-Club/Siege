@@ -61,8 +61,8 @@ public class SiegeGate {
 
     public void broadcastHealth(ServerPlayerEntity initiator, SiegeActive active, ServerWorld world) {
         String msg = this.bashedOpen ?
-                String.format("%s more blocks to repair gate", this.repairedHealthThreshold - this.health) :
-                String.format("Gate health: %s", this.health);
+                String.format("%s more blocks to repair gate", this.blocksToRepair()) :
+                String.format("Gate health: %s/%s", this.health, this.maxHealth);
 
         Text text = Text.literal(msg).formatted(Formatting.DARK_GREEN);
         initiator.sendMessage(text, true);
@@ -93,6 +93,10 @@ public class SiegeGate {
 
     public float repairFraction() {
         return (float) this.health / this.repairedHealthThreshold;
+    }
+
+    public int blocksToRepair() {
+        return this.repairedHealthThreshold - this.health;
     }
 
     public boolean underAttack(long time) {

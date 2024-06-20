@@ -68,4 +68,8 @@ public final class SiegeTeams {
     public GameTeamKey getSmallestTeam() {
         return this.teams.getSmallestTeam();
     }
+
+    public static Text nameOf(GameTeam team) {
+        return Text.translatable("game.siege.team." + team.key().id());
+    }
 }

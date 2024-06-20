@@ -3,6 +3,7 @@ package io.github.restioson.siege.game.active;
 import io.github.restioson.siege.entity.SiegeKitStandEntity;
 import io.github.restioson.siege.game.SiegeSpawnLogic;
 import io.github.restioson.siege.game.SiegeTeams;
+import io.github.restioson.siege.game.active.capturing.CapturingState;
 import io.github.restioson.siege.game.map.SiegeFlag;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
@@ -92,31 +93,32 @@ public final class SiegeCaptureLogic {
         boolean recapture = this.game.config.recapture();
         boolean attackersAtFlag = !attackersPresent.isEmpty();
         boolean defendersAtFlag = !defendersPresent.isEmpty();
+        var prereqs = flag.getUnmetPrerequisites();
         CapturingState state;
 
         if (defendersAtFlag && flag.team != SiegeTeams.DEFENDERS && !recapture) {
             // Defenders _would_ capture/contest, but it's disabled
-            state = CapturingState.RECAPTURE_DISABLED;
+            state = CapturingState.recaptureDisabled();
         } else if (defendersAtFlag && attackersAtFlag) {
             // Both teams present - contested
-            state = flag.isReadyForCapture() ? CapturingState.CONTESTED : CapturingState.PREREQUISITE_REQUIRED;
+            state = prereqs.isEmpty() ? CapturingState.contested() : CapturingState.prerequisitesRequired(prereqs);
         } else if ((attackersAtFlag && flag.team != SiegeTeams.ATTACKERS) ||
                 (defendersAtFlag && flag.team != SiegeTeams.DEFENDERS)) {
             // Only one team present - capturing if prerequisites met
-            state = flag.isReadyForCapture() ? CapturingState.CAPTURING : CapturingState.PREREQUISITE_REQUIRED;
+            state = prereqs.isEmpty() ? CapturingState.capturing() : CapturingState.prerequisitesRequired(prereqs);
         } else {
             // Only owner team (or no players) present
-            state = flag.captureProgressTicks > 0 ? CapturingState.SECURING : null;
+            state = flag.captureProgressTicks > 0 ? CapturingState.securing() : null;
         }
 
         flag.capturingState = state;
 
-        if (state == CapturingState.CAPTURING) {
+        if (state == CapturingState.capturing()) {
             var team = attackersAtFlag ? SiegeTeams.ATTACKERS : SiegeTeams.DEFENDERS;
             this.tickCapturing(flag, interval, team, playersPresent);
-        } else if (state == CapturingState.SECURING) {
+        } else if (state == CapturingState.securing()) {
             this.tickSecuring(flag, interval, playersPresent);
-        } else if (state == CapturingState.CONTESTED) {
+        } else if (state == CapturingState.contested()) {
             this.tickContested(flag);
         }
 
@@ -151,8 +153,17 @@ public final class SiegeCaptureLogic {
                 player.playSound(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.NEUTRAL, 1.0F, 1.0F);
             }
 
-            var giveTime = this.game.config.capturingGiveTimeSecs();
-            var sub = giveTime > 0 ? Text.translatable("game.siege.flag.captured.extra_time", giveTime) : null;
+            Text sub = null;
+            if (this.game.config.capturingGiveTimeSecs() > 0) {
+                sub = Text.empty()
+                        .append(SiegeTeams.ATTACKERS.config().name())
+                        .append(ScreenTexts.SPACE)
+                        .append(Text.translatable("game.siege.flag.captured.extra_time.1"))
+                        .append(ScreenTexts.SPACE)
+                        .append(Text.literal(this.game.config.giveTimeFormatted()).formatted(Formatting.AQUA))
+                        .append(ScreenTexts.SPACE)
+                        .append(Text.translatable("game.siege.flag.captured.extra_time.2"));
+            }
 
             this.game.showTitle(
                     captureTeam,

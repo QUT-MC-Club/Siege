@@ -12,17 +12,21 @@
   "game.siege.villagers_vs_pillagers_recapture_enderpearl": "Siege: Villagers vs Pillagers (with Recapture & Ender Pearls)",
 
   "game.siege.siege.desc": "A castle siege game.",
-
-  "game.siege.quick.desc.1": "In this mode, capturing flags",
+  "game.siege.quick.sidebar": "Capture adds",
+  "game.siege.quick.sidebar.right.enabled": "%s",
+  "game.siege.quick.sidebar.right.disabled": "No",
+  "game.siege.quick.desc.1": "Quick mode - capturing flags",
   "game.siege.quick.desc.2": "adds time for the attackers!",
-
-  "game.siege.recapture.desc.1": "In this mode, defenders can",
+  "game.siege.recapture.desc.1": "Recapture enabled - defenders can",
   "game.siege.recapture.desc.2": "recapture previously captured",
   "game.siege.recapture.desc.3": "points.",
-
-  "game.siege.enderpearl.desc.1": "In this mode, defenders have",
-  "game.siege.enderpearl.desc.2": "ender pearls that allow them",
-  "game.siege.enderpearl.desc.3": "to teleport to points under siege.",
+  "game.siege.enderpearl.sidebar": "Warp",
+  "game.siege.enderpearl.sidebar.attacker_only": "Attackers only",
+  "game.siege.enderpearl.sidebar.defender_only": "Defenders only",
+  "game.siege.enderpearl.sidebar.both": "Both teams",
+  "game.siege.enderpearl.sidebar.neither": "❌",
+  "game.siege.enderpearl.desc.1": "Warp enabled - use your ender pearls",
+  "game.siege.enderpearl.desc.2": "to teleport to points under siege.",
 
   "game.siege.kit.kits.archer": "Archer Kit",
   "game.siege.kit.kits.archer.desc.1": "Shoot powerful arrows and",
@@ -59,8 +63,36 @@
   "game.siege.start.attacker.subtitle": "Stand at the blue flags to capture them!",
   "game.siege.start.defender.title": "Defend!",
   "game.siege.start.defender.subtitle": "Defend the blue flags!",
+
   "game.siege.flag.captured.won": "%s captured!",
   "game.siege.flag.captured.lost": "%s lost!",
-  "game.siege.flag.captured.extra_time": "Attackers now have %ss more time",
-  "game.siege.gate.under_attack": "The %s is under attack!"
+  "game.siege.flag.captured.extra_time.1": "now have an extra",
+  "game.siege.flag.captured.extra_time.2": "to win",
+  "game.siege.flag.prerequisite_required": "Cannot capture before",
+  "game.siege.flag.prerequisite_required.and": "and",
+  "game.siege.gate.under_attack": "The %s is under attack!",
+  "game.siege.gate.contested": "There are enemies outside the gate!",
+  "game.siege.gate.brace_hint.general": "Gate health: %s/%s. Brace it as a constructor by placing wood nearby!",
+  "game.siege.gate.brace_hint.constructor": "Gate health: %s/%s. Brace it by placing wood nearby!",
+  "game.siege.gate.repair_hint.general": "%s more blocks to repair gate. Repair it as a constructor by placing wood nearby!",
+  "game.siege.gate.repair_hint.constructor": "%s more blocks to repair gate. Repair it by placing wood nearby!",
+  "game.siege.gate.bash_hint": "Bash down the gate as a soldier, shieldbearer, or demolitioner!",
+  "game.siege.team.attackers": "Attackers",
+  "game.siege.team.defenders": "Defenders",
+  "game.siege.character.attackers": "Captain Gorok",
+  "game.siege.character.defenders": "Sovereign Garamantes",
+  "game.siege.dialogue.time_low.attackers.leader": "We only have one minute remaining! Push harder, all of you!",
+  "game.siege.dialogue.time_low.defenders.leader": "Time is on our side! Hold your ground just a bit longer!",
+  "game.siege.dialogue.gate_bashed.attackers.leader": "Their puny walls have been reduced to rubble. Charge!",
+  "game.siege.dialogue.gate_bashed.defenders.leader": "They're through the walls! Meet their charge - do not falter!",
+  "game.siege.dialogue.victory.attackers.attackers.leader": "I am victorious!",
+  "game.siege.dialogue.victory.attackers.defenders.leader": "It cannot be! The kingdom is lost!",
+  "game.siege.dialogue.victory.attackers.attackers.chorus": "All hail King Gorok, the Conqueror! All hail!",
+  "game.siege.dialogue.victory.attackers.defenders.chorus": "Cry, the beloved kingdom!",
+  "game.siege.dialogue.victory.defenders.attackers.leader": "This is awkward... Well, I'll be out of here then!",
+  "game.siege.dialogue.victory.defenders.defenders.leader": "Victory! Drive them into the hills!",
+  "game.siege.dialogue.victory.defenders.attackers.chorus": "Grab him!",
+  "game.siege.dialogue.victory.defenders.defenders.chorus": "The kingdom is saved! "
+
+
 }

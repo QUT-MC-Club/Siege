@@ -29,4 +29,12 @@ public record SiegeConfig(
         return (team == SiegeTeams.ATTACKERS && this.attackerEnderPearl) ||
                 (team == SiegeTeams.DEFENDERS && this.defenderEnderPearl);
     }
+
+    public String giveTimeFormatted() {
+        return String.format(
+                "%02d:%02d",
+                Math.floorDiv(this.capturingGiveTimeSecs, 60),
+                this.capturingGiveTimeSecs % 60
+        );
+    }
 }
