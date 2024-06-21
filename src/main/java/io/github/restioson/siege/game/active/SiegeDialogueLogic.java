@@ -96,7 +96,7 @@ public class SiegeDialogueLogic {
                     }
                 },
                 t -> dialogueN.incrementAndGet() < 4,
-                40,
+                30,
                 60
         );
     }

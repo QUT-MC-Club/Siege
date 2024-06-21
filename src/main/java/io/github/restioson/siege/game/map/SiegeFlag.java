@@ -264,6 +264,6 @@ public final class SiegeFlag {
      * Whether this _flag_ is under attack (not including gate)
      */
     public boolean isFlagUnderAttack() {
-        return this.capturingState.isUnderAttack();
+        return this.capturingState != null && this.capturingState.isUnderAttack();
     }
 }
