@@ -43,61 +43,15 @@ public final class SiegeSidebar {
         return -1;
     }
 
-    private static Text getTimeLeft(long ticksUntilEnd) {
-        long secondsUntilEnd = ticksUntilEnd / 20;
-
-        long minutes = secondsUntilEnd / 60;
-        long seconds = secondsUntilEnd % 60;
-
-        return Text.literal(String.format("%02d:%02d", minutes, seconds)).formatted(Formatting.AQUA, Formatting.BOLD);
-    }
-
     public void update(long time) {
         this.widget.set(content -> {
-            content.add(ScreenTexts.EMPTY);
-
-            long ticksUntilEnd = this.game.stageManager.finishTime() - time;
-            content.add(
-                    Text.literal("Time left ").formatted(Formatting.GOLD, Formatting.BOLD),
-                    getTimeLeft(ticksUntilEnd)
-            );
-
-            Text giveTimeRight;
             if (this.config.capturingGiveTimeSecs() > 0) {
-                giveTimeRight = Text.translatable(
-                        "game.siege.quick.sidebar.right.enabled",
-                        this.config.giveTimeFormatted()
-                ).formatted(Formatting.AQUA);
-            } else {
-                giveTimeRight = Text.translatable("game.siege.quick.sidebar.right.disabled")
-                        .formatted(Formatting.DARK_RED);
+                content.add(
+                        Text.translatable("game.siege.quick.sidebar").formatted(Formatting.GOLD),
+                        Text.literal(this.config.giveTimeFormatted()).formatted(Formatting.AQUA)
+                );
+                content.add(ScreenTexts.EMPTY);
             }
-
-            content.add(Text.translatable("game.siege.quick.sidebar").formatted(Formatting.GOLD), giveTimeRight);
-
-            String enderPearlKey;
-            Formatting enderPearlColor;
-            if (this.config.hasEnderPearl(SiegeTeams.ATTACKERS) && this.config.hasEnderPearl(SiegeTeams.DEFENDERS)) {
-                enderPearlKey = "both";
-                enderPearlColor = Formatting.GREEN;
-            } else if (this.config.hasEnderPearl(SiegeTeams.ATTACKERS)) {
-                enderPearlKey = "attacker_only";
-                enderPearlColor = SiegeTeams.ATTACKERS.config().chatFormatting();
-            } else if (this.config.hasEnderPearl(SiegeTeams.DEFENDERS)) {
-                enderPearlKey = "defender_only";
-                enderPearlColor = SiegeTeams.DEFENDERS.config().chatFormatting();
-            } else {
-                enderPearlKey = "neither";
-                enderPearlColor = Formatting.DARK_RED;
-            }
-
-            content.add(
-                    Text.translatable("game.siege.enderpearl.sidebar").formatted(Formatting.GOLD),
-                    Text.translatable(String.format("game.siege.enderpearl.sidebar.%s", enderPearlKey))
-                            .formatted(enderPearlColor)
-            );
-
-            content.add(ScreenTexts.EMPTY);
 
             List<SiegeFlag> flags = new ArrayList<>(this.game.map.flags);
             flags.sort(Comparator.comparingInt(flag -> getSortIndex(flag, time)));
@@ -134,7 +88,7 @@ public final class SiegeSidebar {
                 int percent = (int) Math.floor(flag.captureFraction() * 100);
 
                 Text line;
-                boolean underAttack = flag.capturingState != null && flag.capturingState.isUnderAttack();
+                boolean underAttack = flag.capturingState != null && flag.isFlagUnderAttack();
                 if (underAttack || percent > 0) {
                     line = Text.literal("(" + percent + "%) ").append(flagName);
                 } else if (flag.gateUnderAttack(time)) {

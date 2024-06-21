@@ -5,7 +5,6 @@ import io.github.restioson.siege.game.active.SiegePersonalResource;
 import io.github.restioson.siege.game.active.SiegePlayer;
 import io.github.restioson.siege.item.SiegeHorn;
 import net.minecraft.enchantment.EnchantmentLevelEntry;
-import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -39,7 +38,14 @@ public final class SiegeKit {
                     new KitEquipment(Items.IRON_SWORD, EquipmentSlot.MAINHAND),
                     new KitEquipment(Items.STONE_AXE, EquipmentSlot.OFFHAND)
             ),
-            List.of(),
+            List.of(
+                    new KitResource(
+                            Items.GOLDEN_APPLE.getName(),
+                            Items.GOLDEN_APPLE,
+                            SiegePersonalResource.GAPPLE,
+                            2
+                    )
+            ),
             List.of()
     );
     public static final SiegeKit SHIELD_BEARER = new SiegeKit(
@@ -50,7 +56,8 @@ public final class SiegeKit {
                     new KitEquipment(Items.IRON_CHESTPLATE),
                     new KitEquipment(Items.IRON_LEGGINGS),
                     new KitEquipment(Items.LEATHER_BOOTS),
-                    new KitEquipment(Items.STONE_SWORD, EquipmentSlot.MAINHAND),
+                    new KitEquipment(Items.IRON_SWORD, EquipmentSlot.MAINHAND),
+                    new KitEquipment(Items.WOODEN_AXE, EquipmentSlot.MAINHAND),
                     new KitEquipable() {
                         @Override
                         public EquipmentSlot getArmorStandSlot() {
@@ -80,57 +87,40 @@ public final class SiegeKit {
                     new KitEquipment(Items.LEATHER_CHESTPLATE),
                     new KitEquipment(Items.LEATHER_LEGGINGS),
                     new KitEquipment(Items.LEATHER_BOOTS),
-                    new KitEquipment(Items.WOODEN_SWORD, EquipmentSlot.OFFHAND),
-                    new KitEquipment(
-                            Items.BOW,
-                            Items.BOW,
-                            List.of(
-                                    new EnchantmentLevelEntry(Enchantments.POWER, 1)
-                            ),
-                            EquipmentSlot.MAINHAND,
-                            null
-                    )
+                    new KitEquipment(Items.STONE_SWORD, EquipmentSlot.OFFHAND),
+                    new KitEquipment(Items.BOW, EquipmentSlot.MAINHAND),
+                    new KitEquipment(Items.CROSSBOW)
             ),
             List.of(new KitResource(
                     Text.translatable("game.siege.kit.items.arrows"),
                     Items.ARROW,
                     SiegePersonalResource.ARROWS,
-                    24
+                    32
             )),
             List.of(kitEffect(StatusEffects.SPEED))
     );
-    public static final SiegeKit CONSTRUCTOR = new SiegeKit(
-            "constructor",
-            Items.OAK_PLANKS,
+    public static final SiegeKit ENGINEER = new SiegeKit(
+            "engineer",
+            Items.IRON_SHOVEL,
             List.of(
                     new KitEquipment(Items.LEATHER_HELMET),
                     new KitEquipment(Items.IRON_CHESTPLATE),
                     new KitEquipment(Items.LEATHER_LEGGINGS),
                     new KitEquipment(Items.LEATHER_BOOTS),
-                    new KitEquipment(Items.STONE_SWORD, EquipmentSlot.MAINHAND),
+                    new KitEquipment(Items.STONE_SWORD),
                     new KitEquipment(Items.WOODEN_AXE)
             ),
-            List.of(KitResource.PLANKS),
-            List.of()
-    );
-    public static final SiegeKit DEMOLITIONER = new SiegeKit(
-            "demolitioner",
-            Items.TNT,
             List.of(
-                    new KitEquipment(Items.LEATHER_HELMET),
-                    new KitEquipment(Items.LEATHER_CHESTPLATE),
-                    new KitEquipment(Items.LEATHER_LEGGINGS),
-                    new KitEquipment(Items.LEATHER_BOOTS),
-                    new KitEquipment(Items.WOODEN_SWORD, EquipmentSlot.MAINHAND)
+                    KitResource.PLANKS,
+                    new KitResource(
+                            Text.translatable("game.siege.kit.items.tnt"),
+                            Items.TNT,
+                            SiegePersonalResource.TNT,
+                            EquipmentSlot.MAINHAND,
+                            2
+                    )
             ),
-            List.of(new KitResource(
-                    Text.translatable("game.siege.kit.items.tnt"),
-                    Items.TNT,
-                    SiegePersonalResource.TNT,
-                    EquipmentSlot.OFFHAND,
-                    2
-            )),
-            List.of(kitEffect(StatusEffects.GLOWING))
+            List.of()
     );
     public static final SiegeKit CAPTAIN = new SiegeKit(
             "captain",
@@ -228,6 +218,10 @@ public final class SiegeKit {
         }
 
         return text;
+    }
+
+    public static ItemStack kitSelectItemStack() {
+        return KitEquipment.KIT_SELECT.buildItemStack(null);
     }
 
     public void equipArmourStand(SiegeKitStandEntity stand) {
@@ -406,7 +400,7 @@ public final class SiegeKit {
         @SuppressWarnings("Convert2Lambda") // That would be hard to understand
         public final static KitEquipable KIT_SELECT = new KitEquipable() {
             @Override
-            public ItemStack buildItemStack(GameTeam team) {
+            public ItemStack buildItemStack(@Nullable GameTeam team) {
                 return ItemStackBuilder.of(KIT_SELECT_ITEM)
                         .setCount(1)
                         .setName(Text.literal("Kit Select").setStyle(NON_ITALIC_STYLE))

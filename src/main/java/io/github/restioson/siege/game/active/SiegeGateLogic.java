@@ -211,7 +211,7 @@ public class SiegeGateLogic {
                 if (participant.team == gate.flag.team) {
                     ownerTeamPresent.add(player);
 
-                    if (participant.kit == SiegeKit.CONSTRUCTOR) {
+                    if (participant.kit == SiegeKit.ENGINEER) {
                         ownerTeamPresent.add(player);
                     }
 
@@ -229,7 +229,7 @@ public class SiegeGateLogic {
 
             if (gate.underAttack(time) || gate.health != gate.maxHealth) {
                 if (time - participant.timeOfLastBrace > 5 * 20) {
-                    var kit = participant.kit == SiegeKit.CONSTRUCTOR ? "constructor" : "general";
+                    var kit = participant.kit == SiegeKit.ENGINEER ? "engineer" : "general";
                     if (gate.bashedOpen) {
                         var key = String.format("game.siege.gate.repair_hint.%s", kit);
                         player.sendMessage(
@@ -247,12 +247,12 @@ public class SiegeGateLogic {
             }
         }
 
-        if (!gate.underAttack(time)) {
-            enemyTeamPresent.sendActionBar(Text.translatable("game.siege.gate.bash_hint").formatted(Formatting.GOLD));
-        }
-
         if (gate.bashedOpen) {
+            enemyTeamPresent.sendActionBar(Text.translatable("game.siege.gate.capture_hint")
+                    .formatted(Formatting.GOLD));
             return;
+        } else if (!gate.underAttack(time)) {
+            enemyTeamPresent.sendActionBar(Text.translatable("game.siege.gate.bash_hint").formatted(Formatting.GOLD));
         }
 
         boolean shouldOpen = !ownerTeamPresent.isEmpty() && enemyTeamPresent.isEmpty();

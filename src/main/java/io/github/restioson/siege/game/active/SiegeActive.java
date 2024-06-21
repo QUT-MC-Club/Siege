@@ -13,7 +13,10 @@ import io.github.restioson.siege.item.SiegeItems;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import net.minecraft.block.*;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.BlockWithEntity;
+import net.minecraft.block.DoorBlock;
+import net.minecraft.block.EnderChestBlock;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
@@ -86,22 +89,22 @@ public class SiegeActive {
     public final Object2ObjectMap<PlayerRef, SiegePlayer> participants;
     public final Map<PlayerRef, WarpingPlayer> warpingPlayers;
 
-    private long timeLimitSecs;
     final SiegeStageManager stageManager;
-
     final SiegeSidebar sidebar;
-
     final SiegeCaptureLogic captureLogic;
     final SiegeGateLogic gateLogic;
-    public static int TNT_GATE_DAMAGE = 10;
     public SiegeMap map;
+
+    public static int TNT_GATE_DAMAGE = 10;
 
     private final static List<Item> PLANKS = List.of(
             SiegeKit.KitResource.PLANKS.attackerItem(),
             SiegeKit.KitResource.PLANKS.defenderItem()
     );
 
-    private SiegeActive(ServerWorld world, GameActivity activity, SiegeMap map, SiegeConfig config, GlobalWidgets widgets, Multimap<GameTeamKey, ServerPlayerEntity> players) {
+    private SiegeActive(ServerWorld world, GameActivity activity, SiegeMap map, SiegeConfig config,
+                        GlobalWidgets widgets, Multimap<GameTeamKey, ServerPlayerEntity> players,
+                        Map<PlayerRef, SiegeKit> kitSelections) {
         this.world = world;
         this.gameSpace = activity.getGameSpace();
         this.config = config;
@@ -113,25 +116,26 @@ public class SiegeActive {
 
         for (GameTeamKey key : players.keySet()) {
             for (ServerPlayerEntity player : players.get(key)) {
-                this.participants.put(PlayerRef.of(player), new SiegePlayer(player.getRandom(), SiegeTeams.byKey(key)));
+                var ref = PlayerRef.of(player);
+                this.participants.put(ref, new SiegePlayer(SiegeTeams.byKey(key), kitSelections.get(ref)));
                 this.teams.addPlayer(player, key);
             }
         }
 
-        this.timeLimitSecs = config.timeLimitMins() * 60L;
         this.stageManager = new SiegeStageManager(this);
-
         this.sidebar = new SiegeSidebar(this, widgets);
 
         this.captureLogic = new SiegeCaptureLogic(this);
         this.gateLogic = new SiegeGateLogic(this);
     }
 
-    public static void open(ServerWorld world, GameSpace gameSpace, SiegeMap map, SiegeConfig config, Multimap<GameTeamKey, ServerPlayerEntity> players) {
+    public static void open(ServerWorld world, GameSpace gameSpace, SiegeMap map, SiegeConfig config,
+                            Multimap<GameTeamKey, ServerPlayerEntity> players,
+                            Map<PlayerRef, SiegeKit> kitSelections) {
         gameSpace.setActivity(activity -> {
             GlobalWidgets widgets = GlobalWidgets.addTo(activity);
 
-            SiegeActive active = new SiegeActive(world, activity, map, config, widgets, players);
+            SiegeActive active = new SiegeActive(world, activity, map, config, widgets, players, kitSelections);
 
             activity.deny(GameRuleType.CRAFTING);
             activity.deny(GameRuleType.PORTALS);
@@ -317,7 +321,6 @@ public class SiegeActive {
             this.gameSpace.getPlayers().sendMessage(hint);
         }
 
-
         this.stageManager.onOpen(this.world.getTime());
     }
 
@@ -325,6 +328,8 @@ public class SiegeActive {
         for (SiegeFlag flag : this.map.flags) {
             flag.closeCaptureBar();
         }
+
+        this.stageManager.closeTimerBar();
     }
 
     private PlayerOfferResult offerPlayer(PlayerOffer offer) {
@@ -340,7 +345,7 @@ public class SiegeActive {
 
     private void allocateParticipant(ServerPlayerEntity player) {
         GameTeamKey smallestTeam = this.teams.getSmallestTeam();
-        SiegePlayer participant = new SiegePlayer(player.getRandom(), SiegeTeams.byKey(smallestTeam));
+        SiegePlayer participant = new SiegePlayer(SiegeTeams.byKey(smallestTeam), null);
         this.participants.put(PlayerRef.of(player), participant);
         this.teams.addPlayer(player, smallestTeam);
     }
@@ -368,9 +373,7 @@ public class SiegeActive {
             return ActionResult.FAIL;
         }
 
-        Block block = blockState.getBlock();
-
-        if (participant.kit == SiegeKit.CONSTRUCTOR && block != Blocks.TNT) {
+        if (participant.kit == SiegeKit.ENGINEER) {
             // TNT may be placed anyway
             for (BlockBounds noBuildRegion : this.map.noBuildRegions) {
                 if (noBuildRegion.contains(blockPos)) {
@@ -383,8 +386,6 @@ public class SiegeActive {
             }
 
             return this.gateLogic.maybeBraceGate(blockPos, participant, player, ctx, this.world.getTime());
-        } else if (participant.kit == SiegeKit.DEMOLITIONER && block == Blocks.TNT) {
-            return ActionResult.PASS;
         } else {
             return ActionResult.FAIL;
         }
@@ -468,7 +469,7 @@ public class SiegeActive {
 
                 return new TypedActionResult<>(ActionResult.FAIL, stack);
             } else if (item == SiegeKit.KIT_SELECT_ITEM) {
-                SimpleGui ui = WarpSelectionUi.createKitWarp(player, participant, selectedKit -> {
+                SimpleGui ui = WarpSelectionUi.createKitSelect(player, participant.kit, selectedKit -> {
                     long time = player.getWorld().getTime();
                     var spawn = this.getSpawnFor(player, time);
 
@@ -607,6 +608,7 @@ public class SiegeActive {
             spawn = this.getSpawnFor(player, this.world.getTime()).spawn;
         }
 
+        this.stageManager.timerBar.addPlayer(player);
         SiegeSpawnLogic.resetPlayer(player, GameMode.SURVIVAL);
         SiegeSpawnLogic.spawnPlayer(player, spawn, this.world);
 
@@ -654,19 +656,19 @@ public class SiegeActive {
         long time = this.world.getTime();
 
         SiegeStageManager.TickResult result = this.stageManager.tick(time);
-        if (result != SiegeStageManager.TickResult.CONTINUE_TICK) {
+        if (!result.continueGame()) {
             switch (result) {
                 case ATTACKERS_WIN -> this.broadcastWin(SiegeTeams.ATTACKERS);
                 case DEFENDERS_WIN -> this.broadcastWin(SiegeTeams.DEFENDERS);
                 case GAME_CLOSED -> this.gameSpace.close(GameCloseReason.FINISHED);
             }
+
             return;
         }
 
         if (time % 20 == 0) {
             this.captureLogic.tick(this.world, 20);
             this.gateLogic.tick();
-
             this.sidebar.update(time);
             this.tickResources(time);
         }
@@ -747,14 +749,6 @@ public class SiegeActive {
                 }
             });
         }
-    }
-
-    public void addTime(long time) {
-        this.timeLimitSecs += time;
-    }
-
-    public long timeLimitSecs() {
-        return this.timeLimitSecs;
     }
 
     private void broadcastWin(GameTeam winningTeam) {

@@ -228,6 +228,16 @@ public class SiegeMapLoader {
             }
         });
 
+        for (var flag : map.flags) {
+            if (flag.attackerRespawn == null) {
+                throw new GameOpenException(Text.literal("Flag %s missing respawn for attackers!".formatted(flag.name)));
+            }
+
+            if (flag.defenderRespawn == null) {
+                throw new GameOpenException(Text.literal("Flag %s missing respawn for defenders!".formatted(flag.name)));
+            }
+        }
+
         map.noBuildRegions = metadata.getRegionBounds("no_build").collect(Collectors.toList());
 
         map.gates = metadata.getRegions("gate_open")
@@ -323,9 +333,9 @@ public class SiegeMapLoader {
             case "bow" -> SiegeKit.ARCHER;
             case "sword" -> SiegeKit.SOLDIER;
             case "shield" -> SiegeKit.SHIELD_BEARER;
-            case "builder" -> SiegeKit.CONSTRUCTOR;
-            case "demolitioner" -> SiegeKit.DEMOLITIONER;
+            case "builder" -> SiegeKit.ENGINEER;
             case "captain" -> SiegeKit.CAPTAIN;
+            case "demolitioner" -> SiegeKit.ENGINEER; // TODO HACK: remove later
             default -> {
                 Siege.LOGGER.error("Unknown kit \"" + kitName + "\"");
                 throw new GameOpenException(Text.literal("unknown kit"));

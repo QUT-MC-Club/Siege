@@ -147,7 +147,7 @@ public final class SiegeCaptureLogic {
 
             this.broadcastCaptured(flag, captureTeam);
             flag.setTeamBlocks(this.game.world, captureTeam);
-            this.game.addTime(this.game.config.capturingGiveTimeSecs());
+            this.game.stageManager.addTime(this.game.config.capturingGiveTimeSecs());
 
             for (ServerPlayerEntity player : capturingPlayers) {
                 player.playSound(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.NEUTRAL, 1.0F, 1.0F);

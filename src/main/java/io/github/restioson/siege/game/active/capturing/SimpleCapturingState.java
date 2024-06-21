@@ -35,11 +35,12 @@ enum SimpleCapturingState implements CapturingState {
     }
 
     @Override
-    public @NotNull BossBar.Color getCaptureBarColorForTeam(GameTeam team) {
-        return switch (this.blink) {
-            case OWNING_TEAM_TO_GREY -> BossBar.Color.WHITE;
-            case OWNING_TEAM_TO_CAPTURING -> team == SiegeTeams.ATTACKERS ? BossBar.Color.RED : BossBar.Color.BLUE;
-            case NO_BLINK -> BossBar.Color.RED;
+    public @NotNull BossBar.Color getCaptureBarColorForTeam(GameTeam flagOwner) {
+        return switch (this) {
+            case CAPTURING -> flagOwner == SiegeTeams.DEFENDERS ? BossBar.Color.RED : BossBar.Color.BLUE;
+            case CONTESTED -> BossBar.Color.WHITE;
+            case SECURING -> BossBar.Color.GREEN;
+            case RECAPTURE_DISABLED -> BossBar.Color.YELLOW;
         };
     }
 

@@ -164,7 +164,7 @@ public final class SiegeFlag {
             this.captureBar.setVisible(true);
             this.captureBar.setName(this.capturingState.getTitle());
             this.captureBar.setPercent(this.captureFraction());
-            this.captureBar.setColor(this.capturingState.getCaptureBarColorForTeam(this.team));
+            this.captureBar.setColor(this.capturingState.getCaptureBarColorForTeam(SiegeTeams.opposite(this.team)));
         } else {
             this.captureBar.setVisible(false);
         }
@@ -258,5 +258,12 @@ public final class SiegeFlag {
     public void playSound(ServerWorld world, SoundEvent event, float pitch) {
         var centre = this.bounds.center();
         world.playSound(null, centre.x, centre.y, centre.z, event, SoundCategory.NEUTRAL, 2.0f, pitch);
+    }
+
+    /**
+     * Whether this _flag_ is under attack (not including gate)
+     */
+    public boolean isFlagUnderAttack() {
+        return this.capturingState.isUnderAttack();
     }
 }

@@ -9,9 +9,6 @@
       "translate": "game.siege.siege.desc"
     },
     {
-      "translate": "game.siege.siege.desc"
-    },
-    {
       "translate": "game.siege.quick.desc.1"
     }
   ],
@@ -25,5 +22,5 @@
     "threshold": 4
   },
   "capturing_give_time_secs": 120,
-  "time_limit_mins": 5
+  "time_limit_mins": 6
 }

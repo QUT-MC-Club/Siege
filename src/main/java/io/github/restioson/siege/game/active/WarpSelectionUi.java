@@ -10,6 +10,7 @@ import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.plasmid.game.common.team.GameTeam;
 import xyz.nucleoid.plasmid.shop.ShopEntry;
 import xyz.nucleoid.plasmid.util.ColoredBlocks;
@@ -31,19 +32,19 @@ public final class WarpSelectionUi extends SimpleGui {
         return new WarpSelectionUi(player, selectors, Text.translatable("game.siege.warp.flag"));
     }
 
-    public static WarpSelectionUi createKitWarp(ServerPlayerEntity player, SiegePlayer participant,
-                                                Consumer<SiegeKit> select) {
-        var selectors = kitSelectors(participant, select);
+    public static WarpSelectionUi createKitSelect(ServerPlayerEntity player, @Nullable SiegeKit selectedKit,
+                                                  Consumer<SiegeKit> select) {
+        var selectors = kitSelectors(selectedKit, select);
         return new WarpSelectionUi(player, selectors, Text.translatable("game.siege.warp.kit"));
     }
 
-    private static List<GuiElementInterface> kitSelectors(SiegePlayer participant, Consumer<SiegeKit> select) {
+    private static List<GuiElementInterface> kitSelectors(@Nullable SiegeKit selectedKit, Consumer<SiegeKit> select) {
         List<GuiElementInterface> selectors = new ArrayList<>();
 
         for (SiegeKit kit : SiegeKit.KITS) {
             ItemStack icon = kit.icon.getDefaultStack();
 
-            if (participant.kit == kit) {
+            if (selectedKit == kit) {
                 icon.addEnchantment(null, 0);
             }
 

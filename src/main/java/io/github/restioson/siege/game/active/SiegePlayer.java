@@ -4,7 +4,6 @@ import io.github.restioson.siege.game.SiegeKit;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.random.Random;
 import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.plasmid.game.common.team.GameTeam;
 
@@ -27,9 +26,9 @@ public class SiegePlayer {
     public int captures;
     public int secures;
 
-    public SiegePlayer(Random random, GameTeam team) {
+    public SiegePlayer(GameTeam team, @Nullable SiegeKit kit) {
         this.team = team;
-        this.kit = SiegeKit.KITS.get(random.nextInt(SiegeKit.KITS.size()));
+        this.kit = kit != null ? kit : SiegeKit.SOLDIER;
 
         for (var resource : SiegePersonalResource.values()) {
             this.resources.put(resource, resource.max);

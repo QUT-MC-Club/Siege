@@ -32,6 +32,6 @@
   },
   "defender_ender_pearl": true,
   "attacker_ender_pearl": true,
-  "capturing_give_time_secs": 90,
-  "time_limit_mins": 5
+  "capturing_give_time_secs": 120,
+  "time_limit_mins": 6
 }
