@@ -94,8 +94,9 @@ public class SiegeStageManager {
     }
 
     private boolean testOvertime(long time) {
-        return time >= this.finishTime &&
-                this.game.map.flags.stream()
+        return this.game.config.capturingGiveTimeSecs() > 0
+                && time >= this.finishTime
+                && this.game.map.flags.stream()
                         .anyMatch(flag -> flag.captureProgressTicks > 0 || flag.isFlagUnderAttack());
     }
 
