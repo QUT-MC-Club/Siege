@@ -5,7 +5,7 @@ public enum SiegePersonalResource {
     ARROWS(64, 2),
     TNT(4, 30),
     FLARES(16, 4),
-    GAPPLE(4, 10);
+    GAPPLE(2, 30);
 
     public final int max;
     public final int refreshSecs;

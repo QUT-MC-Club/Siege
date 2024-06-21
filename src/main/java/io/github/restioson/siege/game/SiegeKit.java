@@ -43,7 +43,7 @@ public final class SiegeKit {
                             Items.GOLDEN_APPLE.getName(),
                             Items.GOLDEN_APPLE,
                             SiegePersonalResource.GAPPLE,
-                            2
+                            1
                     )
             ),
             List.of()
