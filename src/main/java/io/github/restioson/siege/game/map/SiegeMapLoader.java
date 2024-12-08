@@ -20,8 +20,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.BiomeKeys;
 import org.jetbrains.annotations.Nullable;
 import xyz.nucleoid.map_templates.*;
-import xyz.nucleoid.plasmid.game.GameOpenException;
-import xyz.nucleoid.plasmid.game.common.team.GameTeam;
+import xyz.nucleoid.plasmid.api.game.GameOpenException;
+import xyz.nucleoid.plasmid.api.game.common.team.GameTeam;
 
 import java.io.IOException;
 import java.net.URL;
@@ -47,7 +47,7 @@ public class SiegeMapLoader {
                         id.getNamespace(),
                         id.getPath()
                 );
-                template = MapTemplateSerializer.loadFrom(new URL(uri).openStream());
+                template = MapTemplateSerializer.loadFrom(new URL(uri).openStream(), server.getRegistryManager());
             } else {
                 Siege.LOGGER.info("Loading map from resources");
                 template = MapTemplateSerializer.loadFromResource(server, config.templateId());
@@ -63,7 +63,7 @@ public class SiegeMapLoader {
         NbtCompound mapData = metadata.getData();
         String biomeId = mapData.getString("biome");
         if (!Strings.isNullOrEmpty(biomeId)) {
-            template.setBiome(RegistryKey.of(RegistryKeys.BIOME, new Identifier(biomeId)));
+            template.setBiome(RegistryKey.of(RegistryKeys.BIOME, Identifier.of(biomeId)));
         } else {
             template.setBiome(BiomeKeys.PLAINS);
         }
@@ -149,7 +149,7 @@ public class SiegeMapLoader {
 
             if (data.contains("icon")) {
                 String icon = data.getString("icon");
-                flag.icon = new ItemStack(Registries.ITEM.get(new Identifier(icon)));
+                flag.icon = new ItemStack(Registries.ITEM.get(Identifier.of(icon)));
             }
 
             flags.put(id, flag);

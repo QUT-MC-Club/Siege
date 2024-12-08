@@ -6,16 +6,20 @@ import eu.pb4.polymer.core.api.item.PolymerItem;
 import io.github.restioson.siege.Siege;
 import io.github.restioson.siege.game.active.SiegeActive;
 import io.github.restioson.siege.game.active.SiegePlayer;
-import net.minecraft.client.item.TooltipContext;
 import net.minecraft.entity.AreaEffectCloudEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
+import net.minecraft.item.tooltip.TooltipType;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.particle.EntityEffectParticleEffect;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.InstrumentTags;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -23,52 +27,43 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.stat.Stats;
 import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
+import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 import net.minecraft.world.event.GameEvent;
 import org.jetbrains.annotations.Nullable;
+import xyz.nucleoid.packettweaker.PacketContext;
+import xyz.nucleoid.stimuli.event.EventResult;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
-
-import static eu.pb4.polymer.core.api.item.PolymerItemUtils.NON_ITALIC_STYLE;
 
 public class SiegeHorn extends GoatHornItem implements PolymerItem {
     private static final int COOLDOWN_TICKS = 30 * 20;
     private static final int SOUND_RADIUS = 64;
     private static final int EFFECT_RADIUS = 15;
-    private static final String HORN_DATA_KEY = "siege_horn_data";
-    private static final Codec<StatusEffectInstance> HORN_DATA_CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Codec.INT.fieldOf("duration").forGetter(StatusEffectInstance::getDuration),
-            Registries.STATUS_EFFECT.getCodec().fieldOf("effect").forGetter(StatusEffectInstance::getEffectType),
-            Codec.INT.fieldOf("amplifier").forGetter(StatusEffectInstance::getAmplifier)
-    ).apply(instance, (duration, effect, amplifier) -> new StatusEffectInstance(effect, duration, amplifier)));
-
     public SiegeHorn(Settings settings) {
-        super(settings, InstrumentTags.GOAT_HORNS);
+        super(InstrumentTags.GOAT_HORNS, settings);
     }
 
-    public static ItemStack getStack(RegistryKey<Instrument> instrument, Stream<StatusEffectInstance> effects) {
-        ItemStack stack = SiegeHorn.getStackForInstrument(SiegeItems.HORN, Registries.INSTRUMENT.entryOf(instrument));
+    public static ItemStack getStack(RegistryWrapper.WrapperLookup lookup, RegistryKey<Instrument> instrument, List<StatusEffectInstance> effects) {
+        ItemStack stack = SiegeHorn.getStackForInstrument(SiegeItems.HORN, lookup.getOrThrow(RegistryKeys.INSTRUMENT).getOrThrow(instrument));
 
-        NbtList hornData = new NbtList();
-        effects.map(effect -> HORN_DATA_CODEC.encodeStart(NbtOps.INSTANCE, effect)).map(res -> res.getOrThrow(false, err -> Siege.LOGGER.error("Failed to write horn data: {}", err))).forEach(hornData::add);
-        stack.getOrCreateNbt().put(HORN_DATA_KEY, hornData);
+        stack.set(SiegeItems.HORN_DATA, effects);
 
         return stack;
     }
 
-    public static TypedActionResult<ItemStack> onUse(SiegeActive active, ServerPlayerEntity userPlayer, SiegePlayer user, ItemStack stack, Hand hand) {
+    public static ActionResult onUse(SiegeActive active, ServerPlayerEntity userPlayer, SiegePlayer user, ItemStack stack, Hand hand) {
         var result = stack.use(active.world, userPlayer, hand);
 
-        if (!result.getResult().isAccepted()) {
+        if (!result.isAccepted()) {
             return result; // Fail early
         }
 
-        for (var nbt : stack.getOrCreateNbt().getList(HORN_DATA_KEY, NbtElement.COMPOUND_TYPE)) {
-            var effect = HORN_DATA_CODEC.decode(NbtOps.INSTANCE, nbt).getOrThrow(false, err -> Siege.LOGGER.error("Failed to load horn data: {}", err)).getFirst();
-
+        for (var effect : stack.getOrDefault(SiegeItems.HORN_DATA, List.<StatusEffectInstance>of())) {
             for (var entry : active.participants.entrySet()) {
                 var participant = entry.getValue();
                 var player = entry.getKey().getEntity(active.world);
@@ -87,14 +82,13 @@ public class SiegeHorn extends GoatHornItem implements PolymerItem {
                 userPlayer.getY(),
                 userPlayer.getZ()
         );
-        aoeCloud.setColor(user.team.config().fireworkColor().getRgb());
+        aoeCloud.setParticleType(EntityEffectParticleEffect.create(ParticleTypes.ENTITY_EFFECT, user.team.config().fireworkColor().getRgb()));
         aoeCloud.setRadius(EFFECT_RADIUS);
         aoeCloud.setDuration(1);
         active.world.spawnEntity(aoeCloud);
 
         var cooldownMgr = userPlayer.getItemCooldownManager();
-        cooldownMgr.set(SiegeItems.HORN, COOLDOWN_TICKS);
-        cooldownMgr.set(((SiegeHorn) stack.getItem()).getPolymerItem(stack, userPlayer), COOLDOWN_TICKS);
+        cooldownMgr.set(stack, COOLDOWN_TICKS);
 
         return result;
     }
@@ -109,37 +103,27 @@ public class SiegeHorn extends GoatHornItem implements PolymerItem {
 
     // TODO HACK: copied from vanilla to override playSound
     @Override
-    public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
+    public ActionResult use(World world, PlayerEntity user, Hand hand) {
         ItemStack itemStack = user.getStackInHand(hand);
-        Optional<? extends RegistryEntry<Instrument>> optional = this.getInstrument(itemStack);
+        Optional<? extends RegistryEntry<Instrument>> optional = this.getInstrument(itemStack, user.getRegistryManager());
         if (optional.isPresent()) {
             Instrument instrument = (Instrument) ((RegistryEntry<?>) optional.get()).value();
             user.setCurrentHand(hand);
             playSound(world, user, instrument);
             user.incrementStat(Stats.USED.getOrCreateStat(this));
-            return TypedActionResult.consume(itemStack);
+            return ActionResult.CONSUME;
         } else {
-            return TypedActionResult.fail(itemStack);
+            return ActionResult.FAIL;
         }
     }
 
     @Override
-    public ItemStack getPolymerItemStack(ItemStack itemStack, TooltipContext context, @Nullable ServerPlayerEntity player) {
-        var name = Text.translatable("item.siege.captains_horn").setStyle(NON_ITALIC_STYLE);
-
-        var stack = GoatHornItem
-                .getStackForInstrument(
-                        Items.GOAT_HORN,
-                        // This cast is fine since SiegeHorn is a subclass of GoatHornItem
-                        ((GoatHornItem) itemStack.getItem()).getInstrument(itemStack).orElseThrow()
-                )
-                .setCustomName(name);
-        stack.addEnchantment(null, 1);
-        return stack;
+    public @Nullable Identifier getPolymerItemModel(ItemStack stack, PacketContext context) {
+        return null;
     }
 
     @Override
-    public Item getPolymerItem(ItemStack itemStack, @Nullable ServerPlayerEntity player) {
+    public Item getPolymerItem(ItemStack itemStack, PacketContext context) {
         return Items.GOAT_HORN;
     }
 }

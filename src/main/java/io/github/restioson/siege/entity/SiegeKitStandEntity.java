@@ -17,7 +17,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import org.jetbrains.annotations.Nullable;
-import xyz.nucleoid.plasmid.game.common.team.GameTeam;
+import xyz.nucleoid.plasmid.api.game.common.team.GameTeam;
 
 public final class SiegeKitStandEntity extends ArmorStandEntity {
     @Nullable
@@ -72,13 +72,13 @@ public final class SiegeKitStandEntity extends ArmorStandEntity {
         }
 
         var cooldownMgr = player.getItemCooldownManager();
-        if (cooldownMgr.isCoolingDown(SiegeKit.KIT_SELECT_ITEM)) {
+        if (cooldownMgr.isCoolingDown(SiegeKit.KIT_SELECT_ITEM.getDefaultStack())) {
             player.sendMessage(Text.translatable("game.siege.kit.cooldown").formatted(Formatting.RED), true);
             return ActionResult.FAIL;
         }
 
         this.kit.equipPlayer(player, participant, this.game.config, player.getWorld().getTime());
-        cooldownMgr.set(SiegeKit.KIT_SELECT_ITEM, SiegeKit.KIT_SWAP_COOLDOWN);
+        cooldownMgr.set(SiegeKit.KIT_SELECT_ITEM.getDefaultStack(), SiegeKit.KIT_SWAP_COOLDOWN);
 
         return ActionResult.SUCCESS;
     }

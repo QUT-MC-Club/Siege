@@ -1,6 +1,8 @@
 package io.github.restioson.siege.game.active;
 
+import eu.pb4.sgui.api.GuiHelpers;
 import eu.pb4.sgui.api.elements.GuiElementInterface;
+import eu.pb4.sgui.api.gui.GuiInterface;
 import eu.pb4.sgui.api.gui.SimpleGui;
 import io.github.restioson.siege.game.SiegeKit;
 import io.github.restioson.siege.game.map.SiegeFlag;
@@ -11,19 +13,22 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
-import xyz.nucleoid.plasmid.game.common.team.GameTeam;
-import xyz.nucleoid.plasmid.shop.ShopEntry;
-import xyz.nucleoid.plasmid.util.ColoredBlocks;
+import xyz.nucleoid.plasmid.api.game.common.team.GameTeam;
+import xyz.nucleoid.plasmid.api.shop.ShopEntry;
+import xyz.nucleoid.plasmid.api.util.ColoredBlocks;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
 public final class WarpSelectionUi extends SimpleGui {
+    private final GuiInterface previousUi;
+
     private WarpSelectionUi(ServerPlayerEntity player, List<GuiElementInterface> selectors, Text title) {
         super(ScreenHandlerType.GENERIC_9X3, player, false);
         this.setTitle(title);
         selectors.forEach(this::addSlot);
+        this.previousUi = GuiHelpers.getCurrentGui(player);
     }
 
     public static WarpSelectionUi createFlagWarp(ServerPlayerEntity player, SiegeMap map, GameTeam team,
@@ -53,7 +58,6 @@ public final class WarpSelectionUi extends SimpleGui {
                     .noCost()
                     .onBuy(p -> {
                         select.accept(kit);
-                        p.closeHandledScreen();
                     });
 
             for (var desc : kit.getDescription()) {
@@ -96,5 +100,13 @@ public final class WarpSelectionUi extends SimpleGui {
         }
 
         return selectors;
+    }
+
+    @Override
+    public void onClose() {
+        super.onClose();
+        if (this.previousUi != null) {
+            this.previousUi.open();
+        }
     }
 }

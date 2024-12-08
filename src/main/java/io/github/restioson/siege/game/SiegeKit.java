@@ -4,6 +4,8 @@ import io.github.restioson.siege.entity.SiegeKitStandEntity;
 import io.github.restioson.siege.game.active.SiegePersonalResource;
 import io.github.restioson.siege.game.active.SiegePlayer;
 import io.github.restioson.siege.item.SiegeHorn;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.FireworkExplosionComponent;
 import net.minecraft.enchantment.EnchantmentLevelEntry;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.effect.StatusEffect;
@@ -11,18 +13,20 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.*;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.Nullable;
-import xyz.nucleoid.plasmid.game.common.team.GameTeam;
-import xyz.nucleoid.plasmid.util.ItemStackBuilder;
+import xyz.nucleoid.plasmid.api.game.common.team.GameTeam;
+import xyz.nucleoid.plasmid.api.util.ItemStackBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
-
-import static eu.pb4.polymer.core.api.item.PolymerItemUtils.NON_ITALIC_STYLE;
 
 public final class SiegeKit {
     public static final int KIT_SWAP_COOLDOWN = 10 * 20;
@@ -65,14 +69,11 @@ public final class SiegeKit {
                         }
 
                         @Override
-                        public ItemStack buildItemStack(GameTeam team) {
-                            var stack = ItemStackBuilder.of(Items.SHIELD)
+                        public ItemStack buildItemStack(GameTeam team, RegistryWrapper.WrapperLookup lookup) {
+                            return ItemStackBuilder.of(Items.SHIELD)
                                     .setUnbreakable()
+                                    .set(DataComponentTypes.BASE_COLOR, team.config().blockDyeColor())
                                     .build();
-                            var tag = new NbtCompound();
-                            tag.putInt("Base", team.config().colors().blockDyeColor().getId());
-                            stack.getOrCreateNbt().put("BlockEntityTag", tag);
-                            return stack;
                         }
                     }
             ),
@@ -138,11 +139,11 @@ public final class SiegeKit {
                         }
 
                         @Override
-                        public ItemStack buildItemStack(GameTeam team) {
-                            return SiegeHorn.getStack(
+                        public ItemStack buildItemStack(GameTeam team, RegistryWrapper.WrapperLookup lookup) {
+                            return SiegeHorn.getStack(lookup,
                                     team == SiegeTeams.DEFENDERS ? Instruments.SING_GOAT_HORN :
                                             Instruments.SEEK_GOAT_HORN,
-                                    Stream.of(
+                                    List.of(
                                             new StatusEffectInstance(StatusEffects.STRENGTH, 10 * 20),
                                             new StatusEffectInstance(StatusEffects.SPEED, 10 * 20)
                                     )
@@ -171,7 +172,7 @@ public final class SiegeKit {
         KITS.add(this);
     }
 
-    private static StatusEffectInstance kitEffect(StatusEffect effect) {
+    private static StatusEffectInstance kitEffect(RegistryEntry<StatusEffect> effect) {
         return new StatusEffectInstance(effect, -1, 0, false, false, true);
     }
 
@@ -221,24 +222,24 @@ public final class SiegeKit {
     }
 
     public static ItemStack kitSelectItemStack() {
-        return KitEquipment.KIT_SELECT.buildItemStack(null);
+        return KitEquipment.KIT_SELECT.buildItemStack(null, null);
     }
 
     public void equipArmourStand(SiegeKitStandEntity stand) {
         var team = stand.getTeam();
 
         for (var item : this.equipment) {
-            ItemStack stack = item.buildItemStack(team);
+            ItemStack stack = item.buildItemStack(team, stand.getRegistryManager());
             EquipmentSlot slot;
             if (item.getArmorStandSlot() != null) {
                 slot = item.getArmorStandSlot();
-            } else if (stack.getItem() instanceof Equipment equipmentItem) {
-                slot = equipmentItem.getSlotType();
+            } else if (stack.contains(DataComponentTypes.EQUIPPABLE)) {
+                slot = Objects.requireNonNull(stack.get(DataComponentTypes.EQUIPPABLE)).slot();
             } else {
                 continue;
             }
 
-            stand.equipStack(slot, item.buildItemStack(team));
+            stand.equipStack(slot, item.buildItemStack(team, stand.getRegistryManager()));
         }
 
         for (var item : this.resources) {
@@ -277,11 +278,11 @@ public final class SiegeKit {
         var team = participant.team;
 
         for (var item : this.equipment) {
-            var stack = item.buildItemStack(team);
+            var stack = item.buildItemStack(team, player.getRegistryManager());
             if (item.getPlayerSlot() != null) {
                 player.equipStack(item.getPlayerSlot(), stack);
-            } else if (stack.getItem() instanceof Equipment equipmentItem) {
-                player.equipStack(equipmentItem.getSlotType(), stack);
+            } else if (stack.contains(DataComponentTypes.EQUIPPABLE)) {
+                player.equipStack(Objects.requireNonNull(stack.get(DataComponentTypes.EQUIPPABLE)).slot(), stack);
             } else {
                 inventory.offerOrDrop(stack);
             }
@@ -305,7 +306,7 @@ public final class SiegeKit {
             player.getInventory()
                     .insertStack(ItemStackBuilder.of(Items.ENDER_PEARL)
                             .setCount(1)
-                            .setName(Text.literal("Warp to Front Lines").setStyle(NON_ITALIC_STYLE))
+                            .setName(Text.literal("Warp to Front Lines"))
                             .addEnchantment(null, 1)
                             .addLore(Text.literal("This ender pearl will take you"))
                             .addLore(Text.literal("to a flag in need of assistance!"))
@@ -344,7 +345,7 @@ public final class SiegeKit {
             return null;
         }
 
-        ItemStack buildItemStack(GameTeam team);
+        ItemStack buildItemStack(GameTeam team, RegistryWrapper.WrapperLookup lookup);
     }
 
     public interface AbstractKitResource {
@@ -400,11 +401,11 @@ public final class SiegeKit {
         @SuppressWarnings("Convert2Lambda") // That would be hard to understand
         public final static KitEquipable KIT_SELECT = new KitEquipable() {
             @Override
-            public ItemStack buildItemStack(@Nullable GameTeam team) {
+            public ItemStack buildItemStack(@Nullable GameTeam team, RegistryWrapper.WrapperLookup lookup) {
                 return ItemStackBuilder.of(KIT_SELECT_ITEM)
                         .setCount(1)
-                        .setName(Text.literal("Kit Select").setStyle(NON_ITALIC_STYLE))
-                        .addEnchantment(null, 1)
+                        .setName(Text.literal("Kit Select"))
+                        .set(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, true)
                         .addLore(Text.literal("This compass allows you"))
                         .addLore(Text.literal("to change your kit!"))
                         .build();
@@ -438,7 +439,7 @@ public final class SiegeKit {
             return this.playerSlot;
         }
 
-        public ItemStack buildItemStack(GameTeam team) {
+        public ItemStack buildItemStack(GameTeam team, RegistryWrapper.WrapperLookup lookup) {
             var builder = ItemStackBuilder.of(this.itemForTeam(team))
                     .setCount(1)
                     .setUnbreakable()
@@ -473,7 +474,7 @@ public final class SiegeKit {
             return ItemStackBuilder.firework(
                     team.config().fireworkColor().getRgb(),
                     2,
-                    FireworkRocketItem.Type.SMALL_BALL
+                    FireworkExplosionComponent.Type.SMALL_BALL
             );
         }
 

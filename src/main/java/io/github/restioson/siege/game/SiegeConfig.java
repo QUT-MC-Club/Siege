@@ -1,13 +1,14 @@
 package io.github.restioson.siege.game;
 
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.restioson.siege.game.map.SiegeMapConfig;
-import xyz.nucleoid.plasmid.game.common.config.PlayerConfig;
-import xyz.nucleoid.plasmid.game.common.team.GameTeam;
+import xyz.nucleoid.plasmid.api.game.common.config.WaitingLobbyConfig;
+import xyz.nucleoid.plasmid.api.game.common.team.GameTeam;
 
 public record SiegeConfig(
-        PlayerConfig players,
+        WaitingLobbyConfig players,
         SiegeMapConfig map,
         int timeLimitMins,
         int capturingGiveTimeSecs,
@@ -15,8 +16,8 @@ public record SiegeConfig(
         boolean defenderEnderPearl,
         boolean attackerEnderPearl
 ) {
-    public static final Codec<SiegeConfig> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            PlayerConfig.CODEC.fieldOf("players").forGetter(config -> config.players),
+    public static final MapCodec<SiegeConfig> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+            WaitingLobbyConfig.CODEC.fieldOf("players").forGetter(config -> config.players),
             SiegeMapConfig.CODEC.fieldOf("map").forGetter(config -> config.map),
             Codec.INT.fieldOf("time_limit_mins").forGetter(config -> config.timeLimitMins),
             Codec.INT.fieldOf("capturing_give_time_secs").orElse(0).forGetter(config -> config.capturingGiveTimeSecs),

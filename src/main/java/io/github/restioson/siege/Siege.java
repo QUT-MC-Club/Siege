@@ -7,7 +7,7 @@ import net.fabricmc.api.ModInitializer;
 import net.minecraft.util.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xyz.nucleoid.plasmid.game.GameType;
+import xyz.nucleoid.plasmid.api.game.GameType;
 
 public class Siege implements ModInitializer {
     public static final String ID = "siege";
@@ -18,7 +18,7 @@ public class Siege implements ModInitializer {
         SiegeItems.register();
 
         GameType.register(
-                new Identifier(ID, "siege"),
+                Identifier.of(ID, "siege"),
                 SiegeConfig.CODEC,
                 SiegeWaiting::open
         );

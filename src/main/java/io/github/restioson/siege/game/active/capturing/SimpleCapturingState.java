@@ -5,7 +5,7 @@ import net.minecraft.entity.boss.BossBar;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import org.jetbrains.annotations.NotNull;
-import xyz.nucleoid.plasmid.game.common.team.GameTeam;
+import xyz.nucleoid.plasmid.api.game.common.team.GameTeam;
 
 import static io.github.restioson.siege.game.active.capturing.CapturingStateSidebarBlink.*;
 

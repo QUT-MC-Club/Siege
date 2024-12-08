@@ -11,15 +11,16 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.GameMode;
 import xyz.nucleoid.map_templates.BlockBounds;
-import xyz.nucleoid.plasmid.game.player.PlayerOffer;
-import xyz.nucleoid.plasmid.game.player.PlayerOfferResult;
+import xyz.nucleoid.plasmid.api.game.player.JoinAcceptor;
+import xyz.nucleoid.plasmid.api.game.player.JoinAcceptorResult;
+
+import java.util.Set;
 
 public class SiegeSpawnLogic {
-    public static PlayerOfferResult.Accept acceptPlayer(PlayerOffer offer, ServerWorld world, SiegeSpawn spawn, GameMode gameMode) {
-        var player = offer.player();
-        var pos = SiegeSpawnLogic.choosePos(player.getRandom(), spawn.bounds(), 0.5F);
-        return offer.accept(world, pos)
-                .and(() -> {
+    public static JoinAcceptorResult.Teleport acceptPlayer(JoinAcceptor offer, ServerWorld world, SiegeSpawn spawn, GameMode gameMode) {
+        var pos = SiegeSpawnLogic.choosePos(world.getRandom(), spawn.bounds(), 0.5F);
+        return offer.teleport(world, pos)
+                .thenRunForEach((player) -> {
                     player.setYaw(spawn.yaw());
                     resetPlayer(player, gameMode);
                 });
@@ -54,6 +55,6 @@ public class SiegeSpawnLogic {
 
     public static void spawnPlayer(ServerPlayerEntity player, SiegeSpawn spawn, ServerWorld world) {
         Vec3d pos = SiegeSpawnLogic.choosePos(player.getRandom(), spawn.bounds(), 0.5f);
-        player.teleport(world, pos.x, pos.y, pos.z, spawn.yaw(), 0.0F);
+        player.teleport(world, pos.x, pos.y, pos.z, Set.of(), spawn.yaw(), 0.0F, false);
     }
 }

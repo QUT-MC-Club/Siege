@@ -1,7 +1,7 @@
 package io.github.restioson.siege.game.active;
 
 import net.minecraft.server.network.ServerPlayerEntity;
-import xyz.nucleoid.plasmid.util.PlayerRef;
+import xyz.nucleoid.plasmid.api.util.PlayerRef;
 
 public class AttackRecord {
     public static final long EXPIRE_TIME = 20 * 5;

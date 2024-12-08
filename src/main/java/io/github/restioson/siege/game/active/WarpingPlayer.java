@@ -5,7 +5,7 @@ import io.github.restioson.siege.game.map.SiegeSpawn;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
-import xyz.nucleoid.plasmid.util.PlayerRef;
+import xyz.nucleoid.plasmid.api.util.PlayerRef;
 
 public class WarpingPlayer {
     final PlayerRef player;

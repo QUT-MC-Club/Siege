@@ -10,6 +10,7 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LightningEntity;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.screen.ScreenTexts;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -20,10 +21,10 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
-import xyz.nucleoid.plasmid.game.GameSpace;
-import xyz.nucleoid.plasmid.game.common.team.GameTeam;
-import xyz.nucleoid.plasmid.util.PlayerRef;
-import xyz.nucleoid.plasmid.util.Scheduler;
+import xyz.nucleoid.plasmid.api.game.GameSpace;
+import xyz.nucleoid.plasmid.api.game.common.team.GameTeam;
+import xyz.nucleoid.plasmid.api.util.PlayerRef;
+import xyz.nucleoid.plasmid.api.util.Scheduler;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -150,7 +151,7 @@ public final class SiegeCaptureLogic {
             this.game.stageManager.addTime(this.game.config.capturingGiveTimeSecs());
 
             for (ServerPlayerEntity player : capturingPlayers) {
-                player.playSound(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.NEUTRAL, 1.0F, 1.0F);
+                player.playSoundToPlayer(SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.NEUTRAL, 1.0F, 1.0F);
             }
 
             Text sub = null;
@@ -233,7 +234,7 @@ public final class SiegeCaptureLogic {
                     player -> {
                         AtomicInteger plays = new AtomicInteger();
                         Scheduler.INSTANCE.repeatWhile(
-                                s -> player.playSound(SoundEvents.BLOCK_BELL_USE, SoundCategory.PLAYERS, 1.0f, 1.0f),
+                                s -> player.playSoundToPlayer(SoundEvents.BLOCK_BELL_USE, SoundCategory.PLAYERS, 1.0f, 1.0f),
                                 t -> plays.incrementAndGet() < 3,
                                 0,
                                 7
@@ -256,7 +257,7 @@ public final class SiegeCaptureLogic {
         );
 
         Vec3d pos = SiegeSpawnLogic.choosePos(this.world.getRandom(), flag.bounds, 0.0f);
-        LightningEntity lightningEntity = EntityType.LIGHTNING_BOLT.create(this.world);
+        LightningEntity lightningEntity = EntityType.LIGHTNING_BOLT.create(this.world, SpawnReason.TRIGGERED);
         Objects.requireNonNull(lightningEntity).refreshPositionAfterTeleport(pos);
         lightningEntity.setCosmetic(true);
         this.world.spawnEntity(lightningEntity);

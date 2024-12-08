@@ -4,7 +4,7 @@ import io.github.restioson.siege.game.map.SiegeFlag;
 import net.minecraft.entity.boss.BossBar;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.NotNull;
-import xyz.nucleoid.plasmid.game.common.team.GameTeam;
+import xyz.nucleoid.plasmid.api.game.common.team.GameTeam;
 
 import java.util.List;
 
